@@ -1,0 +1,9 @@
+{
+  "name": "sagamenu-vercel-prototype",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "npx serve . -l 4178",
+    "check": "node scripts/check.mjs"
+  }
+}

@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Prototype interaktif SagaMenu untuk review alur dashboard dan e-menu.">
+    <meta name="robots" content="noindex,nofollow">
+    <title>SagaMenu Prototype</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/styles.css">
+    <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.js" defer></script>
+    <script src="/app.js" defer></script>
+</head>
+<body>
+    <div class="prototype-strip">
+        <span>PROTOTYPE REVIEW</span>
+        <p>Data tersimpan hanya di browser ini</p>
+        <button class="strip-action" type="button" data-action="reset-demo">Reset demo</button>
+    </div>
+
+    <div class="app-shell" data-dashboard>
+        <aside class="sidebar" aria-label="Navigasi utama">
+            <div class="brand">
+                <div class="brand-mark">S</div>
+                <div>
+                    <strong>SagaMenu</strong>
+                    <span>Owner workspace</span>
+                </div>
+            </div>
+
+            <nav class="nav-list">
+                <button class="nav-item is-active" type="button" data-route="overview">
+                    <i data-lucide="layout-dashboard"></i><span>Ringkasan</span>
+                </button>
+                <button class="nav-item" type="button" data-route="menus">
+                    <i data-lucide="utensils"></i><span>Menu</span>
+                    <span class="nav-count" data-menu-count>12</span>
+                </button>
+                <button class="nav-item" type="button" data-route="categories">
+                    <i data-lucide="tags"></i><span>Kategori</span>
+                </button>
+                <button class="nav-item" type="button" data-route="addons">
+                    <i data-lucide="list-plus"></i><span>Add-on</span>
+                </button>
+                <button class="nav-item" type="button" data-route="appearance">
+                    <i data-lucide="palette"></i><span>Tampilan</span>
+                </button>
+                <button class="nav-item" type="button" data-route="publish">
+                    <i data-lucide="send"></i><span>Publish & Share</span>
+                    <span class="nav-dot" data-draft-dot></span>
+                </button>
+                <button class="nav-item" type="button" data-route="analytics">
+                    <i data-lucide="chart-no-axes-combined"></i><span>Analytics</span>
+                </button>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="trial-meter">
+                    <div>
+                        <span>Trial Pro</span>
+                        <strong>10 hari tersisa</strong>
+                    </div>
+                    <div class="meter"><span style="width: 29%"></span></div>
+                </div>
+                <button class="profile-button" type="button">
+                    <span class="avatar">AS</span>
+                    <span><strong>Andreas</strong><small>Owner</small></span>
+                    <i data-lucide="chevrons-up-down"></i>
+                </button>
+            </div>
+        </aside>
+
+        <div class="workspace">
+            <header class="topbar">
+                <button class="icon-button mobile-menu-button" type="button" data-action="toggle-sidebar" aria-label="Buka navigasi">
+                    <i data-lucide="menu"></i>
+                </button>
+                <button class="business-switcher" type="button">
+                    <span class="business-logo">SC</span>
+                    <span><strong>Saga Coffee Demo</strong><small>Main Menu · Madiun</small></span>
+                    <i data-lucide="chevron-down"></i>
+                </button>
+                <div class="topbar-actions">
+                    <div class="save-state" data-save-state>
+                        <i data-lucide="cloud-check"></i><span>Tersimpan</span>
+                    </div>
+                    <button class="button button-secondary" type="button" data-action="preview-mobile">
+                        <i data-lucide="smartphone"></i><span>Bio Menu</span>
+                    </button>
+                    <button class="button button-secondary tablet-preview-button" type="button" data-action="preview-tablet">
+                        <i data-lucide="tablet"></i><span>Store Display</span>
+                    </button>
+                    <button class="button button-primary" type="button" data-action="open-publish">
+                        <i data-lucide="send"></i><span>Publish</span>
+                        <span class="button-dot" data-publish-dot></span>
+                    </button>
+                </div>
+            </header>
+
+            <main class="main-content" id="main-content" tabindex="-1"></main>
+        </div>
+    </div>
+
+    <section class="preview-shell" data-preview-shell hidden>
+        <header class="preview-toolbar">
+            <button class="button button-secondary" type="button" data-action="close-preview">
+                <i data-lucide="arrow-left"></i><span>Kembali ke dashboard</span>
+            </button>
+            <div class="preview-title">
+                <span class="live-indicator"></span>
+                <strong>Draft preview</strong>
+                <small>Belum dilihat customer</small>
+            </div>
+            <div class="segmented" aria-label="Mode preview">
+                <button type="button" data-action="preview-mobile"><i data-lucide="smartphone"></i><span>Mobile</span></button>
+                <button type="button" data-action="preview-tablet"><i data-lucide="tablet"></i><span>Tablet</span></button>
+            </div>
+        </header>
+        <div class="preview-stage" data-preview-stage></div>
+    </section>
+
+    <dialog class="modal" data-item-editor>
+        <form method="dialog" class="modal-frame item-editor-form" data-item-form>
+            <header class="modal-header">
+                <div>
+                    <span class="eyebrow">Menu</span>
+                    <h2 data-editor-title>Tambah menu</h2>
+                </div>
+                <button class="icon-button" type="button" data-action="close-item-editor" aria-label="Tutup">
+                    <i data-lucide="x"></i>
+                </button>
+            </header>
+            <div class="modal-body form-grid">
+                <input type="hidden" name="itemId">
+                <label class="field field-span-2">
+                    <span>Nama menu</span>
+                    <input name="name" required maxlength="80" placeholder="Contoh: Iced Aren Latte">
+                </label>
+                <label class="field">
+                    <span>Kategori</span>
+                    <select name="categoryId" required data-category-select></select>
+                </label>
+                <label class="field">
+                    <span>Harga</span>
+                    <div class="input-prefix"><span>Rp</span><input name="price" required type="number" min="0" step="1000"></div>
+                </label>
+                <label class="field field-span-2">
+                    <span>Deskripsi singkat</span>
+                    <textarea name="description" maxlength="180" rows="3"></textarea>
+                </label>
+                <label class="field field-span-2">
+                    <span>URL foto</span>
+                    <input name="image" type="url" placeholder="https://images.unsplash.com/...">
+                </label>
+                <label class="field">
+                    <span>Badge</span>
+                    <select name="badge">
+                        <option value="">Tanpa badge</option>
+                        <option>Best Seller</option>
+                        <option>New</option>
+                        <option>Promo</option>
+                        <option>Recommended</option>
+                        <option>Seasonal</option>
+                    </select>
+                </label>
+                <label class="field">
+                    <span>Status</span>
+                    <select name="availability">
+                        <option value="available">Tersedia</option>
+                        <option value="sold_out">Sold out</option>
+                    </select>
+                </label>
+                <fieldset class="field field-span-2 checkbox-fieldset">
+                    <legend>Informasi tambahan</legend>
+                    <label><input type="checkbox" name="milkOptions"> Tampilkan pilihan susu</label>
+                    <label><input type="checkbox" name="extraOptions"> Tampilkan tambahan</label>
+                    <label><input type="checkbox" name="containsMilk"> Mengandung susu</label>
+                </fieldset>
+            </div>
+            <footer class="modal-footer">
+                <button class="button button-secondary" type="button" data-action="close-item-editor">Batal</button>
+                <button class="button button-primary" type="submit"><i data-lucide="check"></i><span>Simpan menu</span></button>
+            </footer>
+        </form>
+    </dialog>
+
+    <dialog class="modal modal-narrow" data-simple-dialog>
+        <form method="dialog" class="modal-frame" data-simple-form>
+            <header class="modal-header">
+                <div>
+                    <span class="eyebrow" data-simple-eyebrow>Pengaturan</span>
+                    <h2 data-simple-title>Tambah</h2>
+                </div>
+                <button class="icon-button" type="button" data-action="close-simple-dialog" aria-label="Tutup">
+                    <i data-lucide="x"></i>
+                </button>
+            </header>
+            <div class="modal-body" data-simple-fields></div>
+            <footer class="modal-footer">
+                <button class="button button-secondary" type="button" data-action="close-simple-dialog">Batal</button>
+                <button class="button button-primary" type="submit"><i data-lucide="check"></i><span>Simpan</span></button>
+            </footer>
+        </form>
+    </dialog>
+
+    <dialog class="menu-detail" data-menu-detail>
+        <article data-detail-content></article>
+    </dialog>
+
+    <div class="toast-region" aria-live="polite" aria-atomic="true" data-toast-region></div>
+    <div class="sidebar-backdrop" data-sidebar-backdrop hidden></div>
+</body>
+</html>
