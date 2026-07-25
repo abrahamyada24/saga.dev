@@ -18,7 +18,7 @@
             <div class="field"><label for="password">Password</label><input id="password" type="password" name="password" autocomplete="new-password" minlength="12" aria-describedby="password-hint" required><p class="field-hint" id="password-hint">Minimal 12 karakter.</p></div>
             <div class="field"><label for="password_confirmation">Ulangi password</label><input id="password_confirmation" type="password" name="password_confirmation" autocomplete="new-password" minlength="12" required></div>
         </div>
-        <label class="check"><input type="checkbox" name="terms" value="1" required><span>Saya menyetujui ketentuan layanan dan <a href="{{ route('privacy') }}">kebijakan privasi</a> yang berlaku.</span></label>
+        <label class="check" for="terms"><input id="terms" type="checkbox" name="terms" value="1" required><span>Saya menyetujui ketentuan layanan dan <a href="{{ route('privacy') }}">kebijakan privasi</a> yang berlaku.</span></label>
         <button type="submit">Buat akun</button>
     </form>
     <p class="switch">Sudah punya akun? <a href="{{ route('saga-platform.login.show') }}">Masuk</a></p>

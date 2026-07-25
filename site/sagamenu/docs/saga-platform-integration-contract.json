@@ -1,35 +1,48 @@
 {
   "schema_version": "1.0.0",
-  "document_status": "discovery_placeholder_contract",
-  "generated_at": "2026-07-16T00:00:00+07:00",
+  "document_status": "local_implementation_complete_external_sandbox_blocked",
+  "generated_at": "2026-07-25T00:00:00+07:00",
   "implementation_overlay": {
-    "status": "LOCAL_IMPLEMENTED_FEATURE_FLAG_OFF",
+    "status": "LOCAL_VERIFIED_FEATURE_FLAG_OFF",
     "precedence": "This overlay and the verified central baseline supersede conflicting PLACEHOLDER endpoint and authentication proposals in this discovery contract.",
     "central_baseline_commit": "aeb3cb0e4500f53ffd6663998979639cb25712d4",
+    "sagamenu_baseline_commit": "9a1692eb425460bf3d8b8ca9929073909d0dab73",
+    "sagamenu_implementation_commit": "00e50780fb4bba9a9ac78cf3238a1f3555cfc2d2",
     "service_authentication": "HMAC-SHA256 v1 with key id, timestamp, ULID nonce, method, normalized path, exact body SHA-256, contract version, and correlation ULID",
     "product_base_path": "/internal/v1/products/sagamenu",
     "canonical_signup_fields": ["subscriptionId", "planCode", "subscriptionStatus", "lifecycleVersion"],
     "canonical_verification_fields": ["subscriptionId", "planCode", "subscriptionStatus", "lifecycleVersion", "trialEndsAt"],
     "feature_flag_default": false,
     "staging_ready": false,
-    "immutable_source_blocker": true
+    "immutable_source_blocker": false,
+    "central_contract_mismatch_blocker": true,
+    "central_sandbox_e2e_blocker": true,
+    "local_test_evidence": {
+      "tests": 46,
+      "assertions": 243,
+      "result": "passed"
+    },
+    "privacy_boundary": {
+      "allowed_usage_metrics": ["activeBusinesses", "trials", "subscriptions", "outletsCount", "catalogsPublished", "qrCodesCount", "serviceHealth"],
+      "forbidden": ["catalog_content", "media_payloads", "visitor_level_analytics", "search_terms", "session_identifiers"]
+    }
   },
   "product_code": "sagamenu",
   "source_commit": {
-    "status": "UNAVAILABLE",
-    "repository_head": "e2e07105a01959fc38df615b2528cc68b0ad209e",
-    "branch": "main",
+    "status": "VERIFIED_LOCAL_IMMUTABLE",
+    "repository_head": "00e50780fb4bba9a9ac78cf3238a1f3555cfc2d2",
+    "branch": "codex/sagamenu-wave2-sprint22",
     "product_path": "site/sagamenu",
-    "working_tree_state": "untracked_local",
-    "tracked_product_file_count": 0,
-    "note": "Repository HEAD is a workspace baseline only; it does not contain the untracked SagaMenu product tree."
+    "working_tree_state": "tracked_local_branch",
+    "tracked_product_file_count": 258,
+    "note": "Local commits exist in an isolated worktree. They have not been pushed, merged, deployed, or exercised against a central sandbox."
   },
   "current_auth": {
     "status": "VERIFIED",
     "guard": "web",
     "provider": "eloquent:App\\Models\\User",
-    "credential_owner": "local_sagamenu_database",
-    "password_hash_local": true,
+    "credential_owner": "saga_platform_for_central_accounts",
+    "password_hash_local": "legacy_accounts_only_during_bounded_compatibility",
     "email_verification_local": true,
     "password_reset_local": true,
     "session": {
@@ -39,7 +52,7 @@
       "encryption_environment_controlled": true,
       "secure_cookie_environment_controlled": true
     },
-    "central_identity_integration": "UNAVAILABLE",
+    "central_identity_integration": "LOCAL_IMPLEMENTED_FEATURE_FLAG_OFF",
     "references": [
       "config/auth.php:18-68",
       "config/session.php:21,50,172,185,202",
@@ -48,22 +61,22 @@
     ]
   },
   "signup_entrypoint": {
-    "current_status": "UNAVAILABLE",
-    "current_route": null,
-    "recommended_status": "PLACEHOLDER",
+    "current_status": "LOCAL_IMPLEMENTED_FEATURE_FLAG_OFF",
+    "current_route": "/signup",
+    "recommended_status": "IMPLEMENTED",
     "page": "/signup",
     "handler": "SagaMenu branded server-side BFF",
-    "central_operation": "POST /v1/product-signups",
+    "central_operation": "POST /internal/v1/products/sagamenu/signups",
     "redirect_to_central_ui": false
   },
   "login_entrypoint": {
-    "current_status": "VERIFIED",
-    "current_route": "/admin/login",
-    "current_handler": "Filament local login",
-    "recommended_status": "PLACEHOLDER",
+    "current_status": "LOCAL_IMPLEMENTED_FEATURE_FLAG_OFF",
+    "current_route": "/login",
+    "current_handler": "SagaPlatformAuthController server-side BFF",
+    "recommended_status": "IMPLEMENTED",
     "page": "/login",
     "handler": "SagaMenu branded server-side BFF",
-    "central_operation": "POST /v1/auth/password/login",
+    "central_operation": "POST /internal/v1/products/sagamenu/sessions then POST /sessions/exchange",
     "local_session_after_signed_assertion": true,
     "redirect_to_central_ui": false
   },
@@ -75,7 +88,7 @@
     "membership_statuses": ["active", "inactive"],
     "owner_invariant": "at_least_one_active_accepted_owner",
     "location_table": "locations",
-    "central_id_columns_present": false,
+    "central_id_columns_present": true,
     "references": [
       "database/migrations/2026_07_07_000002_create_saga_menu_core_tables.php:11-55",
       "database/migrations/2026_07_16_000003_complete_pilot_controls.php:11-25",
@@ -513,15 +526,15 @@
     "migration compatibility expiry and rollback"
   ],
   "acceptance_gates": [
-    {"gate": "immutable_source_revision", "status": "BLOCKED", "owner": "repository_owner"},
-    {"gate": "central_openapi_and_lifecycle_contract", "status": "BLOCKED", "owner": "saga_platform_api_owner"},
-    {"gate": "assertion_service_auth_and_key_rotation", "status": "BLOCKED", "owner": "identity_security_owner"},
-    {"gate": "reporting_allowlist_and_retention", "status": "PLACEHOLDER", "owner": "privacy_and_product_owner"},
+    {"gate": "immutable_source_revision", "status": "VERIFIED_LOCAL", "owner": "repository_owner"},
+    {"gate": "central_openapi_and_lifecycle_contract", "status": "BLOCKED_CONTRACT_MISMATCH", "owner": "saga_platform_api_owner"},
+    {"gate": "assertion_service_auth_and_key_rotation", "status": "LOCAL_VERIFIED_EXTERNAL_ROTATION_BLOCKED", "owner": "identity_security_owner"},
+    {"gate": "reporting_allowlist_and_retention", "status": "ALLOWLIST_VERIFIED_RETENTION_PENDING", "owner": "privacy_and_product_owner"},
     {"gate": "expiry_suspension_cancellation_access_matrix", "status": "BLOCKED", "owner": "product_business_owner"},
-    {"gate": "idempotent_provisioning_and_reconciliation_tests", "status": "PLACEHOLDER", "owner": "sagamenu_engineering"},
-    {"gate": "legacy_migration_inventory_runbook_and_rollback", "status": "PLACEHOLDER", "owner": "migration_owner"},
-    {"gate": "branded_ui_accessibility_and_safe_errors", "status": "PLACEHOLDER", "owner": "product_design_and_qa"},
-    {"gate": "security_test_suite", "status": "PLACEHOLDER", "owner": "security_and_qa"},
+    {"gate": "idempotent_provisioning_and_reconciliation_tests", "status": "VERIFIED_LOCAL", "owner": "sagamenu_engineering"},
+    {"gate": "legacy_migration_inventory_runbook_and_rollback", "status": "LOCAL_VERIFIED_POLICY_INPUT_PENDING", "owner": "migration_owner"},
+    {"gate": "branded_ui_accessibility_and_safe_errors", "status": "VERIFIED_LOCAL", "owner": "product_design_and_qa"},
+    {"gate": "security_test_suite", "status": "LOCAL_VERIFIED_EXTERNAL_REVIEW_REQUIRED", "owner": "security_and_qa"},
     {"gate": "sandbox_end_to_end_and_webhook_retry_proof", "status": "UNAVAILABLE", "owner": "release_engineering"}
   ],
   "placeholders": [
@@ -542,12 +555,9 @@
     "Saga Platform sandbox and integration test credentials"
   ],
   "unavailable": [
-    "committed SagaMenu source revision",
-    "current central identity integration",
-    "current central ID mapping",
-    "current Saga Platform adapter or webhooks",
-    "current idempotent product provisioning implementation",
-    "current entitlement quota or license enforcement",
+    "verified Saga Platform to SagaMenu inbound adapter or webhooks",
+    "central sandbox credentials and end-to-end evidence",
+    "production entitlement and quota policy values",
     "current payment provider integration",
     "current custom domain implementation",
     "current verified video upload and processing pipeline",

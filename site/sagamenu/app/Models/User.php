@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\SagaPlatform\LegacyLoginCompatibility;
 use Database\Factories\UserFactory;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
@@ -44,7 +45,18 @@ class User extends Authenticatable implements FilamentUser
 
     public function canAccessPanel(Panel $panel): bool
     {
-        return $this->is_active && $this->email_verified_at !== null;
+        if (! $this->is_active || $this->email_verified_at === null) {
+            return false;
+        }
+        if (! config('sagamenu.saga_platform.enabled') || $this->isSagaDevAdmin()) {
+            return true;
+        }
+        if (filled($this->central_user_id)) {
+            return session('saga_platform.session.central_user_id') === $this->central_user_id;
+        }
+
+        return session('saga_platform.session_origin') === 'legacy_compatibility'
+            && app(LegacyLoginCompatibility::class)->isAvailable();
     }
 
     public function isSagaDevAdmin(): bool

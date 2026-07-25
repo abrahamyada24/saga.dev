@@ -226,7 +226,13 @@ class SagaPlatformSprints23To29Test extends TestCase
         $account = $this->provisionAccount();
         $account->update(['status' => 'expired']);
 
-        $this->actingAs($account->user)->get('/admin')
+        $this->actingAs($account->user)
+            ->withSession(['saga_platform.session' => [
+                'central_user_id' => $account->central_user_id,
+                'central_organization_id' => $account->central_organization_id,
+                'central_product_account_id' => $account->central_product_account_id,
+            ]])
+            ->get('/admin')
             ->assertRedirect(route('saga-platform.account-status'));
         $this->assertGuest();
         $this->get('/account-status')
@@ -250,6 +256,23 @@ class SagaPlatformSprints23To29Test extends TestCase
             ->get('/account-status')
             ->assertOk()
             ->assertSee('Akun sedang ditangguhkan');
+    }
+
+    public function test_filament_login_cannot_bypass_branded_central_or_legacy_compatibility_flow(): void
+    {
+        $this->get('/admin/login')->assertRedirect(route('saga-platform.login.show'));
+
+        $legacy = $this->legacyOwner('blocked-local-login@example.test');
+        $this->actingAs($legacy)->get('/admin')->assertForbidden();
+
+        config([
+            'sagamenu.saga_platform.legacy_login_compatibility_enabled' => true,
+            'sagamenu.saga_platform.legacy_login_compatibility_ends_at' => now()->addDay()->toIso8601String(),
+        ]);
+        $this->actingAs($legacy)
+            ->withSession(['saga_platform.session_origin' => 'legacy_compatibility'])
+            ->get('/admin')
+            ->assertOk();
     }
 
     private function provisionAccount(): SagaPlatformAccount

@@ -4,7 +4,8 @@
     "type": "module",
     "scripts": {
         "build": "vite build",
-        "dev": "vite"
+        "dev": "vite",
+        "qa:auth": "node scripts/qa-auth.mjs"
     },
     "devDependencies": {
         "@tailwindcss/vite": "^4.0.0",
