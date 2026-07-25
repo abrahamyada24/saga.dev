@@ -8,6 +8,7 @@
     "central_baseline_commit": "aeb3cb0e4500f53ffd6663998979639cb25712d4",
     "sagamenu_baseline_commit": "9a1692eb425460bf3d8b8ca9929073909d0dab73",
     "sagamenu_implementation_commit": "00e50780fb4bba9a9ac78cf3238a1f3555cfc2d2",
+    "sagamenu_commercial_policy_commit": "e7b717b77f7e972903cd7d3534f68401a133efff",
     "service_authentication": "HMAC-SHA256 v1 with key id, timestamp, ULID nonce, method, normalized path, exact body SHA-256, contract version, and correlation ULID",
     "product_base_path": "/internal/v1/products/sagamenu",
     "canonical_signup_fields": ["subscriptionId", "planCode", "subscriptionStatus", "lifecycleVersion"],
@@ -47,12 +48,12 @@
   "product_code": "sagamenu",
   "source_commit": {
     "status": "VERIFIED_LOCAL_IMMUTABLE",
-    "repository_head": "00e50780fb4bba9a9ac78cf3238a1f3555cfc2d2",
+    "repository_head": "e7b717b77f7e972903cd7d3534f68401a133efff",
     "branch": "codex/sagamenu-wave2-sprint22",
     "product_path": "site/sagamenu",
     "working_tree_state": "tracked_local_branch",
     "tracked_product_file_count": 258,
-    "note": "Local commits exist in an isolated worktree. They have not been pushed, merged, deployed, or exercised against a central sandbox."
+    "note": "This is the latest application and policy commit covered by the report. A documentation-only evidence commit may follow. Nothing has been pushed, merged, deployed, or exercised against a central sandbox."
   },
   "current_auth": {
     "status": "VERIFIED",

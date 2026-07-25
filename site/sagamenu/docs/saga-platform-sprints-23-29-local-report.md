@@ -11,6 +11,7 @@ SagaMenu now has an immutable local source baseline and a tested implementation 
 - Isolated branch: `codex/sagamenu-wave2-sprint22`
 - Wave 2 baseline: `9a1692eb425460bf3d8b8ca9929073909d0dab73`
 - Sprints 23-28 implementation: `00e50780fb4bba9a9ac78cf3238a1f3555cfc2d2`
+- Approved commercial and public access policy: `e7b717b77f7e972903cd7d3534f68401a133efff`
 - Central baseline inspected read-only: `aeb3cb0e4500f53ffd6663998979639cb25712d4`
 - Product path: `site/sagamenu`
 - Feature flag default: `SAGAMENU_SAGA_PLATFORM_ENABLED=false`
