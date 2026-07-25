@@ -1,0 +1,556 @@
+{
+  "schema_version": "1.0.0",
+  "document_status": "discovery_placeholder_contract",
+  "generated_at": "2026-07-16T00:00:00+07:00",
+  "implementation_overlay": {
+    "status": "LOCAL_IMPLEMENTED_FEATURE_FLAG_OFF",
+    "precedence": "This overlay and the verified central baseline supersede conflicting PLACEHOLDER endpoint and authentication proposals in this discovery contract.",
+    "central_baseline_commit": "aeb3cb0e4500f53ffd6663998979639cb25712d4",
+    "service_authentication": "HMAC-SHA256 v1 with key id, timestamp, ULID nonce, method, normalized path, exact body SHA-256, contract version, and correlation ULID",
+    "product_base_path": "/internal/v1/products/sagamenu",
+    "canonical_signup_fields": ["subscriptionId", "planCode", "subscriptionStatus", "lifecycleVersion"],
+    "canonical_verification_fields": ["subscriptionId", "planCode", "subscriptionStatus", "lifecycleVersion", "trialEndsAt"],
+    "feature_flag_default": false,
+    "staging_ready": false,
+    "immutable_source_blocker": true
+  },
+  "product_code": "sagamenu",
+  "source_commit": {
+    "status": "UNAVAILABLE",
+    "repository_head": "e2e07105a01959fc38df615b2528cc68b0ad209e",
+    "branch": "main",
+    "product_path": "site/sagamenu",
+    "working_tree_state": "untracked_local",
+    "tracked_product_file_count": 0,
+    "note": "Repository HEAD is a workspace baseline only; it does not contain the untracked SagaMenu product tree."
+  },
+  "current_auth": {
+    "status": "VERIFIED",
+    "guard": "web",
+    "provider": "eloquent:App\\Models\\User",
+    "credential_owner": "local_sagamenu_database",
+    "password_hash_local": true,
+    "email_verification_local": true,
+    "password_reset_local": true,
+    "session": {
+      "driver_default": "database",
+      "http_only_default": true,
+      "same_site_default": "lax",
+      "encryption_environment_controlled": true,
+      "secure_cookie_environment_controlled": true
+    },
+    "central_identity_integration": "UNAVAILABLE",
+    "references": [
+      "config/auth.php:18-68",
+      "config/session.php:21,50,172,185,202",
+      "app/Models/User.php:15-47",
+      "app/Providers/Filament/AdminPanelProvider.php:28-33"
+    ]
+  },
+  "signup_entrypoint": {
+    "current_status": "UNAVAILABLE",
+    "current_route": null,
+    "recommended_status": "PLACEHOLDER",
+    "page": "/signup",
+    "handler": "SagaMenu branded server-side BFF",
+    "central_operation": "POST /v1/product-signups",
+    "redirect_to_central_ui": false
+  },
+  "login_entrypoint": {
+    "current_status": "VERIFIED",
+    "current_route": "/admin/login",
+    "current_handler": "Filament local login",
+    "recommended_status": "PLACEHOLDER",
+    "page": "/login",
+    "handler": "SagaMenu branded server-side BFF",
+    "central_operation": "POST /v1/auth/password/login",
+    "local_session_after_signed_assertion": true,
+    "redirect_to_central_ui": false
+  },
+  "tenant_model": {
+    "status": "VERIFIED",
+    "local_tenant_table": "organizations",
+    "membership_table": "organization_user",
+    "roles": ["owner", "manager", "editor"],
+    "membership_statuses": ["active", "inactive"],
+    "owner_invariant": "at_least_one_active_accepted_owner",
+    "location_table": "locations",
+    "central_id_columns_present": false,
+    "references": [
+      "database/migrations/2026_07_07_000002_create_saga_menu_core_tables.php:11-55",
+      "database/migrations/2026_07_16_000003_complete_pilot_controls.php:11-25",
+      "app/Services/OrganizationMembershipService.php:12-57",
+      "app/Providers/AppServiceProvider.php:87-112"
+    ]
+  },
+  "provisioning_steps": [
+    {
+      "order": 1,
+      "status": "PLACEHOLDER",
+      "name": "accept_branded_signup",
+      "owner": "sagamenu",
+      "idempotency_key": "sagamenu:signup:<uuid>",
+      "effect": "Create a local signup attempt only; do not create a local password identity."
+    },
+    {
+      "order": 2,
+      "status": "PLACEHOLDER",
+      "name": "create_or_link_central_identity_and_organization",
+      "owner": "saga_platform",
+      "idempotency_key": "same_as_signup",
+      "effect": "Create/link central user and organization and return pending verification or linked state."
+    },
+    {
+      "order": 3,
+      "status": "PLACEHOLDER",
+      "name": "create_product_account_trial_entitlements",
+      "owner": "saga_platform",
+      "idempotency_key": "central_product_account_id",
+      "effect": "Create SagaMenu product account, trial, subscription, entitlement and license state."
+    },
+    {
+      "order": 4,
+      "status": "PLACEHOLDER",
+      "name": "deliver_provisioning_event",
+      "owner": "saga_platform",
+      "idempotency_key": "event_id",
+      "effect": "Send signed product_account.provisioning_requested.v1 event."
+    },
+    {
+      "order": 5,
+      "status": "PLACEHOLDER",
+      "name": "persist_inbox_and_enqueue",
+      "owner": "sagamenu",
+      "idempotency_key": "event_id",
+      "effect": "Persist unique inbox receipt before side effects and enqueue an idempotent job."
+    },
+    {
+      "order": 6,
+      "status": "PLACEHOLDER",
+      "name": "upsert_local_identity_tenant_owner_projection",
+      "owner": "sagamenu",
+      "idempotency_key": "central_product_account_id",
+      "effect": "Transactionally upsert mappings and an active accepted owner membership."
+    },
+    {
+      "order": 7,
+      "status": "PLACEHOLDER",
+      "name": "create_starter_domain_objects",
+      "owner": "sagamenu",
+      "idempotency_key": "central_product_account_id:starter:v1",
+      "effect": "Create optional default location and one empty draft catalog; do not auto-publish."
+    },
+    {
+      "order": 8,
+      "status": "PLACEHOLDER",
+      "name": "upsert_access_projection",
+      "owner": "sagamenu",
+      "idempotency_key": "product_account_id:entitlement_version",
+      "effect": "Store central lifecycle and entitlement projection without becoming billing source of truth."
+    },
+    {
+      "order": 9,
+      "status": "PLACEHOLDER",
+      "name": "report_provisioning_result",
+      "owner": "sagamenu_to_saga_platform",
+      "idempotency_key": "provisioning_request_id",
+      "effect": "Report provisioned or provisioning_failed using stable sanitized error codes."
+    },
+    {
+      "order": 10,
+      "status": "PLACEHOLDER",
+      "name": "create_local_session",
+      "owner": "sagamenu",
+      "idempotency_key": "auth_exchange_jti",
+      "effect": "Validate central assertion, rotate session ID, and create secure local product session."
+    }
+  ],
+  "central_data": {
+    "status": "PLACEHOLDER",
+    "source_of_truth": [
+      "identity",
+      "central_user",
+      "organization_identity",
+      "product_account",
+      "trial",
+      "subscription",
+      "entitlement",
+      "quota_policy",
+      "license",
+      "provisioning_status",
+      "payment_status",
+      "cross_product_access",
+      "aggregate_product_reports"
+    ],
+    "allowed_report_fields": [
+      "central_organization_id",
+      "central_product_account_id",
+      "product_code",
+      "period_start",
+      "period_end",
+      "plan_key",
+      "subscription_status",
+      "entitlement_version",
+      "provisioning_status",
+      "health_status",
+      "active_catalog_count",
+      "active_location_count",
+      "active_team_seat_count",
+      "storage_bytes_aggregate",
+      "catalog_views_aggregate",
+      "engaged_sessions_aggregate",
+      "offering_opens_aggregate",
+      "qr_scans_aggregate",
+      "searches_aggregate",
+      "zero_results_aggregate"
+    ]
+  },
+  "local_data": {
+    "status": "VERIFIED",
+    "source_of_truth": [
+      "local_user_projection_and_session",
+      "organization_projection_and_memberships",
+      "locations",
+      "catalogs",
+      "collections",
+      "offerings",
+      "variants",
+      "modifier_option_groups",
+      "inclusions",
+      "media_assets",
+      "custom_fonts",
+      "appearance_and_theme",
+      "qr_routes",
+      "preview_tokens",
+      "publish_snapshots",
+      "raw_and_granular_visitor_analytics",
+      "product_settings",
+      "audit_logs",
+      "support_issues",
+      "backup_runs"
+    ],
+    "never_send_to_central_without_explicit_contract": [
+      "catalog_content",
+      "category_item_modifier_structure",
+      "menu_descriptions_and_prices",
+      "media_or_font_files_and_urls",
+      "raw_analytics_events",
+      "search_terms",
+      "session_hashes",
+      "visitor_identifiers",
+      "top_searches",
+      "top_offerings",
+      "qr_source_details",
+      "customer_contact_fields"
+    ]
+  },
+  "endpoints": {
+    "status": "PLACEHOLDER",
+    "sagamenu_to_saga_platform": [
+      {
+        "method": "POST",
+        "path": "/v1/product-signups",
+        "purpose": "Central identity, organization, product account and trial initiation",
+        "request_fields": ["product_code", "idempotency_key", "email", "password", "display_name", "organization_name", "business_type", "locale", "return_url", "terms_version"],
+        "response_fields": ["signup_attempt_id", "status", "central_user_id", "central_organization_id", "central_product_account_id", "verification_required", "safe_next_action", "correlation_id"],
+        "auth": "signed_service_jwt",
+        "timeout_seconds": 10,
+        "idempotent": true
+      },
+      {
+        "method": "POST",
+        "path": "/v1/auth/password/login",
+        "purpose": "Server-side central password authentication",
+        "request_fields": ["product_code", "email", "password", "return_url", "request_nonce"],
+        "response_fields": ["status", "opaque_exchange_code", "expires_in", "mfa_required", "safe_next_action", "correlation_id"],
+        "auth": "signed_service_jwt",
+        "timeout_seconds": 10,
+        "idempotent": false
+      },
+      {
+        "method": "POST",
+        "path": "/v1/auth/code/exchange",
+        "purpose": "Exchange one-time code for a signed product assertion",
+        "request_fields": ["product_code", "opaque_exchange_code", "request_nonce"],
+        "response_fields": ["signed_assertion", "expires_in", "correlation_id"],
+        "auth": "signed_service_jwt",
+        "timeout_seconds": 10,
+        "idempotent": false
+      },
+      {
+        "method": "POST",
+        "path": "/v1/auth/password/reset-requests",
+        "purpose": "Request central reset while keeping SagaMenu branded UI",
+        "request_fields": ["product_code", "email", "return_url"],
+        "response_fields": ["accepted", "correlation_id"],
+        "auth": "signed_service_jwt",
+        "timeout_seconds": 10,
+        "idempotent": true
+      },
+      {
+        "method": "POST",
+        "path": "/v1/auth/password/resets",
+        "purpose": "Complete central password reset",
+        "request_fields": ["product_code", "opaque_reset_code", "new_password", "request_nonce"],
+        "response_fields": ["status", "opaque_exchange_code", "correlation_id"],
+        "auth": "signed_service_jwt",
+        "timeout_seconds": 10,
+        "idempotent": false
+      },
+      {
+        "method": "GET",
+        "path": "/v1/products/sagamenu/accounts/{product_account_id}/access",
+        "purpose": "Reconcile product account, subscription and entitlement state",
+        "request_fields": ["product_account_id"],
+        "response_fields": ["product_account_status", "provisioning_status", "subscription_status", "plan_key", "trial_ends_at", "grace_ends_at", "entitlement_version", "entitlements", "quota_policy", "license_status", "updated_at"],
+        "auth": "signed_service_jwt",
+        "timeout_seconds": 10,
+        "idempotent": true
+      },
+      {
+        "method": "POST",
+        "path": "/v1/products/sagamenu/provisioning-results",
+        "purpose": "Report local provisioning result",
+        "request_fields": ["provisioning_request_id", "central_product_account_id", "status", "local_organization_id", "safe_error_code", "completed_at"],
+        "response_fields": ["accepted", "product_account_status", "correlation_id"],
+        "auth": "signed_service_jwt",
+        "timeout_seconds": 10,
+        "idempotent": true
+      },
+      {
+        "method": "POST",
+        "path": "/v1/products/sagamenu/usage-reports",
+        "purpose": "Send allowlisted aggregate product report",
+        "request_fields": ["report_id", "central_product_account_id", "period_start", "period_end", "schema_version", "aggregates"],
+        "response_fields": ["accepted", "report_id", "correlation_id"],
+        "auth": "signed_service_jwt",
+        "timeout_seconds": 10,
+        "idempotent": true
+      }
+    ],
+    "saga_platform_to_sagamenu": [
+      {
+        "method": "POST",
+        "path": "/api/integrations/saga-platform/v1/provision",
+        "purpose": "Request idempotent local provisioning",
+        "request_fields": ["event_id", "event_name", "event_version", "occurred_at", "provisioning_request_id", "central_user_id", "central_organization_id", "central_product_account_id", "owner", "organization", "trial", "access_version"],
+        "response_fields": ["accepted", "duplicate", "provisioning_request_id", "correlation_id"],
+        "auth": "signed_service_jwt",
+        "idempotent": true
+      },
+      {
+        "method": "POST",
+        "path": "/api/integrations/saga-platform/v1/access-sync",
+        "purpose": "Synchronize versioned plan, subscription, entitlement, quota and license projection",
+        "request_fields": ["event_id", "central_product_account_id", "access_version", "plan_key", "subscription_status", "trial_ends_at", "grace_ends_at", "entitlements", "quota_policy", "license_status", "effective_at"],
+        "response_fields": ["accepted", "applied_version", "duplicate", "correlation_id"],
+        "auth": "signed_service_jwt",
+        "idempotent": true
+      },
+      {
+        "method": "POST",
+        "path": "/api/integrations/saga-platform/v1/account-status-sync",
+        "purpose": "Synchronize product account lifecycle state",
+        "request_fields": ["event_id", "central_product_account_id", "status", "reason_code", "effective_at", "access_version"],
+        "response_fields": ["accepted", "duplicate", "correlation_id"],
+        "auth": "signed_service_jwt",
+        "idempotent": true
+      },
+      {
+        "method": "POST",
+        "path": "/api/integrations/saga-platform/v1/deprovision",
+        "purpose": "Apply non-destructive suspension or cancellation policy",
+        "request_fields": ["event_id", "central_product_account_id", "mode", "reason_code", "effective_at"],
+        "response_fields": ["accepted", "data_deleted", "correlation_id"],
+        "auth": "signed_service_jwt",
+        "idempotent": true,
+        "constraints": ["data_deleted must be false", "reversible state transition only"]
+      },
+      {
+        "method": "GET",
+        "path": "/api/integrations/saga-platform/v1/health",
+        "purpose": "Product adapter health and contract version",
+        "request_fields": [],
+        "response_fields": ["status", "product_code", "contract_version", "timestamp"],
+        "auth": "signed_service_jwt",
+        "idempotent": true
+      }
+    ]
+  },
+  "service_authentication": {
+    "status": "PLACEHOLDER",
+    "transport": "TLS",
+    "mechanism": "asymmetric_signed_service_jwt",
+    "required_claims": ["iss", "sub", "aud", "iat", "exp", "jti"],
+    "required_headers": ["kid", "Idempotency-Key", "X-Correlation-Id", "X-Content-SHA256"],
+    "maximum_token_lifetime_seconds": 60,
+    "replay_cache_minimum_seconds": 300,
+    "body_digest": "SHA-256",
+    "secret_logging": false,
+    "algorithm_and_jwks": "BLOCKED_OWNER_INPUT"
+  },
+  "retry_policy": {
+    "status": "PLACEHOLDER",
+    "connect_timeout_seconds": 3,
+    "request_timeout_seconds": 10,
+    "maximum_attempts": 3,
+    "backoff": "exponential_with_jitter",
+    "retry_on": ["network_timeout", "HTTP_429", "HTTP_5xx"],
+    "honor_retry_after": true,
+    "do_not_retry_on": ["HTTP_400", "HTTP_401", "HTTP_403", "HTTP_404", "HTTP_422"],
+    "conflict_handling": "HTTP_409 returns prior idempotent result when key and payload hash match"
+  },
+  "error_mapping": [
+    {"upstream": "invalid_credentials", "browser": "AUTH_FAILED", "http": 422, "enumeration_safe": true},
+    {"upstream": "verification_required", "browser": "VERIFICATION_REQUIRED", "http": 202, "enumeration_safe": true},
+    {"upstream": "account_suspended", "browser": "ACCOUNT_UNAVAILABLE", "http": 403, "enumeration_safe": true},
+    {"upstream": "entitlement_denied", "browser": "FEATURE_UNAVAILABLE", "http": 403, "enumeration_safe": true},
+    {"upstream": "rate_limited", "browser": "TRY_LATER", "http": 429, "enumeration_safe": true},
+    {"upstream": "timeout_or_5xx", "browser": "SERVICE_TEMPORARILY_UNAVAILABLE", "http": 503, "enumeration_safe": true},
+    {"upstream": "provisioning_failed", "browser": "SETUP_INCOMPLETE", "http": 202, "enumeration_safe": true}
+  ],
+  "events": {
+    "status": "PLACEHOLDER",
+    "from_saga_platform": [
+      "identity.user.verified.v1",
+      "organization.updated.v1",
+      "product_account.provisioning_requested.v1",
+      "product_account.suspended.v1",
+      "product_account.reactivated.v1",
+      "product_account.cancelled.v1",
+      "subscription.trial_started.v1",
+      "subscription.activated.v1",
+      "subscription.past_due.v1",
+      "subscription.expired.v1",
+      "subscription.cancelled.v1",
+      "subscription.reactivated.v1",
+      "entitlements.updated.v1",
+      "payment.succeeded.v1",
+      "payment.failed.v1",
+      "payment.refunded.v1"
+    ],
+    "from_sagamenu": [
+      "product.provisioning_succeeded.v1",
+      "product.provisioning_failed.v1",
+      "product.usage_reported.v1",
+      "product.health_changed.v1"
+    ],
+    "delivery": "at_least_once",
+    "ordering": "not_assumed",
+    "deduplication_key": "event_id",
+    "versioning": "event_name_suffix_and_schema_version"
+  },
+  "id_mapping": {
+    "status": "PLACEHOLDER",
+    "rules": [
+      "Central IDs are opaque strings or UUIDs and are never equated with local integer IDs.",
+      "Every product account maps to exactly one local organization projection unless an approved migration exception exists.",
+      "Every linked local user has one central_user_id; one central user may have many product and organization memberships.",
+      "Mapping writes use unique constraints and transactional upserts."
+    ],
+    "recommended_columns_and_tables": [
+      {"local": "users.central_user_id", "central": "central_user_id", "constraint": "nullable_unique_during_migration"},
+      {"local": "organizations.central_organization_id", "central": "central_organization_id", "constraint": "nullable_unique_during_migration"},
+      {"local": "product_accounts.central_product_account_id", "central": "central_product_account_id", "constraint": "unique_not_null"},
+      {"local": "product_accounts.organization_id", "central": "central_product_account_to_organization", "constraint": "unique_product_code_per_organization"},
+      {"local": "identity_links", "central": "legacy_to_central_user_link", "constraint": "audited_and_no_password_material"},
+      {"local": "integration_inbox.event_id", "central": "event_id", "constraint": "unique"},
+      {"local": "integration_outbox.request_id", "central": "request_or_report_id", "constraint": "unique"}
+    ]
+  },
+  "lifecycle": {
+    "status": "PLACEHOLDER",
+    "states": ["pending_verification", "provisioning_pending", "trialing", "active", "past_due", "expired", "suspended", "cancelled", "reactivated", "provisioning_failed"],
+    "central_authoritative": true,
+    "local_projection_only": true,
+    "public_catalog_behavior_on_restricted_states": "BLOCKED_OWNER_INPUT",
+    "dashboard_access_matrix": "BLOCKED_OWNER_INPUT"
+  },
+  "migration_risks": [
+    {"risk": "duplicate_normalized_email", "severity": "high", "control": "manual resolution; never auto-merge"},
+    {"risk": "password_hash_duplication", "severity": "critical", "control": "never transmit/copy hashes; central credential enrollment or reset"},
+    {"risk": "central_and_local_email_disagree", "severity": "high", "control": "verified account linking and audit evidence"},
+    {"risk": "tenant_owner_conflict", "severity": "critical", "control": "preserve memberships; owner/admin review; never silently merge"},
+    {"risk": "permanent_dual_auth", "severity": "high", "control": "bounded feature-flagged compatibility period with central-first login"},
+    {"risk": "rollback_data_loss", "severity": "critical", "control": "non-destructive rollback retaining mappings and local domain data"},
+    {"risk": "multi_product_identity_fragmentation", "severity": "high", "control": "one central identity with product-specific local sessions"}
+  ],
+  "security_controls": [
+    "asymmetric assertion and service-request signature validation",
+    "issuer audience product algorithm expiry nbf nonce and jti validation",
+    "one-time code exchange and replay cache",
+    "unique event_id and idempotency key with payload hash",
+    "tenant-scoped authorization and active-owner invariant",
+    "session ID rotation after central exchange",
+    "HTTPS secure HTTP-only encrypted database sessions",
+    "CSRF protection and rate limiting",
+    "account-enumeration-safe responses",
+    "versioned entitlement cache with periodic reconciliation",
+    "non-destructive suspension and deprovisioning",
+    "aggregate reporting allowlist",
+    "redaction of token code assertion password email and PII from logs",
+    "scoped key rotation through a secret manager",
+    "audited migration and manual conflict resolution"
+  ],
+  "tests": [
+    "signup idempotency and key-payload conflict",
+    "branded same-domain signup login reset verification and callback",
+    "assertion signature issuer audience product expiry nbf nonce and jti rejection",
+    "session rotation only after valid central assertion",
+    "no local persistence of central password hash token or auth code",
+    "account enumeration resistance",
+    "duplicate and out-of-order provisioning event convergence",
+    "partial-failure provisioning retry without duplicate domain objects",
+    "active accepted owner invariant during provisioning and membership mutation",
+    "cross-tenant IDOR denial",
+    "versioned entitlement sync and stale-event rejection",
+    "atomic quota enforcement on create upload and publish",
+    "non-destructive suspend cancel and reactivation",
+    "publish snapshot and restore regression",
+    "central aggregate report allowlist and local-data exclusion",
+    "report idempotency by account period and schema version",
+    "legacy linked unlinked duplicate inactive unverified and multi-organization users",
+    "migration compatibility expiry and rollback"
+  ],
+  "acceptance_gates": [
+    {"gate": "immutable_source_revision", "status": "BLOCKED", "owner": "repository_owner"},
+    {"gate": "central_openapi_and_lifecycle_contract", "status": "BLOCKED", "owner": "saga_platform_api_owner"},
+    {"gate": "assertion_service_auth_and_key_rotation", "status": "BLOCKED", "owner": "identity_security_owner"},
+    {"gate": "reporting_allowlist_and_retention", "status": "PLACEHOLDER", "owner": "privacy_and_product_owner"},
+    {"gate": "expiry_suspension_cancellation_access_matrix", "status": "BLOCKED", "owner": "product_business_owner"},
+    {"gate": "idempotent_provisioning_and_reconciliation_tests", "status": "PLACEHOLDER", "owner": "sagamenu_engineering"},
+    {"gate": "legacy_migration_inventory_runbook_and_rollback", "status": "PLACEHOLDER", "owner": "migration_owner"},
+    {"gate": "branded_ui_accessibility_and_safe_errors", "status": "PLACEHOLDER", "owner": "product_design_and_qa"},
+    {"gate": "security_test_suite", "status": "PLACEHOLDER", "owner": "security_and_qa"},
+    {"gate": "sandbox_end_to_end_and_webhook_retry_proof", "status": "UNAVAILABLE", "owner": "release_engineering"}
+  ],
+  "placeholders": [
+    "Saga Platform base URL and environment topology",
+    "actual endpoint paths and OpenAPI schemas",
+    "actual event names payloads ordering and delivery guarantees",
+    "central user organization product account ID formats",
+    "identity verification password reset MFA and code exchange protocol",
+    "JWT signing algorithm issuer audience JWKS URL and rotation policy",
+    "service credential provisioning and secret manager",
+    "trial duration plan catalog entitlement quota and license definitions",
+    "grace expiry suspension cancellation and public catalog access matrix",
+    "payment provider and central commerce semantics",
+    "aggregate reporting allowlist retention and deletion policy",
+    "legacy compatibility period and duplicate ownership resolution policy",
+    "custom domain scope and ownership verification",
+    "video upload processing storage playback and quota contract",
+    "Saga Platform sandbox and integration test credentials"
+  ],
+  "unavailable": [
+    "committed SagaMenu source revision",
+    "current central identity integration",
+    "current central ID mapping",
+    "current Saga Platform adapter or webhooks",
+    "current idempotent product provisioning implementation",
+    "current entitlement quota or license enforcement",
+    "current payment provider integration",
+    "current custom domain implementation",
+    "current verified video upload and processing pipeline",
+    "current staging end-to-end proof against Saga Platform"
+  ]
+}

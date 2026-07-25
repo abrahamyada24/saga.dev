@@ -1,0 +1,11 @@
+[Unit]
+Description=Saga Menu Laravel scheduler
+After=network.target postgresql.service redis-server.service
+
+[Service]
+Type=oneshot
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/sagamenu/current
+ExecStart=/usr/bin/php artisan schedule:run
+

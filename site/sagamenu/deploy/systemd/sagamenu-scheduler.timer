@@ -1,0 +1,11 @@
+[Unit]
+Description=Run Saga Menu scheduler every minute
+
+[Timer]
+OnCalendar=*-*-* *:*:00
+Persistent=true
+Unit=sagamenu-scheduler.service
+
+[Install]
+WantedBy=timers.target
+
