@@ -37,7 +37,10 @@ class SagaPlatformWave2Sprint22Test extends TestCase
             'sagamenu.saga_platform.issuer' => 'saga-platform',
             'sagamenu.saga_platform.audience' => 'sagamenu-web',
             'sagamenu.saga_platform.retry_attempts' => 1,
-            'sagamenu.saga_platform.checkout_plans' => ['sagamenu_pro:monthly' => 199000],
+            'sagamenu.saga_platform.checkout_plans' => [
+                'sagamenu_pro:monthly' => 100000,
+                'sagamenu_pro:annual' => 1000000,
+            ],
         ]);
     }
 
@@ -287,7 +290,7 @@ class SagaPlatformWave2Sprint22Test extends TestCase
 
         $requests = Http::recorded();
         $this->assertCount(2, $requests);
-        $this->assertSame(199000, $requests[0][0]->data()['amount']);
+        $this->assertSame(100000, $requests[0][0]->data()['amount']);
         $this->assertSame($requests[0][0]->data()['idempotencyKey'], $requests[1][0]->data()['idempotencyKey']);
     }
 

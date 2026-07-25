@@ -1,16 +1,16 @@
 # SagaMenu Saga Platform Activation Runbook
 
-## 1. Approve product inputs
+## 1. Approved product inputs
 
-Before staging, record these decisions:
+- Trial: 14 days, centrally authoritative.
+- Paid plan: `sagamenu_pro`.
+- Monthly price: Rp100.000.
+- Annual price: Rp1.000.000.
+- Public catalog: maintenance response unless account and subscription are `active` or `trialing`.
+- Legacy compatibility cutoff: 1 August 2026 at 23:59:59 Asia/Jakarta.
+- Migration conflict owner: Andreas.
 
-1. Trial duration.
-2. Plan codes, monthly and annual prices, and allowed upgrade paths.
-3. Dashboard and public catalog behavior for `past_due`, `expired`, `suspended`, and `cancelled`.
-4. Legacy compatibility end date.
-5. Named owner for duplicate email and tenant ownership conflicts.
-
-Do not enable the feature while any of these values are being guessed.
+Refund, proration, renewal, tax, and payment retry semantics still require Saga Platform/payment-provider confirmation.
 
 ## 2. Align the central contract
 
@@ -43,7 +43,9 @@ SAGAMENU_SAGA_PLATFORM_BASE_URL=<sandbox HTTPS URL>
 SAGAMENU_SAGA_PLATFORM_KEY_ID=<sandbox key id>
 SAGAMENU_SAGA_PLATFORM_HMAC_SECRET=<secret manager injection>
 SAGAMENU_SAGA_PLATFORM_CONTRACT_VERSION=1.0
-SAGAMENU_SAGA_PLATFORM_CHECKOUT_PLANS_JSON=<approved server-side plan map>
+SAGAMENU_SAGA_PLATFORM_CHECKOUT_PLANS_JSON='{"sagamenu_pro:monthly":100000,"sagamenu_pro:annual":1000000}'
+SAGAMENU_LEGACY_LOGIN_COMPATIBILITY_ENABLED=false
+SAGAMENU_LEGACY_LOGIN_COMPATIBILITY_ENDS_AT=2026-08-01T23:59:59+07:00
 ```
 
 Keep the feature disabled.
@@ -125,16 +127,16 @@ After owner review, create local candidates:
 php artisan sagamenu:saga-platform-migration-audit --write
 ```
 
-Resolve duplicate email and multi-tenant ownership manually. Never auto-merge identities and never copy local password hashes to Saga Platform.
+Andreas resolves duplicate email and multi-tenant ownership conflicts manually. Never auto-merge identities and never copy local password hashes to Saga Platform.
 
 If a compatibility window is approved:
 
 ```text
 SAGAMENU_LEGACY_LOGIN_COMPATIBILITY_ENABLED=true
-SAGAMENU_LEGACY_LOGIN_COMPATIBILITY_ENDS_AT=<approved ISO-8601 timestamp>
+SAGAMENU_LEGACY_LOGIN_COMPATIBILITY_ENDS_AT=2026-08-01T23:59:59+07:00
 ```
 
-Disable it at the approved deadline.
+Disable it at the approved deadline. If staging is not ready by then, leave compatibility disabled and request a new explicit deadline from Andreas.
 
 ## 9. Production go/no-go
 

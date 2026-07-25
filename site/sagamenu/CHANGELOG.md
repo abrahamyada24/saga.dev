@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased - Commercial policy lock (local only)
+
+### Added
+
+- Approved 14-day centrally authoritative trial policy.
+- Approved `sagamenu_pro` pricing at Rp100.000 monthly and Rp1.000.000 annually.
+- Generic HTTP 503 maintenance response for restricted Store Display, Bio Menu, QR destinations, and preview tokens.
+- Hard legacy compatibility cutoff of 1 August 2026 at 23:59:59 Asia/Jakarta, with Andreas as migration conflict owner.
+
+### Safety
+
+- Public maintenance pages never disclose billing status or catalog content.
+- Feature-flag rollback does not bypass a persisted restricted account status.
+- Legacy organizations without a central mapping continue to render during migration.
+
 ## Unreleased - Saga Platform Sprints 23-29 (local only)
 
 ### Added

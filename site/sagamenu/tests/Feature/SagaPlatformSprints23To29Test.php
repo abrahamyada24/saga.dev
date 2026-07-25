@@ -32,8 +32,22 @@ class SagaPlatformSprints23To29Test extends TestCase
             'sagamenu.saga_platform.key_id' => 'sagamenu-local-test-key',
             'sagamenu.saga_platform.hmac_secret' => 'local-test-secret-never-used-outside-tests',
             'sagamenu.saga_platform.retry_attempts' => 1,
-            'sagamenu.saga_platform.checkout_plans' => ['sagamenu_pro:monthly' => 199000],
+            'sagamenu.saga_platform.checkout_plans' => [
+                'sagamenu_pro:monthly' => 100000,
+                'sagamenu_pro:annual' => 1000000,
+            ],
         ]);
+    }
+
+    public function test_approved_commercial_policy_is_locked_without_defaulting_central_state(): void
+    {
+        $this->assertSame(14, config('sagamenu.commercial.approved_trial_days'));
+        $this->assertSame(['active', 'trialing'], config('sagamenu.commercial.public_catalog_allowed_statuses'));
+        $this->assertSame(
+            '2026-08-01T23:59:59+07:00',
+            config('sagamenu.saga_platform.legacy_login_compatibility_ends_at'),
+        );
+        $this->assertNull(config('sagamenu.saga_platform.plan_code'));
     }
 
     public function test_final_canonical_fields_are_required_and_no_status_is_defaulted(): void
@@ -135,6 +149,12 @@ class SagaPlatformSprints23To29Test extends TestCase
                 'reference' => 'LOCAL-RETRY',
                 'checkoutUrl' => 'https://checkout.example.test/local-retry',
                 'gatewayMode' => 'dry_run',
+            ]], 201)
+            ->push(['data' => [
+                'status' => 'pending',
+                'reference' => 'LOCAL-ANNUAL',
+                'checkoutUrl' => null,
+                'gatewayMode' => 'dry_run',
             ]], 201);
         $payload = ['plan_code' => 'sagamenu_pro', 'billing_cycle' => 'monthly'];
         $this->actingAs($account->user)->postJson('/billing/subscription-checkout', $payload)
@@ -150,7 +170,15 @@ class SagaPlatformSprints23To29Test extends TestCase
             $requests[0][0]->header('Idempotency-Key')[0],
             $requests[1][0]->header('Idempotency-Key')[0],
         );
-        $this->assertSame(199000, $requests[1][0]->data()['amount']);
+        $this->assertSame(100000, $requests[1][0]->data()['amount']);
+
+        $this->actingAs($account->user)->postJson('/billing/subscription-checkout', [
+            'plan_code' => 'sagamenu_pro',
+            'billing_cycle' => 'annual',
+        ])->assertCreated()->assertJsonPath('data.reference', 'LOCAL-ANNUAL');
+        $this->assertDatabaseCount('saga_platform_checkout_attempts', 2);
+        $annualRequest = Http::recorded()->last()[0];
+        $this->assertSame(1000000, $annualRequest->data()['amount']);
     }
 
     public function test_subscription_lifecycle_is_applied_only_from_canonical_central_response(): void

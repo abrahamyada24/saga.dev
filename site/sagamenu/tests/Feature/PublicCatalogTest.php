@@ -5,11 +5,14 @@ namespace Tests\Feature;
 use App\Models\Catalog;
 use App\Models\Offering;
 use App\Models\PreviewToken;
+use App\Models\QrRoute;
+use App\Models\SagaPlatformAccount;
 use App\Models\User;
 use App\Services\Publishing\CatalogPublisher;
 use App\Services\Publishing\PreviewTokenService;
 use Database\Seeders\DemoCoffeeMenuSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
@@ -104,5 +107,118 @@ class PublicCatalogTest extends TestCase
 
         $this->get('/s/saga-coffee/main-menu')->assertNotFound();
         $this->get('/m/saga-coffee/main-menu')->assertOk();
+    }
+
+    public function test_restricted_central_account_hides_every_public_surface_behind_maintenance(): void
+    {
+        $catalog = Catalog::query()->where('slug', 'main-menu')->firstOrFail();
+        $account = $this->attachCentralAccount($catalog, 'past_due');
+        $token = app(PreviewTokenService::class)->create($catalog, 'mobile', User::query()->firstOrFail());
+
+        foreach (['past_due', 'expired', 'suspended', 'cancelled', 'provisioning_failed'] as $status) {
+            $account->update(['status' => $status]);
+            $catalog->organization->subscription()->update(['status' => $status]);
+
+            foreach (['/s/saga-coffee/main-menu', '/m/saga-coffee/main-menu', '/preview/'.$token] as $path) {
+                $this->get($path)
+                    ->assertServiceUnavailable()
+                    ->assertHeader('Cache-Control', 'no-store, private')
+                    ->assertHeader('Retry-After', '3600')
+                    ->assertSee('Menu sedang maintenance')
+                    ->assertDontSee('Iced Aren Latte')
+                    ->assertDontSee($status);
+            }
+        }
+    }
+
+    public function test_reactivation_restores_catalog_and_feature_rollback_does_not_bypass_restriction(): void
+    {
+        $catalog = Catalog::query()->where('slug', 'main-menu')->firstOrFail();
+        $account = $this->attachCentralAccount($catalog, 'suspended');
+        config(['sagamenu.saga_platform.enabled' => false]);
+
+        $this->get('/m/saga-coffee/main-menu')
+            ->assertServiceUnavailable()
+            ->assertSee('Menu sedang maintenance');
+
+        $account->update(['status' => 'active']);
+        $catalog->organization->subscription()->update(['status' => 'active']);
+        $this->get('/m/saga-coffee/main-menu')
+            ->assertOk()
+            ->assertSee('Iced Aren Latte');
+    }
+
+    public function test_mapped_account_fails_closed_when_subscription_projection_is_missing_or_mismatched(): void
+    {
+        $catalog = Catalog::query()->where('slug', 'main-menu')->firstOrFail();
+        $this->attachCentralAccount($catalog, 'active');
+
+        $catalog->organization->subscription()->update(['central_subscription_id' => null]);
+        $this->get('/m/saga-coffee/main-menu')
+            ->assertServiceUnavailable()
+            ->assertSee('Menu sedang maintenance');
+
+        $catalog->organization->subscription()->update([
+            'central_subscription_id' => (string) Str::ulid(),
+            'status' => 'active',
+        ]);
+        $this->get('/m/saga-coffee/main-menu')
+            ->assertServiceUnavailable()
+            ->assertSee('Menu sedang maintenance');
+    }
+
+    public function test_restricted_account_shows_maintenance_before_publish_snapshot_check(): void
+    {
+        $catalog = Catalog::query()->where('slug', 'main-menu')->firstOrFail();
+        $this->attachCentralAccount($catalog, 'suspended');
+        $catalog->update(['active_snapshot_id' => null]);
+
+        $this->get('/m/saga-coffee/main-menu')
+            ->assertServiceUnavailable()
+            ->assertSee('Menu sedang maintenance');
+    }
+
+    public function test_qr_keeps_its_public_destination_but_catalog_policy_returns_maintenance(): void
+    {
+        $catalog = Catalog::query()->where('slug', 'main-menu')->firstOrFail();
+        $this->attachCentralAccount($catalog, 'expired');
+        $qr = QrRoute::query()->create([
+            'organization_id' => $catalog->organization_id,
+            'catalog_id' => $catalog->id,
+            'code' => 'maintenance-test',
+            'label' => 'Maintenance Test',
+            'status' => 'active',
+            'destination_surface' => 'mobile',
+        ]);
+
+        $redirect = $this->get('/q/'.$qr->code)->assertRedirect();
+        $this->get($redirect->headers->get('Location'))
+            ->assertServiceUnavailable()
+            ->assertSee('Menu sedang maintenance');
+    }
+
+    private function attachCentralAccount(Catalog $catalog, string $status): SagaPlatformAccount
+    {
+        $catalog->loadMissing(['organization.subscription', 'organization.users', 'location']);
+        $subscriptionId = (string) Str::ulid();
+        $catalog->organization->subscription()->update([
+            'central_subscription_id' => $subscriptionId,
+            'status' => $status,
+        ]);
+
+        return SagaPlatformAccount::query()->create([
+            'user_id' => $catalog->organization->users->firstOrFail()->id,
+            'organization_id' => $catalog->organization_id,
+            'location_id' => $catalog->location_id,
+            'central_user_id' => (string) Str::ulid(),
+            'central_organization_id' => (string) Str::ulid(),
+            'central_workspace_id' => (string) Str::ulid(),
+            'central_product_account_id' => (string) Str::ulid(),
+            'central_subscription_id' => $subscriptionId,
+            'status' => $status,
+            'plan_code' => 'sagamenu_pro',
+            'lifecycle_version' => 3,
+            'trial_ends_at' => now()->addDays(14),
+        ]);
     }
 }

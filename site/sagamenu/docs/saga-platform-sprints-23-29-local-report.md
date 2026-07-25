@@ -45,13 +45,13 @@ Status: **LOCAL VERIFIED; INBOUND CENTRAL ADAPTER BLOCKED**
 - Added projection fields for plan, entitlement version, entitlements, quota policy, license, reason, and sync timestamps.
 - Added central subscription actions for suspend, resume, and cancel.
 - Central-origin dashboard sessions are allowed only for `active` and `trialing`.
-- Public catalog behavior for restricted subscription states remains unchanged because the business access matrix has not been approved.
+- Public Store Display, Bio Menu, QR destinations, and preview tokens now show a generic maintenance response unless mapped access is `active` or `trialing`.
 
 No public inbound webhook route was invented. The projector is ready, but activation waits for a verified central-to-product event contract and signed inbound authentication specification.
 
 ## Sprint 26 - Legacy account migration
 
-Status: **LOCAL VERIFIED; OWNER POLICY INPUT REQUIRED**
+Status: **LOCAL VERIFIED; OWNER ASSIGNED**
 
 - Added a PII-safe migration inventory using keyed email fingerprints.
 - Dry-run is the default; local candidate writes require `--write`.
@@ -59,10 +59,11 @@ Status: **LOCAL VERIFIED; OWNER POLICY INPUT REQUIRED**
 - Compatibility is default-off and requires both an explicit flag and expiry timestamp.
 - Fallback runs only after central `PLT_AUTH_FAILED`, only for unmapped local users, and never copies password hashes.
 - Duplicate email, multi-tenant ownership, and missing credential cases require manual review.
+- Andreas is the decision owner and compatibility ends on 1 August 2026 at 23:59:59 Asia/Jakarta.
 
 ## Sprint 27 - Billing rehearsal
 
-Status: **LOCAL VERIFIED; PLAN AND PAYMENT INPUT REQUIRED**
+Status: **LOCAL VERIFIED; PRICING APPROVED, PAYMENT SEMANTICS BLOCKED**
 
 - Enforced owner-only checkout and subscription lifecycle actions.
 - Added a persistent checkout attempt ledger with request hash and idempotency key.
@@ -71,7 +72,7 @@ Status: **LOCAL VERIFIED; PLAN AND PAYMENT INPUT REQUIRED**
 - Checkout URLs are accepted only when HTTPS.
 - Safe central error codes are returned without leaking upstream internals.
 
-Real plan codes, prices, billing cycles, payment gateway mode, and callback semantics remain external inputs.
+`sagamenu_pro` is approved at Rp100.000 monthly and Rp1.000.000 annually. Payment gateway mode, callbacks, refund, proration, renewal, tax, and failed-payment retry semantics remain external inputs.
 
 ## Sprint 28 - UI, accessibility, and UAT states
 
@@ -92,7 +93,7 @@ Latest implementation verification:
 
 ```text
 php artisan test --compact
-46 tests passed, 243 assertions
+52 tests passed, 384 assertions
 ```
 
 Additional verified gates:
@@ -105,6 +106,7 @@ Additional verified gates:
 - Source secret scan: clean; documented values are placeholders only.
 - Local canonical rehearsal: eight mocked requests, no network, no domain writes.
 - Visual auth QA: four mobile/tablet/desktop screens returned 200 with no console errors, horizontal overflow, hidden headings, or unlabeled controls.
+- Visual maintenance QA: mobile 390 px and tablet 1024 px returned 503, showed the generic maintenance state, leaked no catalog item, had no horizontal overflow, and produced no unexpected console errors.
 - Filament `/admin/login` redirects to the branded flow while the integration is enabled.
 - Feature-off rollback and restricted-session invalidation: passed.
 
@@ -127,10 +129,8 @@ Catalog content, item descriptions, media, custom fonts, visitor-level events, s
 1. A central commit or sandbox must return the explicit final signup and verification fields.
 2. Sandbox base URL, environment-bound key ID, and HMAC secret are unavailable.
 3. Central-to-SagaMenu lifecycle/entitlement event contract and inbound signature policy are unavailable.
-4. Owner-approved plan codes, prices, billing cycles, and trial duration are unavailable.
-5. Restricted-state behavior for public Store Display and Bio Menu needs a business decision.
-6. Legacy migration compatibility end date and conflict-resolution owner are not approved.
-7. Staging VPS, TLS, PostgreSQL, Redis, queue, scheduler, email, backup, monitoring, and restore proof are unavailable.
+4. Payment gateway, callback, refund, proration, renewal, tax, and failed-payment retry semantics are unavailable.
+5. Staging VPS, TLS, PostgreSQL, Redis, queue, scheduler, email, backup, monitoring, and restore proof are unavailable.
 
 ## Rollback
 

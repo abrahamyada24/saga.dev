@@ -1,6 +1,11 @@
 <?php
 
 return [
+    'commercial' => [
+        'approved_trial_days' => 14,
+        'public_catalog_allowed_statuses' => ['active', 'trialing'],
+        'maintenance_retry_after_seconds' => 3600,
+    ],
     'saga_platform' => [
         'enabled' => filter_var(env('SAGAMENU_SAGA_PLATFORM_ENABLED', false), FILTER_VALIDATE_BOOLEAN),
         'base_url' => rtrim((string) env('SAGAMENU_SAGA_PLATFORM_BASE_URL', ''), '/'),
@@ -22,7 +27,10 @@ return [
             env('SAGAMENU_LEGACY_LOGIN_COMPATIBILITY_ENABLED', false),
             FILTER_VALIDATE_BOOLEAN,
         ),
-        'legacy_login_compatibility_ends_at' => env('SAGAMENU_LEGACY_LOGIN_COMPATIBILITY_ENDS_AT'),
+        'legacy_login_compatibility_ends_at' => env(
+            'SAGAMENU_LEGACY_LOGIN_COMPATIBILITY_ENDS_AT',
+            '2026-08-01T23:59:59+07:00',
+        ),
     ],
     'backup' => [
         'disk' => env('SAGAMENU_BACKUP_DISK'),

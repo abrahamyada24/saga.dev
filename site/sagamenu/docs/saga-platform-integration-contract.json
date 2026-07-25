@@ -18,9 +18,26 @@
     "central_contract_mismatch_blocker": true,
     "central_sandbox_e2e_blocker": true,
     "local_test_evidence": {
-      "tests": 46,
-      "assertions": 243,
-      "result": "passed"
+      "tests": 52,
+      "assertions": 384,
+      "result": "passed",
+      "visual_maintenance": "passed_mobile_390_and_tablet_1024"
+    },
+    "approved_product_decisions": {
+      "decision_owner": "Andreas",
+      "trial_days": 14,
+      "trial_plan_code": "sagamenu_trial",
+      "paid_plan_code": "sagamenu_pro",
+      "currency": "IDR",
+      "checkout_prices": {
+        "monthly": 100000,
+        "annual": 1000000
+      },
+      "subscription_source_of_truth": "saga_platform",
+      "public_catalog_allowed_statuses": ["active", "trialing"],
+      "restricted_public_behavior": "generic_maintenance_http_503",
+      "legacy_compatibility_ends_at": "2026-08-01T23:59:59+07:00",
+      "migration_conflict_owner": "Andreas"
     },
     "privacy_boundary": {
       "allowed_usage_metrics": ["activeBusinesses", "trials", "subscriptions", "outletsCount", "catalogsPublished", "qrCodesCount", "serviceHealth"],
@@ -472,12 +489,12 @@
     ]
   },
   "lifecycle": {
-    "status": "PLACEHOLDER",
+    "status": "LOCAL_VERIFIED_EXTERNAL_EVENT_CONTRACT_BLOCKED",
     "states": ["pending_verification", "provisioning_pending", "trialing", "active", "past_due", "expired", "suspended", "cancelled", "reactivated", "provisioning_failed"],
     "central_authoritative": true,
     "local_projection_only": true,
-    "public_catalog_behavior_on_restricted_states": "BLOCKED_OWNER_INPUT",
-    "dashboard_access_matrix": "BLOCKED_OWNER_INPUT"
+    "public_catalog_behavior_on_restricted_states": "Mapped accounts in past_due, expired, suspended, cancelled, or provisioning_failed receive a generic HTTP 503 maintenance page with no catalog or status disclosure. Legacy organizations without a central mapping remain visible during migration.",
+    "dashboard_access_matrix": "Mapped users may authenticate only while the projected account status is active or trialing. Restricted states are logged out and redirected to the branded account-status page."
   },
   "migration_risks": [
     {"risk": "duplicate_normalized_email", "severity": "high", "control": "manual resolution; never auto-merge"},
@@ -530,7 +547,7 @@
     {"gate": "central_openapi_and_lifecycle_contract", "status": "BLOCKED_CONTRACT_MISMATCH", "owner": "saga_platform_api_owner"},
     {"gate": "assertion_service_auth_and_key_rotation", "status": "LOCAL_VERIFIED_EXTERNAL_ROTATION_BLOCKED", "owner": "identity_security_owner"},
     {"gate": "reporting_allowlist_and_retention", "status": "ALLOWLIST_VERIFIED_RETENTION_PENDING", "owner": "privacy_and_product_owner"},
-    {"gate": "expiry_suspension_cancellation_access_matrix", "status": "BLOCKED", "owner": "product_business_owner"},
+    {"gate": "expiry_suspension_cancellation_access_matrix", "status": "VERIFIED_LOCAL", "owner": "Andreas"},
     {"gate": "idempotent_provisioning_and_reconciliation_tests", "status": "VERIFIED_LOCAL", "owner": "sagamenu_engineering"},
     {"gate": "legacy_migration_inventory_runbook_and_rollback", "status": "LOCAL_VERIFIED_POLICY_INPUT_PENDING", "owner": "migration_owner"},
     {"gate": "branded_ui_accessibility_and_safe_errors", "status": "VERIFIED_LOCAL", "owner": "product_design_and_qa"},
@@ -545,11 +562,11 @@
     "identity verification password reset MFA and code exchange protocol",
     "JWT signing algorithm issuer audience JWKS URL and rotation policy",
     "service credential provisioning and secret manager",
-    "trial duration plan catalog entitlement quota and license definitions",
-    "grace expiry suspension cancellation and public catalog access matrix",
+    "central entitlement quota and license definitions",
+    "central grace-period semantics and event delivery contract",
     "payment provider and central commerce semantics",
     "aggregate reporting allowlist retention and deletion policy",
-    "legacy compatibility period and duplicate ownership resolution policy",
+    "duplicate ownership resolution procedure and migration inventory",
     "custom domain scope and ownership verification",
     "video upload processing storage playback and quota contract",
     "Saga Platform sandbox and integration test credentials"
