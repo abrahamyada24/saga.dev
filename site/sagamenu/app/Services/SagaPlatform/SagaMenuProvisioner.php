@@ -14,17 +14,22 @@ use Illuminate\Support\Str;
 
 class SagaMenuProvisioner
 {
+    public function __construct(private readonly SagaPlatformContract $contract) {}
+
     public function provision(array $signup, array $verification): SagaPlatformAccount
     {
-        $required = ['platformUserId', 'organizationId', 'productAccountId', 'subscriptionId', 'planCode', 'subscriptionStatus', 'email', 'name', 'organizationName'];
+        $signup = $this->contract->signup($signup);
+        $verification = $this->contract->verification($verification);
+        $required = ['email', 'name', 'organizationName'];
         foreach ($required as $key) {
             if (blank($signup[$key] ?? null)) {
                 throw new SagaPlatformException('PRODUCT_PROVISIONING_CONTEXT_INCOMPLETE', 409);
             }
         }
-        if (! isset($verification['lifecycleVersion']) || (int) $verification['lifecycleVersion'] < 1
-            || blank($verification['trialEndsAt'] ?? null)) {
-            throw new SagaPlatformException('PLT_CONTRACT_RESPONSE_INCOMPLETE', 503);
+        foreach (['productAccountId', 'subscriptionId', 'planCode', 'subscriptionStatus'] as $field) {
+            if ($signup[$field] !== $verification[$field]) {
+                throw new SagaPlatformException('PRODUCT_ACCOUNT_BINDING_CONFLICT', 409);
+            }
         }
 
         return DB::transaction(function () use ($signup, $verification): SagaPlatformAccount {
@@ -130,10 +135,11 @@ class SagaMenuProvisioner
                 ['organization_id' => $organization->id],
                 [
                     'central_subscription_id' => $signup['subscriptionId'] ?? null,
-                    'plan_key' => $signup['planCode'],
-                    'status' => $signup['subscriptionStatus'],
+                    'plan_key' => $verification['planCode'],
+                    'status' => $verification['subscriptionStatus'],
                     'starts_at' => now(),
                     'ends_at' => $trialEndsAt,
+                    'central_version' => (int) $verification['lifecycleVersion'],
                     'entitlements' => null,
                 ],
             );
@@ -147,10 +153,12 @@ class SagaMenuProvisioner
                 'central_workspace_id' => $workspaceId,
                 'central_product_account_id' => $signup['productAccountId'],
                 'central_subscription_id' => $signup['subscriptionId'] ?? null,
-                'status' => $signup['subscriptionStatus'],
+                'status' => $verification['subscriptionStatus'],
+                'plan_code' => $verification['planCode'],
                 'lifecycle_version' => (int) $verification['lifecycleVersion'],
                 'trial_ends_at' => $trialEndsAt,
                 'last_synced_at' => now(),
+                'access_synced_at' => now(),
             ]);
         });
     }

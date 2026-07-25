@@ -11,7 +11,13 @@ class Subscription extends Model
 {
     protected function casts(): array
     {
-        return ['starts_at' => 'datetime', 'ends_at' => 'datetime', 'grace_ends_at' => 'datetime', 'entitlements' => 'array'];
+        return [
+            'starts_at' => 'datetime',
+            'ends_at' => 'datetime',
+            'grace_ends_at' => 'datetime',
+            'entitlements' => 'array',
+            'quota_policy' => 'array',
+        ];
     }
 
     public function organization(): BelongsTo

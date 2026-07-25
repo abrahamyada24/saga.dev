@@ -14,6 +14,9 @@ class SagaPlatformAccount extends Model
         return [
             'trial_ends_at' => 'datetime',
             'last_synced_at' => 'datetime',
+            'access_synced_at' => 'datetime',
+            'entitlements' => 'array',
+            'quota_policy' => 'array',
         ];
     }
 

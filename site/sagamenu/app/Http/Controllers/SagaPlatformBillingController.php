@@ -4,14 +4,21 @@ namespace App\Http\Controllers;
 
 use App\Exceptions\SagaPlatformException;
 use App\Models\SagaPlatformAccount;
+use App\Services\SagaPlatform\SagaPlatformAccessProjector;
+use App\Services\SagaPlatform\SagaPlatformCheckoutService;
 use App\Services\SagaPlatform\SagaPlatformClient;
+use App\Services\SagaPlatform\SagaPlatformContract;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 
 class SagaPlatformBillingController extends Controller
 {
-    public function __construct(private readonly SagaPlatformClient $platform) {}
+    public function __construct(
+        private readonly SagaPlatformClient $platform,
+        private readonly SagaPlatformCheckoutService $checkouts,
+        private readonly SagaPlatformContract $contract,
+        private readonly SagaPlatformAccessProjector $access,
+    ) {}
 
     public function checkout(Request $request): JsonResponse
     {
@@ -27,6 +34,9 @@ class SagaPlatformBillingController extends Controller
         if (! $account || ! $account->central_subscription_id) {
             return response()->json(['error' => ['code' => 'PRODUCT_SUBSCRIPTION_MAPPING_REQUIRED']], 409);
         }
+        if (! $user->isSagaDevAdmin() && $user->roleFor($organization) !== 'owner') {
+            return response()->json(['error' => ['code' => 'PRODUCT_OWNER_REQUIRED']], 403);
+        }
 
         $planKey = $data['plan_code'].':'.$data['billing_cycle'];
         $plans = config('sagamenu.saga_platform.checkout_plans', []);
@@ -35,23 +45,14 @@ class SagaPlatformBillingController extends Controller
             return response()->json(['error' => ['code' => 'PRODUCT_PLAN_NOT_CONFIGURED']], 422);
         }
 
-        $sessionKey = 'saga_platform.checkout_idempotency.'.hash('sha256', $account->id.'|'.$planKey);
-        $idempotencyKey = $request->session()->get($sessionKey);
-        if (! is_string($idempotencyKey)) {
-            $idempotencyKey = 'sagamenu-checkout-'.Str::lower((string) Str::ulid());
-            $request->session()->put($sessionKey, $idempotencyKey);
-        }
-
         try {
-            $checkout = $this->platform->createSubscriptionCheckout([
-                'idempotencyKey' => $idempotencyKey,
-                'subscriptionId' => $account->central_subscription_id,
-                'planCode' => $data['plan_code'],
-                'billingCycle' => $data['billing_cycle'],
-                'amount' => $amount,
-                'customerName' => $user->name,
-                'customerEmail' => $user->email,
-            ]);
+            $attempt = $this->checkouts->create(
+                $account,
+                $user,
+                $data['plan_code'],
+                $data['billing_cycle'],
+                $amount,
+            );
         } catch (SagaPlatformException $exception) {
             return response()->json([
                 'error' => ['code' => $this->safeCode($exception)],
@@ -60,22 +61,49 @@ class SagaPlatformBillingController extends Controller
 
         return response()->json([
             'data' => [
-                'status' => $checkout['status'] ?? 'pending',
-                'reference' => $checkout['reference'] ?? null,
-                'checkout_url' => $this->safeCheckoutUrl($checkout['checkoutUrl'] ?? null),
-                'expires_at' => $checkout['expiresAt'] ?? null,
-                'gateway_mode' => $checkout['gatewayMode'] ?? null,
+                'status' => $attempt->status,
+                'reference' => $attempt->central_reference,
+                'checkout_url' => $attempt->checkout_url,
+                'expires_at' => $attempt->expires_at?->utc()->toIso8601ZuluString(),
+                'gateway_mode' => $attempt->gateway_mode,
             ],
         ], 201);
     }
 
-    private function safeCheckoutUrl(mixed $url): ?string
+    public function lifecycle(Request $request, string $action): JsonResponse
     {
-        if (! is_string($url) || ! filter_var($url, FILTER_VALIDATE_URL)) {
-            return null;
+        if (! in_array($action, ['suspend', 'resume', 'cancel'], true)) {
+            abort(404);
+        }
+        $user = $request->user();
+        $organization = $user?->currentOrganization();
+        if (! $organization || (! $user->isSagaDevAdmin() && $user->roleFor($organization) !== 'owner')) {
+            return response()->json(['error' => ['code' => 'PRODUCT_OWNER_REQUIRED']], 403);
+        }
+        $account = SagaPlatformAccount::query()->where('organization_id', $organization->id)->first();
+        if (! $account || ! $account->central_subscription_id) {
+            return response()->json(['error' => ['code' => 'PRODUCT_SUBSCRIPTION_MAPPING_REQUIRED']], 409);
         }
 
-        return parse_url($url, PHP_URL_SCHEME) === 'https' ? $url : null;
+        try {
+            $payload = $this->contract->lifecycle(
+                $this->platform->changeSubscription($account->central_subscription_id, $action),
+            );
+            $updated = $this->access->applyLifecycleResponse($account, $payload);
+        } catch (SagaPlatformException $exception) {
+            return response()->json(
+                ['error' => ['code' => $this->safeCode($exception)]],
+                $exception->httpStatus >= 400 && $exception->httpStatus < 600 ? $exception->httpStatus : 503,
+            );
+        }
+
+        return response()->json([
+            'data' => [
+                'subscription_id' => $updated->central_subscription_id,
+                'status' => $updated->status,
+                'version' => $updated->lifecycle_version,
+            ],
+        ]);
     }
 
     private function safeCode(SagaPlatformException $exception): string
@@ -85,6 +113,9 @@ class SagaPlatformBillingController extends Controller
             'PLT_PRODUCT_ACCOUNT_NOT_FOUND',
             'PLT_SUBSCRIPTION_INVALID_STATE',
             'PLT_DEPENDENCY_UNAVAILABLE',
+            'PRODUCT_STALE_LIFECYCLE_UPDATE',
+            'PRODUCT_ACCOUNT_BINDING_CONFLICT',
+            'PLT_CONTRACT_RESPONSE_INCOMPLETE',
         ], true) ? $exception->safeCode : 'PLT_REQUEST_INVALID';
     }
 }

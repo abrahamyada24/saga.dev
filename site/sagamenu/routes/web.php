@@ -14,6 +14,7 @@ Route::middleware(['saga-platform.enabled', 'throttle:20,1'])->group(function ()
     Route::post('/signup', [SagaPlatformAuthController::class, 'signup'])->name('saga-platform.signup');
     Route::get('/login', [SagaPlatformAuthController::class, 'showLogin'])->name('saga-platform.login.show');
     Route::post('/login', [SagaPlatformAuthController::class, 'login'])->name('saga-platform.login');
+    Route::get('/account-status', [SagaPlatformAuthController::class, 'showAccountStatus'])->name('saga-platform.account-status');
     Route::get('/verify-email', [SagaPlatformAuthController::class, 'showVerify'])->name('saga-platform.verify.show');
     Route::post('/verify-email', [SagaPlatformAuthController::class, 'verify'])->name('saga-platform.verify');
     Route::post('/provisioning/retry', [SagaPlatformAuthController::class, 'retryProvisioning'])->name('saga-platform.provisioning.retry');
@@ -22,6 +23,10 @@ Route::middleware(['saga-platform.enabled', 'throttle:20,1'])->group(function ()
 Route::post('/billing/subscription-checkout', [SagaPlatformBillingController::class, 'checkout'])
     ->middleware(['saga-platform.enabled:auth', 'throttle:10,1'])
     ->name('saga-platform.billing.checkout');
+Route::post('/billing/subscription/{action}', [SagaPlatformBillingController::class, 'lifecycle'])
+    ->whereIn('action', ['suspend', 'resume', 'cancel'])
+    ->middleware(['saga-platform.enabled:auth', 'throttle:10,1'])
+    ->name('saga-platform.billing.lifecycle');
 
 Route::get('/invitations/{token}/accept', [InvitationController::class, 'accept'])
     ->middleware(['auth', 'throttle:10,1'])

@@ -4,9 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Exceptions\SagaPlatformException;
 use App\Models\SagaPlatformAccount;
+use App\Services\SagaPlatform\LegacyLoginCompatibility;
 use App\Services\SagaPlatform\SagaMenuProvisioner;
+use App\Services\SagaPlatform\SagaPlatformAccessProjector;
 use App\Services\SagaPlatform\SagaPlatformAssertionVerifier;
 use App\Services\SagaPlatform\SagaPlatformClient;
+use App\Services\SagaPlatform\SagaPlatformContract;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -19,6 +22,9 @@ class SagaPlatformAuthController extends Controller
         private readonly SagaPlatformClient $platform,
         private readonly SagaPlatformAssertionVerifier $assertions,
         private readonly SagaMenuProvisioner $provisioner,
+        private readonly SagaPlatformContract $contract,
+        private readonly SagaPlatformAccessProjector $access,
+        private readonly LegacyLoginCompatibility $legacyLogin,
     ) {}
 
     public function showSignup(Request $request): View|RedirectResponse
@@ -67,18 +73,7 @@ class SagaPlatformAuthController extends Controller
             if (filled(config('sagamenu.saga_platform.plan_code'))) {
                 $payload['planCode'] = config('sagamenu.saga_platform.plan_code');
             }
-            $central = $this->platform->signup($payload);
-            $this->requireCentralFields($central, [
-                'signupAttemptId',
-                'platformUserId',
-                'organizationId',
-                'workspaceId',
-                'productAccountId',
-                'subscriptionId',
-                'planCode',
-                'subscriptionStatus',
-                'lifecycleVersion',
-            ]);
+            $central = $this->contract->signup($this->platform->signup($payload));
         } catch (SagaPlatformException $exception) {
             return back()->withInput($request->except(['password', 'password_confirmation']))
                 ->withErrors(['email' => $this->safeMessage($exception)]);
@@ -126,15 +121,9 @@ class SagaPlatformAuthController extends Controller
         }
 
         try {
-            $verification = $this->platform->verify($data['verification_token']);
-            $this->requireCentralFields($verification, [
-                'productAccountId',
-                'subscriptionId',
-                'planCode',
-                'subscriptionStatus',
-                'lifecycleVersion',
-                'trialEndsAt',
-            ]);
+            $verification = $this->contract->verification(
+                $this->platform->verify($data['verification_token']),
+            );
             $signup['productAccountId'] = $verification['productAccountId'];
             $signup['subscriptionId'] = $verification['subscriptionId'];
             $signup['lifecycleVersion'] = $verification['lifecycleVersion'];
@@ -174,6 +163,16 @@ class SagaPlatformAuthController extends Controller
         return view('auth.login');
     }
 
+    public function showAccountStatus(Request $request): View
+    {
+        $status = (string) $request->session()->get('saga_platform.restricted_status', 'unavailable');
+        if (! in_array($status, ['past_due', 'expired', 'suspended', 'cancelled', 'provisioning_failed'], true)) {
+            $status = 'unavailable';
+        }
+
+        return view('auth.account-status', compact('status'));
+    }
+
     public function login(Request $request): RedirectResponse
     {
         $data = $request->validate([
@@ -181,11 +180,16 @@ class SagaPlatformAuthController extends Controller
             'password' => ['required', 'string', 'max:255'],
         ]);
         $requestNonce = (string) Str::ulid();
+        $account = null;
 
         try {
-            $session = $this->platform->createSession(Str::lower(trim($data['email'])), $data['password'], $requestNonce);
-            $exchange = $this->platform->exchangeSession((string) ($session['opaqueExchangeCode'] ?? ''), $requestNonce);
-            $claims = $this->assertions->verify((string) ($exchange['signedAssertion'] ?? ''));
+            $session = $this->contract->session(
+                $this->platform->createSession(Str::lower(trim($data['email'])), $data['password'], $requestNonce),
+            );
+            $exchange = $this->contract->exchange(
+                $this->platform->exchangeSession($session['opaqueExchangeCode'], $requestNonce),
+            );
+            $claims = $this->assertions->verify($exchange['signedAssertion']);
             $account = SagaPlatformAccount::query()
                 ->where('central_product_account_id', $claims['product_account_id'])
                 ->where('central_user_id', $claims['sub'])
@@ -194,6 +198,9 @@ class SagaPlatformAuthController extends Controller
                 ->first();
             if (! $account || ! $account->user?->is_active) {
                 throw new SagaPlatformException('PRODUCT_ACCOUNT_NOT_PROVISIONED', 403);
+            }
+            if (! $this->access->canAuthenticate($account)) {
+                throw new SagaPlatformException('PRODUCT_ACCOUNT_RESTRICTED', 403);
             }
 
             Auth::login($account->user);
@@ -209,6 +216,17 @@ class SagaPlatformAuthController extends Controller
 
             return redirect()->intended('/admin');
         } catch (SagaPlatformException $exception) {
+            if ($exception->safeCode === 'PRODUCT_ACCOUNT_RESTRICTED') {
+                $request->session()->put('saga_platform.restricted_status', $account?->status ?? 'unavailable');
+
+                return redirect()->route('saga-platform.account-status');
+            }
+            if ($exception->safeCode === 'PLT_AUTH_FAILED'
+                && $this->legacyLogin->attempt($data['email'], $data['password'], $request)) {
+                return redirect()->intended('/admin')
+                    ->with('status', 'Anda masuk melalui masa kompatibilitas akun lama.');
+            }
+
             return back()->withInput($request->only('email'))
                 ->withErrors(['email' => $this->safeMessage($exception)]);
         }
@@ -218,13 +236,12 @@ class SagaPlatformAuthController extends Controller
     {
         $account = $this->provisioner->provision($signup, $verification);
         try {
-            $result = $this->platform->reportProvisioning([
+            $result = $this->contract->provisioning($this->platform->reportProvisioning([
                 'productAccountId' => $account->central_product_account_id,
                 'expectedLifecycleVersion' => $account->lifecycle_version,
                 'status' => 'ready',
                 'localSubjectId' => 'organization:'.$account->organization_id,
-            ]);
-            $this->requireCentralFields($result, ['productAccountId', 'status', 'lifecycleVersion']);
+            ]));
         } catch (SagaPlatformException $exception) {
             $account->forceFill(['status' => 'provisioning_report_pending'])->save();
             throw $exception;
@@ -250,16 +267,9 @@ class SagaPlatformAuthController extends Controller
             'PLT_IDEMPOTENCY_CONFLICT' => 'Permintaan pendaftaran berubah. Muat ulang halaman dan coba lagi.',
             'PRODUCT_IDENTITY_REVIEW_REQUIRED', 'PRODUCT_IDENTITY_BINDING_CONFLICT', 'PRODUCT_ACCOUNT_BINDING_CONFLICT' => 'Akun membutuhkan pemeriksaan sebelum dapat ditautkan.',
             'PRODUCT_ACCOUNT_NOT_PROVISIONED', 'PLT_PRODUCT_ACCOUNT_UNAVAILABLE' => 'Akun produk belum siap digunakan.',
+            'PRODUCT_ACCOUNT_RESTRICTED' => 'Akses dashboard sedang dibatasi oleh status langganan.',
+            'PLT_CONTRACT_RESPONSE_INCOMPLETE' => 'Layanan identitas mengirim respons yang belum dapat diverifikasi.',
             default => 'Proses belum dapat diselesaikan. Coba lagi beberapa saat lagi.',
         };
-    }
-
-    private function requireCentralFields(array $payload, array $fields): void
-    {
-        foreach ($fields as $field) {
-            if (! array_key_exists($field, $payload) || blank($payload[$field])) {
-                throw new SagaPlatformException('PLT_CONTRACT_RESPONSE_INCOMPLETE', 503);
-            }
-        }
     }
 }

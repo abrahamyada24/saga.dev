@@ -18,6 +18,11 @@ return [
         'retry_delay_milliseconds' => (int) env('SAGAMENU_SAGA_PLATFORM_RETRY_DELAY_MILLISECONDS', 200),
         'assertion_max_ttl_seconds' => (int) env('SAGAMENU_SAGA_PLATFORM_ASSERTION_MAX_TTL_SECONDS', 300),
         'checkout_plans' => json_decode((string) env('SAGAMENU_SAGA_PLATFORM_CHECKOUT_PLANS_JSON', '{}'), true) ?: [],
+        'legacy_login_compatibility_enabled' => filter_var(
+            env('SAGAMENU_LEGACY_LOGIN_COMPATIBILITY_ENABLED', false),
+            FILTER_VALIDATE_BOOLEAN,
+        ),
+        'legacy_login_compatibility_ends_at' => env('SAGAMENU_LEGACY_LOGIN_COMPATIBILITY_ENDS_AT'),
     ],
     'backup' => [
         'disk' => env('SAGAMENU_BACKUP_DISK'),

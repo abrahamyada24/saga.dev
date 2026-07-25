@@ -29,11 +29,17 @@
         .check input { width:17px; min-height:17px; margin-top:1px; }
         button { width:100%; min-height:48px; margin-top:22px; border:0; border-radius:6px; background:var(--brand); color:#fff; font:inherit; font-weight:800; cursor:pointer; }
         button:hover { background:#1f5048; }
+        button:focus-visible,a:focus-visible { outline:3px solid rgb(182 79 47 / 30%); outline-offset:3px; }
         .status,.errors { margin:0 0 18px; padding:12px 14px; border-radius:6px; font-size:13px; line-height:1.5; }
         .status { background:#e7f2ed; color:#225548; }
         .errors { background:#fbece7; color:#8c311f; }
         .errors ul { margin:0; padding-left:18px; }
         .switch { margin:22px 0 0; color:var(--muted); font-size:14px; text-align:center; }
+        .field-hint { margin:0; color:var(--muted); font-size:12px; line-height:1.45; }
+        .status-panel { display:grid; gap:18px; }
+        .status-mark { display:grid; width:44px; height:44px; place-items:center; border-radius:8px; background:#fbece7; color:var(--accent); font-size:20px; font-weight:900; }
+        .status-actions { display:grid; gap:10px; }
+        .status-actions a { display:grid; min-height:46px; place-items:center; border:1px solid var(--line); border-radius:6px; text-decoration:none; }
         a { color:var(--brand); font-weight:750; }
         .secondary { background:#fff; color:var(--ink); border:1px solid var(--line); }
         @media (max-width:800px) { .auth-shell { grid-template-columns:1fr; } .auth-brand { min-height:210px; padding:28px 24px; } .brand-copy h1 { font-size:30px; } .auth-main { padding:24px 16px; } .auth-card { padding:25px 20px; } }
@@ -42,7 +48,7 @@
 </head>
 <body>
 <div class="auth-shell">
-    <aside class="auth-brand">
+    <aside class="auth-brand" aria-label="Saga Menu">
         <div class="brand-name">Saga Menu</div>
         <div class="brand-copy">
             <h1>Menu digital yang terasa seperti brand-mu.</h1>
@@ -51,10 +57,10 @@
         <small>Preview-only menu & catalog</small>
     </aside>
     <main class="auth-main">
-        <section class="auth-card">
-            @if (session('status')) <div class="status">{{ session('status') }}</div> @endif
+        <section class="auth-card" aria-labelledby="auth-title">
+            @if (session('status')) <div class="status" role="status" aria-live="polite">{{ session('status') }}</div> @endif
             @if ($errors->any())
-                <div class="errors"><ul>@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>
+                <div class="errors" id="form-errors" role="alert"><ul>@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>
             @endif
             @yield('content')
         </section>

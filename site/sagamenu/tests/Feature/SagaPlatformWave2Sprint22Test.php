@@ -222,7 +222,12 @@ class SagaPlatformWave2Sprint22Test extends TestCase
         $this->assertNull(User::query()->firstOrFail()->password);
 
         $account = SagaPlatformAccount::query()->firstOrFail();
+        $signupContext['subscriptionStatus'] = 'trialing';
         $replayed = app(SagaMenuProvisioner::class)->provision($signupContext, [
+            'productAccountId' => $account->central_product_account_id,
+            'subscriptionId' => $account->central_subscription_id,
+            'planCode' => 'sagamenu_trial',
+            'subscriptionStatus' => 'trialing',
             'trialEndsAt' => $account->trial_ends_at?->utc()->toIso8601ZuluString(),
             'lifecycleVersion' => 2,
         ]);
@@ -340,6 +345,7 @@ class SagaPlatformWave2Sprint22Test extends TestCase
         $subscriptionId ??= (string) Str::ulid();
 
         return app(SagaMenuProvisioner::class)->provision([
+            'signupAttemptId' => (string) Str::ulid(),
             'platformUserId' => $ids['user'],
             'organizationId' => $ids['organization'],
             'workspaceId' => $ids['workspace'],
@@ -347,6 +353,7 @@ class SagaPlatformWave2Sprint22Test extends TestCase
             'subscriptionId' => $subscriptionId,
             'planCode' => 'sagamenu_trial',
             'subscriptionStatus' => 'trialing',
+            'lifecycleVersion' => 1,
             'email' => 'owner-'.Str::lower(Str::random(6)).'@example.test',
             'name' => 'Owner Test',
             'organizationName' => 'Saga Coffee '.Str::upper(Str::random(4)),
@@ -354,6 +361,10 @@ class SagaPlatformWave2Sprint22Test extends TestCase
             'locale' => 'id',
             'timezone' => 'Asia/Jakarta',
         ], [
+            'productAccountId' => $ids['account'],
+            'subscriptionId' => $subscriptionId,
+            'planCode' => 'sagamenu_trial',
+            'subscriptionStatus' => 'trialing',
             'trialEndsAt' => now()->addDays(14)->utc()->toIso8601ZuluString(),
             'lifecycleVersion' => 2,
         ])->load(['user', 'organization.subscription']);

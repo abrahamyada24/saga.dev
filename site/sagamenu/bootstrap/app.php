@@ -1,8 +1,8 @@
 <?php
 
-use App\Http\Middleware\PublicSecurityHeaders;
 use App\Http\Middleware\EnsureSagaPlatformEnabled;
 use App\Http\Middleware\InvalidateDisabledSagaPlatformSession;
+use App\Http\Middleware\PublicSecurityHeaders;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;

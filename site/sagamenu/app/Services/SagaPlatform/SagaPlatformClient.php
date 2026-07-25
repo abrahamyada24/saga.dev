@@ -50,6 +50,17 @@ class SagaPlatformClient
         return $this->request('POST', $this->productPath('subscription-checkouts'), $payload);
     }
 
+    public function changeSubscription(string $subscriptionId, string $action): array
+    {
+        if (! in_array($action, ['suspend', 'resume', 'cancel'], true)) {
+            throw new SagaPlatformException('PLT_REQUEST_INVALID', 422);
+        }
+
+        $path = $this->productPath('subscriptions/'.rawurlencode($subscriptionId).'/'.$action);
+
+        return $this->request('POST', $path, []);
+    }
+
     public function putUsageSnapshot(array $payload): array
     {
         return $this->request('PUT', $this->productPath('usage-snapshots'), $payload);
@@ -71,7 +82,14 @@ class SagaPlatformClient
 
         $attempts = max(1, (int) config('sagamenu.saga_platform.retry_attempts', 3));
         for ($attempt = 1; $attempt <= $attempts; $attempt++) {
-            $headers = $this->signedHeaders($method, $path, $body, $keyId, $correlationId);
+            $headers = $this->signedHeaders(
+                $method,
+                $path,
+                $body,
+                $keyId,
+                $correlationId,
+                is_string($payload['idempotencyKey'] ?? null) ? $payload['idempotencyKey'] : null,
+            );
             try {
                 $response = Http::connectTimeout(max(1, (int) config('sagamenu.saga_platform.connect_timeout_seconds', 3)))
                     ->timeout(max(1, (int) config('sagamenu.saga_platform.timeout_seconds', 10)))
@@ -154,8 +172,14 @@ class SagaPlatformClient
         usleep($delay * $attempt * 1000);
     }
 
-    private function signedHeaders(string $method, string $path, string $body, string $keyId, string $correlationId): array
-    {
+    private function signedHeaders(
+        string $method,
+        string $path,
+        string $body,
+        string $keyId,
+        string $correlationId,
+        ?string $idempotencyKey,
+    ): array {
         $timestamp = now()->utc()->toIso8601ZuluString();
         $nonce = (string) Str::ulid();
         $canonical = implode("\n", [
@@ -167,7 +191,7 @@ class SagaPlatformClient
             hash('sha256', $body),
         ]);
 
-        return [
+        $headers = [
             'Accept' => 'application/json',
             'X-Saga-Key-Id' => $keyId,
             'X-Saga-Timestamp' => $timestamp,
@@ -175,6 +199,12 @@ class SagaPlatformClient
             'X-Saga-Signature' => 'v1='.hash_hmac('sha256', $canonical, (string) config('sagamenu.saga_platform.hmac_secret')),
             'X-Saga-Contract-Version' => (string) config('sagamenu.saga_platform.contract_version', '1.0'),
             'X-Correlation-Id' => $correlationId,
+            'X-Content-SHA256' => hash('sha256', $body),
         ];
+        if (is_string($idempotencyKey) && strlen($idempotencyKey) >= 16 && strlen($idempotencyKey) <= 128) {
+            $headers['Idempotency-Key'] = $idempotencyKey;
+        }
+
+        return $headers;
     }
 }
