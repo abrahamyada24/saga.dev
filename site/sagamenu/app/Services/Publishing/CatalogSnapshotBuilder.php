@@ -138,9 +138,12 @@ class CatalogSnapshotBuilder
                     'price_minor' => $value->price_minor,
                 ])->values()->all(),
             ])->values()->all(),
-            'option_groups' => $offering->optionGroups->map(fn ($group) => [
+            'option_groups' => $offering->optionGroups->where('is_active', true)->map(fn ($group) => [
                 'name' => $group->name,
                 'description' => $group->description,
+                'selection_type' => $group->selection_type,
+                'min_selections' => $group->min_selections,
+                'max_selections' => $group->max_selections,
                 'values' => $group->values->map(fn ($value) => [
                     'name' => $value->name,
                     'price_delta_minor' => $value->price_delta_minor,

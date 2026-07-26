@@ -15,6 +15,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
+use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -52,7 +53,14 @@ class MediaAssetResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('original_name')->label('File')->searchable(),
+                ImageColumn::make('path')
+                    ->label('Preview')
+                    ->getStateUsing(fn (MediaAsset $record) => $record->type === 'image' ? $record->path : null)
+                    ->disk('public')
+                    ->visibility('public')
+                    ->square()
+                    ->imageSize(56),
+                TextColumn::make('original_name')->label('File')->searchable()->description(fn (MediaAsset $record) => $record->alt_text ?: 'Belum ada alt text'),
                 TextColumn::make('type')->badge(),
                 TextColumn::make('mime_type')->label('MIME'),
                 TextColumn::make('file_size')->formatStateUsing(fn ($state) => $state ? number_format($state / 1024, 0).' KB' : '-'),
@@ -60,7 +68,7 @@ class MediaAssetResource extends Resource
                 TextColumn::make('created_at')->since(),
             ])
             ->filters([SelectFilter::make('type')->options(['image' => 'Image', 'font' => 'Font'])])
-            ->recordActions([EditAction::make()]);
+            ->recordActions([EditAction::make()->slideOver()]);
     }
 
     public static function getPages(): array

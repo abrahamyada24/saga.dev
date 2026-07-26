@@ -95,9 +95,11 @@ class DemoCoffeeMenuSeeder extends Seeder
                 'primary_color' => '#236354',
                 'accent_color' => '#cbf45a',
                 'paper_color' => '#f3f5f1',
-                'heading_font' => 'Instrument Sans',
-                'body_font' => 'Instrument Sans',
+                'heading_font' => 'Plus Jakarta Sans',
+                'body_font' => 'Plus Jakarta Sans',
                 'density' => 'comfortable',
+                'mobile_layout' => 'editorial_list',
+                'store_layout' => 'editorial_grid',
             ],
             'business_info' => [
                 'address' => $location->address,

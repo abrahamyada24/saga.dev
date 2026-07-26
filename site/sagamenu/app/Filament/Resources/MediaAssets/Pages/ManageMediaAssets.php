@@ -14,7 +14,7 @@ class ManageMediaAssets extends ManageRecords
     protected function getHeaderActions(): array
     {
         return [
-            CreateAction::make()->mutateDataUsing(function (array $data): array {
+            CreateAction::make()->label('Upload media')->slideOver()->mutateDataUsing(function (array $data): array {
                 $path = (string) $data['path'];
                 $validated = app(MediaUploadValidator::class)->validateStored('public', $path, $data['type']);
 

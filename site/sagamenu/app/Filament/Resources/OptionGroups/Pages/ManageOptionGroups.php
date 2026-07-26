@@ -13,7 +13,7 @@ class ManageOptionGroups extends ManageRecords
     protected function getHeaderActions(): array
     {
         return [
-            CreateAction::make()->mutateDataUsing(function (array $data): array {
+            CreateAction::make()->label('Tambah add-on')->slideOver()->mutateDataUsing(function (array $data): array {
                 $data['organization_id'] = auth()->user()->currentOrganization()?->id;
 
                 return $data;

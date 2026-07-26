@@ -5,7 +5,7 @@
 @source '../views/**/*.blade.php';
 
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
+    --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
 }
 
 :root {
@@ -755,6 +755,28 @@ body[data-image-treatment='high_contrast'] .offering-dialog__media img {
 body[data-image-treatment='soft'] .offering-card__media img,
 body[data-image-treatment='soft'] .offering-dialog__media img {
     filter: saturate(.88) contrast(.96);
+}
+
+body[data-mobile-layout='photo_grid'] .offering-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+body[data-mobile-layout='photo_grid'] .offering-card--mobile .offering-card__button {
+    display: block;
+    min-height: 0;
+}
+
+body[data-mobile-layout='photo_grid'] .offering-card--mobile .offering-card__media {
+    aspect-ratio: 4 / 3;
+    min-height: 0;
+}
+
+body[data-store-layout='editorial_grid'] .offering-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+body[data-store-layout='photo_grid'] .offering-card__media {
+    aspect-ratio: 1;
 }
 
 .detail-section {

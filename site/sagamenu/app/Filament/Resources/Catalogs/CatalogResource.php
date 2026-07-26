@@ -84,15 +84,19 @@ class CatalogResource extends Resource
                     'warm_minimal' => 'Warm Minimal',
                     'bold_street' => 'Bold Street',
                     'clean_premium' => 'Clean Premium',
+                    'modern_cafe' => 'Modern Cafe',
+                    'playful_pop' => 'Playful Pop',
                 ])->default('editorial_kv')->required(),
                 ColorPicker::make('appearance.primary_color')->default('#236354'),
                 ColorPicker::make('appearance.accent_color')->default('#cbf45a'),
                 ColorPicker::make('appearance.paper_color')->default('#f3f5f1'),
-                Select::make('appearance.heading_font')->options(['Instrument Sans' => 'Instrument Sans', 'Inter' => 'Inter', 'Georgia' => 'Georgia'])->default('Instrument Sans'),
-                Select::make('appearance.body_font')->options(['Instrument Sans' => 'Instrument Sans', 'Inter' => 'Inter', 'Georgia' => 'Georgia'])->default('Instrument Sans'),
+                Select::make('appearance.heading_font')->label('Font judul')->options(['Plus Jakarta Sans' => 'Plus Jakarta Sans', 'Georgia' => 'Georgia'])->default('Plus Jakarta Sans'),
+                Select::make('appearance.body_font')->label('Font isi')->options(['Plus Jakarta Sans' => 'Plus Jakarta Sans', 'Georgia' => 'Georgia'])->default('Plus Jakarta Sans'),
                 Select::make('custom_font_id')->label('Uploaded brand font')
                     ->options(fn () => CustomFont::query()->when(! auth()->user()->isSagaDevAdmin(), fn ($query) => $query->where('organization_id', auth()->user()->currentOrganization()?->id))->where('is_active', true)->pluck('family_name', 'id')),
                 Select::make('appearance.density')->options(['comfortable' => 'Comfortable', 'compact' => 'Compact'])->default('comfortable'),
+                Select::make('appearance.mobile_layout')->label('Layout Bio Menu')->options(['editorial_list' => 'Editorial list', 'photo_grid' => 'Photo grid'])->default('editorial_list'),
+                Select::make('appearance.store_layout')->label('Layout Store Display')->options(['editorial_grid' => 'Editorial grid', 'photo_grid' => 'Photo grid'])->default('editorial_grid'),
             ])->columns(3),
             Section::make('Business information')->schema([
                 TextInput::make('business_info.hours')->label('Opening hours')->maxLength(160),
@@ -152,6 +156,8 @@ class CatalogResource extends Resource
                             'warm_minimal' => 'Warm Minimal',
                             'bold_street' => 'Bold Street',
                             'clean_premium' => 'Clean Premium',
+                            'modern_cafe' => 'Modern Cafe',
+                            'playful_pop' => 'Playful Pop',
                         ])->required(),
                     ])
                     ->action(function (Catalog $record, array $data): void {

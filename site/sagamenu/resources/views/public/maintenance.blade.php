@@ -5,10 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex,nofollow">
     <title>Menu sedang maintenance - {{ $brandName }}</title>
+    @vite(['resources/css/app.css'])
     <style>
         :root { color-scheme:light; --ink:#142019; --muted:#657068; --line:#d9dfda; --paper:#f3f5f1; --surface:#fff; --brand:#236354; --lime:#cbf45a; }
         * { box-sizing:border-box; }
-        body { display:grid; min-height:100dvh; margin:0; place-items:center; padding:24px; background:var(--paper); color:var(--ink); font-family:Inter,ui-sans-serif,system-ui,sans-serif; letter-spacing:0; }
+        body { display:grid; min-height:100dvh; margin:0; place-items:center; padding:24px; background:var(--paper); color:var(--ink); font-family:'Plus Jakarta Sans',ui-sans-serif,system-ui,sans-serif; letter-spacing:0; }
         main { display:grid; width:min(100%,560px); gap:24px; padding:32px; border:1px solid var(--line); border-radius:8px; background:var(--surface); box-shadow:0 18px 55px rgb(23 27 24 / 8%); }
         .brand { color:var(--brand); font-size:14px; font-weight:800; overflow-wrap:anywhere; }
         .status { display:grid; width:46px; height:46px; place-items:center; border-radius:8px; background:var(--lime); color:var(--ink); font-size:20px; font-weight:900; }

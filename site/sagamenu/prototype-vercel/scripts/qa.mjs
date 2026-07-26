@@ -43,7 +43,19 @@ await desktop.locator('[data-item-form] input[name="name"]').fill('Cold Brew Pan
 await desktop.locator('[data-item-form] select[name="categoryId"]').selectOption('signature');
 await desktop.locator('[data-item-form] input[name="price"]').fill('33000');
 await desktop.locator('[data-item-form] textarea[name="description"]').fill('Cold brew ringan dengan aroma pandan.');
-await desktop.locator('[data-item-form] button[type="submit"]').click();
+const wizardStepCount = await desktop.locator('[data-action="item-step"]').count();
+const uploadInputIsFile = await desktop.locator('[data-image-upload]').getAttribute('type') === 'file';
+const urlInputRemoved = await desktop.locator('[data-item-form] input[type="url"]').count() === 0;
+await desktop.screenshot({ path: `${output}/menu-wizard-basic-1440.png`, fullPage: true });
+await desktop.getByRole('button', { name: /Lanjut: Foto & media/ }).click();
+await desktop.getByRole('heading', { name: 'Tambahkan foto tanpa menempel URL.' }).waitFor();
+await desktop.locator('[data-editor-media-library] button').first().click();
+await desktop.getByRole('button', { name: /Lanjut: Pilihan & detail/ }).click();
+await desktop.getByRole('heading', { name: 'Lengkapi pilihan yang membantu customer memahami menu.' }).waitFor();
+await desktop.getByRole('button', { name: /Lanjut: Review/ }).click();
+await desktop.getByRole('heading', { name: 'Review sebelum menyimpan draft.' }).waitFor();
+const draftSafetyVisible = await desktop.getByText('Perubahan tetap aman sebagai draft.').isVisible();
+await desktop.getByRole('button', { name: 'Simpan draft' }).click();
 await desktop.waitForURL(/#menus$/);
 await desktop.locator('[data-item-row]').filter({ hasText: 'Cold Brew Pandan' }).waitFor();
 const rowsAfterCreate = await desktop.locator('[data-item-row]').count();
@@ -149,6 +161,17 @@ const dashboardOverflow = await mobile.evaluate(
 );
 await mobile.screenshot({ path: `${output}/dashboard-editorial-mobile-390.png`, fullPage: true });
 
+await mobile.getByRole('button', { name: /^Menu & Katalog/ }).click();
+await mobile.getByRole('button', { name: 'Tambah menu' }).click();
+await mobile.locator('[data-item-editor]').waitFor({ state: 'visible' });
+const mobileWizardOverflow = await mobile.evaluate(
+    () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+);
+const mobileWizardFooterVisible = await mobile.locator('.item-wizard-footer').isVisible();
+await mobile.screenshot({ path: `${output}/menu-wizard-mobile-390.png`, fullPage: true });
+await mobile.getByRole('button', { name: 'Tutup editor' }).click();
+
+await mobile.getByRole('button', { name: 'Buka navigasi' }).click();
 await mobile.getByRole('button', { name: 'Tampilan' }).click();
 await mobile.getByRole('heading', { name: 'Tampilan & branding' }).waitFor();
 const appearanceMobileOverflow = await mobile.evaluate(
@@ -162,6 +185,10 @@ const result = {
     baseUrl,
     initialRows,
     rowsAfterCreate,
+    wizardStepCount,
+    uploadInputIsFile,
+    urlInputRemoved,
+    draftSafetyVisible,
     overviewPreviewRatio,
     previewZoomChanged,
     duplicateWorked,
@@ -183,6 +210,8 @@ const result = {
     dashboardOverflow,
     appearanceMobileOverflow,
     mobileNavVisible,
+    mobileWizardOverflow,
+    mobileWizardFooterVisible,
     unnamedDesktopButtons,
     errors,
     mobileErrors,
@@ -190,6 +219,10 @@ const result = {
 
 const failed = initialRows < 10
     || rowsAfterCreate !== initialRows + 1
+    || wizardStepCount !== 4
+    || !uploadInputIsFile
+    || !urlInputRemoved
+    || !draftSafetyVisible
     || overviewPreviewRatio < 0.58
     || !previewZoomChanged
     || !duplicateWorked
@@ -211,6 +244,8 @@ const failed = initialRows < 10
     || dashboardOverflow
     || appearanceMobileOverflow
     || !mobileNavVisible
+    || mobileWizardOverflow
+    || !mobileWizardFooterVisible
     || unnamedDesktopButtons > 0
     || errors.length > 0
     || mobileErrors.length > 0;

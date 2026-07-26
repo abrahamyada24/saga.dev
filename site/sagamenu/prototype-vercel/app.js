@@ -231,6 +231,10 @@ let previewMode = 'mobile';
 let simpleDialogHandler = null;
 let publishRunState = 'idle';
 let publishFailureMessage = '';
+let itemEditorStep = 1;
+let itemEditorPreviewMode = 'mobile';
+let itemEditorDirty = false;
+let itemEditorSaveTimer = null;
 
 const main = document.querySelector('[data-dashboard] #main-content');
 const previewShell = document.querySelector('[data-preview-shell]');
@@ -240,6 +244,7 @@ const itemForm = document.querySelector('[data-item-form]');
 const simpleDialog = document.querySelector('[data-simple-dialog]');
 const simpleForm = document.querySelector('[data-simple-form]');
 const detailDialog = document.querySelector('[data-menu-detail]');
+const EDITOR_DRAFT_KEY = 'sagamenu-prototype-item-editor-draft-v1';
 
 function cloneDefaultState() {
     return JSON.parse(JSON.stringify(DEFAULT_STATE));
@@ -1074,15 +1079,15 @@ function renderEditorialAppearance() {
                 </section>
                 <section class="setting-section">
                     <h3>Tipografi</h3>
-                    <label class="field"><span>Heading font</span><select><option>Manrope Bold</option><option>Brand font</option></select></label>
-                    <label class="field"><span>Body font</span><select><option>Manrope Regular</option></select></label>
+                    <label class="field"><span>Heading font</span><select><option>Plus Jakarta Sans Bold</option><option>Brand font</option></select></label>
+                    <label class="field"><span>Body font</span><select><option>Plus Jakarta Sans Regular</option></select></label>
                 </section>
                 <section class="setting-section">
                     <h3>Font brand</h3>
                     <label class="upload-box compact-upload">
                         <i data-lucide="upload-cloud"></i>
                         <strong>${state.appearance.customFontName ? escapeHTML(state.appearance.customFontName) : 'Unggah WOFF/WOFF2'}</strong>
-                        <span>Fallback: Manrope</span>
+                        <span>Fallback: Plus Jakarta Sans</span>
                         <input type="file" accept=".woff,.woff2,font/woff,font/woff2" data-font-upload>
                     </label>
                     ${state.appearance.customFontName ? '<button class="text-action remove-font-action" type="button" data-action="remove-custom-font">Hapus font dan gunakan fallback</button>' : ''}
@@ -1286,7 +1291,7 @@ function renderPublicMenu(mode, compact = false) {
 }
 
 function appearanceStyle() {
-    return `--menu-primary:${escapeHTML(state.appearance.primary)};--menu-accent:${escapeHTML(state.appearance.accent)};--menu-paper:${escapeHTML(state.appearance.paper)};${state.appearance.customFontName ? `--custom-font:"SagaUploadedFont", "Manrope", sans-serif;` : ''}`;
+    return `--menu-primary:${escapeHTML(state.appearance.primary)};--menu-accent:${escapeHTML(state.appearance.accent)};--menu-paper:${escapeHTML(state.appearance.paper)};${state.appearance.customFontName ? `--custom-font:"SagaUploadedFont", "Plus Jakarta Sans", sans-serif;` : ''}`;
 }
 
 function renderMobileMenu(categories, compact) {
@@ -1418,41 +1423,202 @@ function closePreview() {
 
 function openItemEditor(itemId = '') {
     const item = state.items.find((entry) => entry.id === itemId);
+    const recoveredDraft = !item ? loadEditorDraft() : null;
     itemForm.reset();
+    const source = item || recoveredDraft || {};
     itemForm.elements.itemId.value = item?.id || '';
-    itemForm.elements.name.value = item?.name || '';
-    itemForm.elements.price.value = item?.price || 28000;
-    itemForm.elements.description.value = item?.description || '';
-    itemForm.elements.image.value = item?.image || '';
-    itemForm.elements.badge.value = item?.badge || '';
-    itemForm.elements.availability.value = item?.availability || 'available';
-    itemForm.elements.containsMilk.checked = Boolean(item?.containsMilk);
+    itemForm.elements.name.value = source.name || '';
+    itemForm.elements.price.value = source.price || 28000;
+    itemForm.elements.description.value = source.description || '';
+    itemForm.elements.image.value = source.image || '';
+    itemForm.elements.badge.value = source.badge || '';
+    itemForm.elements.availability.value = source.availability || 'available';
+    itemForm.elements.containsMilk.checked = Boolean(source.containsMilk);
     itemForm.querySelector('[data-editor-title]').textContent = item ? 'Edit menu' : 'Tambah menu';
-    itemForm.querySelector('[data-editor-preview-name]').textContent = item?.name || 'Item baru';
-    itemForm.querySelector('[data-editor-preview-price]').textContent = formatPrice(item?.price || 28000);
-    itemForm.querySelector('[data-editor-preview-description]').textContent = item?.description || 'Deskripsi item akan tampil di sini.';
-    const editorPreviewImage = itemForm.querySelector('[data-editor-preview-image]');
-    editorPreviewImage.src = safeImage(item?.image || FALLBACK_IMAGE);
-    editorPreviewImage.alt = item?.name || '';
     const categorySelect = itemForm.querySelector('[data-category-select]');
     categorySelect.innerHTML = state.categories.map((category) => `<option value="${escapeHTML(category.id)}">${escapeHTML(category.name)}</option>`).join('');
-    categorySelect.value = item?.categoryId || state.categories[0]?.id || '';
-    const selectedGroups = item?.addonGroupIds || [
-        ...(item?.milkOptions ? ['milk'] : []),
-        ...(item?.extraOptions ? ['extras'] : []),
+    categorySelect.value = source.categoryId || state.categories[0]?.id || '';
+    const selectedGroups = source.addonGroupIds || [
+        ...(source.milkOptions ? ['milk'] : []),
+        ...(source.extraOptions ? ['extras'] : []),
     ];
-    itemForm.querySelector('[data-addon-attachment-options]').innerHTML = state.addonGroups.map((group) => `
-        <label>
-            <input type="checkbox" name="addonGroupIds" value="${escapeHTML(group.id)}" ${selectedGroups.includes(group.id) ? 'checked' : ''}>
-            <span><strong>${escapeHTML(group.name)}</strong><small>${escapeHTML(group.description)}</small></span>
-        </label>
-    `).join('');
+    renderEditorAddonOptions(selectedGroups);
+    renderEditorMediaLibrary();
+    itemEditorDirty = Boolean(recoveredDraft);
+    itemEditorPreviewMode = 'mobile';
+    setItemEditorStep(1, false);
+    refreshItemEditorPreview();
+    updateEditorSaveState(recoveredDraft ? 'Draft dipulihkan dari browser' : 'Draft aman, belum tampil ke customer', recoveredDraft ? 'history' : 'cloud');
     itemEditor.showModal();
     document.body.classList.add('modal-open');
     window.setTimeout(() => itemForm.elements.name.focus(), 30);
 }
 
+function renderEditorAddonOptions(selectedGroups = []) {
+    const checkedGroups = selectedGroups.length
+        ? selectedGroups
+        : [...itemForm.querySelectorAll('input[name="addonGroupIds"]:checked')].map((input) => input.value);
+    itemForm.querySelector('[data-addon-attachment-options]').innerHTML = state.addonGroups.map((group) => `
+        <label>
+            <input type="checkbox" name="addonGroupIds" value="${escapeHTML(group.id)}" ${checkedGroups.includes(group.id) ? 'checked' : ''}>
+            <span><strong>${escapeHTML(group.name)}</strong><small>${escapeHTML(group.description)}</small></span>
+        </label>
+    `).join('');
+}
+
+function renderEditorMediaLibrary() {
+    const images = [...new Set(state.items.map((item) => safeImage(item.image)).filter(Boolean))].slice(0, 8);
+    const selected = itemForm.elements.image.value;
+    itemForm.querySelector('[data-editor-media-library]').innerHTML = images.map((image, index) => `
+        <button type="button" data-action="choose-editor-media" data-image="${escapeHTML(image)}" class="${selected === image ? 'is-selected' : ''}" aria-label="Pilih foto media ${index + 1}">
+            <img src="${escapeHTML(image)}" alt="">
+            <span><i data-lucide="check"></i></span>
+        </button>
+    `).join('');
+}
+
+function setItemEditorStep(step, shouldValidate = true) {
+    const nextStep = Math.min(4, Math.max(1, Number(step)));
+    const currentPanel = itemForm.querySelector(`[data-wizard-panel="${itemEditorStep}"]`);
+    if (shouldValidate && nextStep > itemEditorStep && itemEditorStep === 1) {
+        const invalid = [...currentPanel.querySelectorAll('input, select, textarea')].find((field) => !field.checkValidity());
+        if (invalid) {
+            invalid.reportValidity();
+            invalid.focus();
+            return false;
+        }
+    }
+
+    itemEditorStep = nextStep;
+    itemForm.querySelectorAll('[data-wizard-panel]').forEach((panel) => {
+        panel.hidden = Number(panel.dataset.wizardPanel) !== itemEditorStep;
+    });
+    itemForm.querySelectorAll('[data-action="item-step"]').forEach((button) => {
+        const buttonStep = Number(button.dataset.step);
+        button.classList.toggle('is-active', buttonStep === itemEditorStep);
+        button.classList.toggle('is-complete', buttonStep < itemEditorStep);
+        if (buttonStep === itemEditorStep) button.setAttribute('aria-current', 'step');
+        else button.removeAttribute('aria-current');
+    });
+
+    const labels = ['Foto & media', 'Pilihan & detail', 'Review'];
+    const back = itemForm.querySelector('[data-editor-back]');
+    const next = itemForm.querySelector('[data-editor-next]');
+    const submit = itemForm.querySelector('[data-editor-submit]');
+    back.hidden = itemEditorStep === 1;
+    next.hidden = itemEditorStep === 4;
+    submit.hidden = itemEditorStep !== 4;
+    if (itemEditorStep < 4) next.querySelector('span').textContent = `Lanjut: ${labels[itemEditorStep - 1]}`;
+    if (itemEditorStep === 4) refreshEditorReview();
+    itemForm.querySelector(`[data-wizard-panel="${itemEditorStep}"] header`)?.scrollIntoView({ block: 'nearest' });
+    refreshIcons();
+    return true;
+}
+
+function refreshItemEditorPreview() {
+    const name = itemForm.elements.name.value.trim() || 'Item baru';
+    const price = Math.max(0, Number(itemForm.elements.price.value || 0));
+    const description = itemForm.elements.description.value.trim() || 'Deskripsi item akan tampil di sini.';
+    const image = normalizeImage(itemForm.elements.image.value);
+    const availability = itemForm.elements.availability.value;
+    itemForm.querySelector('[data-editor-preview-name]').textContent = name;
+    itemForm.querySelector('[data-editor-preview-price]').textContent = formatPrice(price);
+    itemForm.querySelector('[data-editor-preview-description]').textContent = description;
+    itemForm.querySelector('[data-editor-preview-status]').textContent = availability === 'sold_out' ? 'Sold out' : 'Tersedia';
+    itemForm.querySelector('[data-description-count]').textContent = String(itemForm.elements.description.value.length);
+    const previewImage = itemForm.querySelector('[data-editor-preview-image]');
+    previewImage.src = image;
+    previewImage.alt = name;
+    itemForm.querySelector('[data-editor-preview-card]').classList.toggle('is-store', itemEditorPreviewMode === 'tablet');
+    itemForm.querySelector('[data-editor-preview-mode]').textContent = itemEditorPreviewMode === 'tablet' ? 'Store Display' : 'Bio Menu';
+}
+
+function refreshEditorReview() {
+    const values = {
+        name: [itemForm.elements.name.value.trim(), 'Nama sudah siap'],
+        category: [itemForm.elements.categoryId.value, itemForm.elements.categoryId.selectedOptions[0]?.textContent || 'Belum dipilih'],
+        price: [Number(itemForm.elements.price.value) >= 0, formatPrice(Number(itemForm.elements.price.value || 0))],
+        image: [itemForm.elements.image.value, itemForm.elements.image.value ? 'Foto siap digunakan' : 'Opsional untuk layout daftar'],
+    };
+    Object.entries(values).forEach(([key, [complete, label]]) => {
+        const row = itemForm.querySelector(`[data-review-check="${key}"]`);
+        row.classList.toggle('is-complete', Boolean(complete));
+        row.querySelector('small').textContent = label;
+        row.querySelector('svg, i').outerHTML = `<i data-lucide="${complete ? 'circle-check' : 'circle-alert'}"></i>`;
+    });
+    refreshIcons();
+}
+
+function updateEditorSaveState(message, icon = 'cloud') {
+    const stateElement = itemForm.querySelector('[data-editor-save-state]');
+    stateElement.querySelector('span').textContent = message;
+    stateElement.querySelector('svg, i').outerHTML = `<i data-lucide="${escapeHTML(icon)}"></i>`;
+    refreshIcons();
+}
+
+function captureEditorDraft() {
+    const data = new FormData(itemForm);
+    return {
+        name: String(data.get('name') || ''),
+        categoryId: String(data.get('categoryId') || ''),
+        price: Math.max(0, Number(data.get('price') || 0)),
+        description: String(data.get('description') || ''),
+        image: String(data.get('image') || ''),
+        badge: String(data.get('badge') || ''),
+        availability: String(data.get('availability') || 'available'),
+        addonGroupIds: data.getAll('addonGroupIds').map(String),
+        containsMilk: data.get('containsMilk') === 'on',
+    };
+}
+
+function persistEditorDraft() {
+    if (itemForm.elements.itemId.value) {
+        updateEditorSaveState('Perubahan tersimpan sementara sebagai draft', 'cloud-check');
+        return;
+    }
+    try {
+        localStorage.setItem(EDITOR_DRAFT_KEY, JSON.stringify(captureEditorDraft()));
+        updateEditorSaveState('Draft tersimpan di browser', 'cloud-check');
+    } catch {
+        updateEditorSaveState('Draft belum dapat disimpan. Selesaikan atau kecilkan foto.', 'cloud-alert');
+    }
+}
+
+function loadEditorDraft() {
+    try {
+        return JSON.parse(localStorage.getItem(EDITOR_DRAFT_KEY) || 'null');
+    } catch {
+        return null;
+    }
+}
+
+async function imageFileToDataUrl(file) {
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 5 * 1024 * 1024) {
+        throw new Error('Gunakan JPG, PNG, atau WebP maksimal 5 MB.');
+    }
+    const source = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+    const image = await new Promise((resolve, reject) => {
+        const element = new Image();
+        element.onload = () => resolve(element);
+        element.onerror = reject;
+        element.src = source;
+    });
+    const maxDimension = 1400;
+    const scale = Math.min(1, maxDimension / Math.max(image.width, image.height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(image.width * scale));
+    canvas.height = Math.max(1, Math.round(image.height * scale));
+    canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL('image/webp', 0.82);
+}
+
 function closeItemEditor() {
+    if (itemEditorDirty) persistEditorDraft();
     itemEditor.close();
     document.body.classList.remove('modal-open');
 }
@@ -1512,7 +1678,7 @@ function closeSimpleDialog() {
     simpleDialogHandler = null;
 }
 
-function categoryDialog(categoryId = '') {
+function categoryDialog(categoryId = '', onSaved = null) {
     const category = state.categories.find((entry) => entry.id === categoryId);
     openSimpleDialog({
         eyebrow: 'Kategori',
@@ -1524,26 +1690,30 @@ function categoryDialog(categoryId = '') {
         `,
         submit: (formData) => {
             const id = formData.get('entityId');
+            let savedCategory;
             if (id) {
                 const existing = state.categories.find((entry) => entry.id === id);
                 existing.name = String(formData.get('name'));
                 existing.description = String(formData.get('description'));
+                savedCategory = existing;
             } else {
-                state.categories.push({
+                savedCategory = {
                     id: `${slugify(formData.get('name'))}-${Date.now().toString(36).slice(-4)}`,
                     name: String(formData.get('name')),
                     description: String(formData.get('description')),
                     visible: true,
-                });
+                };
+                state.categories.push(savedCategory);
             }
             persistState();
             render();
+            onSaved?.(savedCategory);
             toast('Kategori disimpan', 'Perubahan masuk ke draft.');
         },
     });
 }
 
-function addonDialog(addonId = '') {
+function addonDialog(addonId = '', onSaved = null) {
     const group = state.addonGroups.find((entry) => entry.id === addonId);
     const lines = group?.values.map((value) => `${value.name}|${value.price}`).join('\n') || '';
     openSimpleDialog({
@@ -1569,6 +1739,7 @@ function addonDialog(addonId = '') {
                     return { name: name.trim(), price: Math.max(0, Number(price || 0)) };
                 });
             const id = formData.get('entityId');
+            let savedGroup;
             if (id) {
                 const existing = state.addonGroups.find((entry) => entry.id === id);
                 existing.name = String(formData.get('name'));
@@ -1577,8 +1748,9 @@ function addonDialog(addonId = '') {
                 existing.min = 0;
                 existing.max = Math.min(values.length, Math.max(1, Number(formData.get('max') || 1)));
                 existing.values = values;
+                savedGroup = existing;
             } else {
-                state.addonGroups.push({
+                savedGroup = {
                     id: `${slugify(formData.get('name'))}-${Date.now().toString(36).slice(-4)}`,
                     name: String(formData.get('name')),
                     description: String(formData.get('description')),
@@ -1586,10 +1758,12 @@ function addonDialog(addonId = '') {
                     min: 0,
                     max: Math.min(values.length, Math.max(1, Number(formData.get('max') || 1))),
                     values,
-                });
+                };
+                state.addonGroups.push(savedGroup);
             }
             persistState();
             render();
+            onSaved?.(savedGroup);
             toast('Grup add-on disimpan', 'Detail menu akan memakai informasi terbaru.');
         },
     });
@@ -1814,6 +1988,45 @@ document.addEventListener('click', (event) => {
     if (action === 'new-item') openItemEditor();
     if (action === 'edit-item') openItemEditor(actionButton.dataset.itemId);
     if (action === 'close-item-editor') closeItemEditor();
+    if (action === 'item-step') setItemEditorStep(actionButton.dataset.step);
+    if (action === 'item-step-next') setItemEditorStep(itemEditorStep + 1);
+    if (action === 'item-step-back') setItemEditorStep(itemEditorStep - 1, false);
+    if (action === 'trigger-image-upload') itemForm.elements.imageUpload.click();
+    if (action === 'choose-editor-media') {
+        itemForm.elements.image.value = actionButton.dataset.image;
+        renderEditorMediaLibrary();
+        refreshItemEditorPreview();
+        itemEditorDirty = true;
+    }
+    if (action === 'clear-editor-image') {
+        itemForm.elements.image.value = '';
+        itemForm.elements.imageUpload.value = '';
+        renderEditorMediaLibrary();
+        refreshItemEditorPreview();
+        itemEditorDirty = true;
+    }
+    if (action === 'editor-preview-mode') {
+        itemEditorPreviewMode = actionButton.dataset.mode === 'tablet' ? 'tablet' : 'mobile';
+        itemForm.querySelectorAll('[data-action="editor-preview-mode"]').forEach((button) => {
+            button.classList.toggle('is-active', button.dataset.mode === itemEditorPreviewMode);
+        });
+        refreshItemEditorPreview();
+    }
+    if (action === 'new-category-from-editor') {
+        categoryDialog('', (category) => {
+            const select = itemForm.querySelector('[data-category-select]');
+            select.innerHTML = state.categories.map((entry) => `<option value="${escapeHTML(entry.id)}">${escapeHTML(entry.name)}</option>`).join('');
+            select.value = category.id;
+            itemEditorDirty = true;
+            refreshItemEditorPreview();
+        });
+    }
+    if (action === 'new-addon-from-editor') {
+        addonDialog('', (group) => {
+            renderEditorAddonOptions([group.id]);
+            itemEditorDirty = true;
+        });
+    }
     if (action === 'new-category') categoryDialog();
     if (action === 'edit-category') categoryDialog(actionButton.dataset.categoryId);
     if (action === 'new-addon') addonDialog();
@@ -1868,7 +2081,7 @@ document.addEventListener('click', (event) => {
         state.appearance.customFontName = '';
         persistState();
         render();
-        toast('Font dihapus', 'Preview kembali menggunakan Manrope.');
+        toast('Font dihapus', 'Preview kembali menggunakan Plus Jakarta Sans.');
     }
 
     if (action === 'toggle-sidebar') {
@@ -2005,16 +2218,54 @@ document.addEventListener('click', (event) => {
 document.querySelector('[data-sidebar-backdrop]').addEventListener('click', closeSidebar);
 
 itemForm.addEventListener('input', () => {
-    const name = itemForm.elements.name.value.trim() || 'Item baru';
-    const price = Math.max(0, Number(itemForm.elements.price.value || 0));
-    const description = itemForm.elements.description.value.trim() || 'Deskripsi item akan tampil di sini.';
-    const image = normalizeImage(itemForm.elements.image.value);
-    itemForm.querySelector('[data-editor-preview-name]').textContent = name;
-    itemForm.querySelector('[data-editor-preview-price]').textContent = formatPrice(price);
-    itemForm.querySelector('[data-editor-preview-description]').textContent = description;
-    const previewImage = itemForm.querySelector('[data-editor-preview-image]');
-    previewImage.src = image;
-    previewImage.alt = name;
+    itemEditorDirty = true;
+    refreshItemEditorPreview();
+    updateEditorSaveState('Menyimpan perubahan draft...', 'cloud-upload');
+    window.clearTimeout(itemEditorSaveTimer);
+    itemEditorSaveTimer = window.setTimeout(persistEditorDraft, 450);
+});
+
+itemForm.elements.imageUpload.addEventListener('change', async (event) => {
+    const [file] = event.target.files;
+    if (!file) return;
+    const progress = itemForm.querySelector('[data-upload-progress]');
+    progress.hidden = false;
+    progress.querySelector('span').style.width = '35%';
+    try {
+        const image = await imageFileToDataUrl(file);
+        progress.querySelector('span').style.width = '100%';
+        itemForm.elements.image.value = image;
+        itemEditorDirty = true;
+        renderEditorMediaLibrary();
+        refreshItemEditorPreview();
+        updateEditorSaveState('Foto selesai diproses dan tersimpan di draft', 'cloud-check');
+        window.setTimeout(() => {
+            progress.hidden = true;
+            progress.querySelector('span').style.width = '0';
+        }, 500);
+    } catch (error) {
+        progress.hidden = true;
+        event.target.value = '';
+        toast('Foto tidak dapat digunakan', error.message || 'Coba gunakan file lain.');
+    }
+});
+
+const editorDropZone = itemForm.querySelector('[data-media-upload-zone]');
+['dragenter', 'dragover'].forEach((eventName) => editorDropZone.addEventListener(eventName, (event) => {
+    event.preventDefault();
+    editorDropZone.classList.add('is-dragging');
+}));
+['dragleave', 'drop'].forEach((eventName) => editorDropZone.addEventListener(eventName, (event) => {
+    event.preventDefault();
+    editorDropZone.classList.remove('is-dragging');
+}));
+editorDropZone.addEventListener('drop', (event) => {
+    const [file] = event.dataTransfer.files;
+    if (!file) return;
+    const transfer = new DataTransfer();
+    transfer.items.add(file);
+    itemForm.elements.imageUpload.files = transfer.files;
+    itemForm.elements.imageUpload.dispatchEvent(new Event('change', { bubbles: true }));
 });
 
 itemForm.addEventListener('submit', (event) => {
@@ -2041,6 +2292,8 @@ itemForm.addEventListener('submit', (event) => {
         state.items.unshift(item);
     }
     persistState();
+    localStorage.removeItem(EDITOR_DRAFT_KEY);
+    itemEditorDirty = false;
     closeItemEditor();
     routeTo('menus');
     toast('Menu disimpan', `${name} masuk ke draft.`);

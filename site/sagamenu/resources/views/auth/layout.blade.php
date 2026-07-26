@@ -5,10 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex,nofollow">
     <title>@yield('title') - Saga Menu</title>
+    @vite(['resources/css/app.css'])
     <style>
         :root { color-scheme: light; --ink:#171b18; --muted:#657068; --line:#d9dfda; --paper:#f3f5f1; --surface:#fff; --brand:#28665b; --accent:#b64f2f; }
         * { box-sizing:border-box; }
-        body { min-height:100vh; margin:0; background:var(--paper); color:var(--ink); font-family:Inter,ui-sans-serif,system-ui,sans-serif; letter-spacing:0; }
+        body { min-height:100vh; margin:0; background:var(--paper); color:var(--ink); font-family:'Plus Jakarta Sans',ui-sans-serif,system-ui,sans-serif; letter-spacing:0; }
         .auth-shell { display:grid; grid-template-columns:minmax(260px,.75fr) minmax(420px,1.25fr); min-height:100vh; }
         .auth-brand { display:flex; flex-direction:column; justify-content:space-between; padding:42px; background:#183f39; color:#fff; }
         .brand-name { font-size:22px; font-weight:800; }

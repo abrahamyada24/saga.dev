@@ -8,7 +8,7 @@
     <title>SagaMenu Prototype</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/styles.css">
     <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.js" defer></script>
     <script src="/app.js" defer></script>
@@ -121,93 +121,157 @@
         <div class="preview-stage" data-preview-stage></div>
     </section>
 
-    <dialog class="modal" data-item-editor>
-        <form method="dialog" class="modal-frame item-editor-form" data-item-form>
-            <header class="modal-header">
-                <div>
-                    <span class="eyebrow">Menu</span>
-                    <h2 data-editor-title>Tambah menu</h2>
-                </div>
-                <button class="icon-button" type="button" data-action="close-item-editor" aria-label="Tutup">
-                    <i data-lucide="x"></i>
-                </button>
-            </header>
-            <div class="modal-body form-grid editor-fields">
-                <input type="hidden" name="itemId">
-                <label class="field field-span-2">
-                    <span>Nama menu</span>
-                    <input name="name" required maxlength="80" placeholder="Contoh: Iced Aren Latte">
-                </label>
-                <label class="field">
-                    <span>Kategori</span>
-                    <select name="categoryId" required data-category-select></select>
-                </label>
-                <label class="field">
-                    <span>Harga</span>
-                    <div class="input-prefix"><span>Rp</span><input name="price" required type="number" min="0" step="1000"></div>
-                </label>
-                <label class="field field-span-2">
-                    <span>Deskripsi singkat</span>
-                    <textarea name="description" maxlength="180" rows="3"></textarea>
-                </label>
-                <label class="field field-span-2">
-                    <span>URL foto</span>
-                    <input name="image" type="url" placeholder="https://images.unsplash.com/...">
-                </label>
-                <label class="field">
-                    <span>Badge</span>
-                    <select name="badge">
-                        <option value="">Tanpa badge</option>
-                        <option>Best Seller</option>
-                        <option>New</option>
-                        <option>Promo</option>
-                        <option>Recommended</option>
-                        <option>Seasonal</option>
-                    </select>
-                </label>
-                <label class="field">
-                    <span>Status</span>
-                    <select name="availability">
-                        <option value="available">Tersedia</option>
-                        <option value="sold_out">Sold out</option>
-                    </select>
-                </label>
-                <fieldset class="field field-span-2 checkbox-fieldset">
-                    <legend>Add-on yang ditampilkan</legend>
-                    <div class="dynamic-checkbox-list" data-addon-attachment-options></div>
-                </fieldset>
-                <fieldset class="field field-span-2 checkbox-fieldset">
-                    <legend>Informasi tambahan</legend>
-                    <label><input type="checkbox" name="containsMilk"> Mengandung susu</label>
-                </fieldset>
-            </div>
-            <aside class="editor-preview-rail" aria-label="Preview dan validasi item">
-                <div class="editor-preview-card">
-                    <span class="eyebrow">Preview item (mobile)</span>
-                    <img data-editor-preview-image src="" alt="">
+    <dialog class="item-wizard" data-item-editor>
+        <form method="dialog" class="item-editor-form" data-item-form>
+            <header class="item-wizard-header">
+                <div class="item-wizard-title">
+                    <button class="icon-button" type="button" data-action="close-item-editor" aria-label="Tutup editor">
+                        <i data-lucide="x"></i>
+                    </button>
                     <div>
-                        <strong data-editor-preview-name>Item baru</strong>
-                        <span data-editor-preview-price>Rp28.000</span>
-                        <p data-editor-preview-description>Deskripsi item akan tampil di sini.</p>
+                        <span class="eyebrow">Menu & Katalog</span>
+                        <h2 data-editor-title>Tambah menu</h2>
                     </div>
                 </div>
-                <div class="editor-status-card is-success">
-                    <span><i data-lucide="circle-check"></i></span>
-                    <div><strong>Data utama lengkap</strong><p>Item siap disimpan sebagai draft.</p></div>
+                <div class="item-save-state" role="status" aria-live="polite" data-editor-save-state>
+                    <i data-lucide="cloud"></i>
+                    <span>Draft aman, belum tampil ke customer</span>
                 </div>
-                <div class="editor-status-card is-warning">
-                    <span><i data-lucide="info"></i></span>
-                    <div><strong>Belum terlihat publik</strong><p>Perubahan baru tampil setelah diterbitkan.</p></div>
+            </header>
+
+            <nav class="item-wizard-steps" aria-label="Tahapan editor menu">
+                <button type="button" data-action="item-step" data-step="1" aria-current="step"><span>1</span><b>Informasi dasar</b><small>Nama dan harga</small></button>
+                <button type="button" data-action="item-step" data-step="2"><span>2</span><b>Foto & media</b><small>Upload dan crop</small></button>
+                <button type="button" data-action="item-step" data-step="3"><span>3</span><b>Pilihan & detail</b><small>Add-on dan info</small></button>
+                <button type="button" data-action="item-step" data-step="4"><span>4</span><b>Review</b><small>Cek sebelum simpan</small></button>
+            </nav>
+
+            <main class="item-wizard-main">
+                <div class="item-wizard-content">
+                    <input type="hidden" name="itemId">
+                    <input type="hidden" name="image">
+
+                    <section class="wizard-panel" data-wizard-panel="1">
+                        <header><span class="eyebrow">Langkah 1 dari 4</span><h3>Mulai dari informasi yang customer cari.</h3><p>Nama, kategori, harga, dan deskripsi akan langsung terlihat pada preview.</p></header>
+                        <div class="form-grid editor-fields">
+                            <label class="field field-span-2">
+                                <span>Nama menu <b>Wajib</b></span>
+                                <input name="name" required maxlength="80" placeholder="Contoh: Iced Aren Latte">
+                                <small>Maksimal 80 karakter.</small>
+                            </label>
+                            <div class="field">
+                                <span>Kategori <b>Wajib</b></span>
+                                <div class="inline-field-action">
+                                    <select name="categoryId" required data-category-select></select>
+                                    <button class="icon-button" type="button" data-action="new-category-from-editor" aria-label="Tambah kategori"><i data-lucide="plus"></i></button>
+                                </div>
+                            </div>
+                            <label class="field">
+                                <span>Harga <b>Wajib</b></span>
+                                <div class="input-prefix"><span>Rp</span><input name="price" required type="number" min="0" step="1000"></div>
+                            </label>
+                            <label class="field field-span-2">
+                                <span>Deskripsi singkat</span>
+                                <textarea name="description" maxlength="180" rows="4" placeholder="Rasa, bahan utama, atau hal yang membuat menu ini menarik."></textarea>
+                                <small><span data-description-count>0</span>/180 karakter</small>
+                            </label>
+                            <label class="field">
+                                <span>Status ketersediaan</span>
+                                <select name="availability">
+                                    <option value="available">Tersedia</option>
+                                    <option value="sold_out">Sold out</option>
+                                </select>
+                            </label>
+                            <label class="field">
+                                <span>Badge</span>
+                                <select name="badge">
+                                    <option value="">Tanpa badge</option>
+                                    <option>Best Seller</option>
+                                    <option>New</option>
+                                    <option>Promo</option>
+                                    <option>Recommended</option>
+                                    <option>Seasonal</option>
+                                </select>
+                            </label>
+                        </div>
+                    </section>
+
+                    <section class="wizard-panel" data-wizard-panel="2" hidden>
+                        <header><span class="eyebrow">Langkah 2 dari 4</span><h3>Tambahkan foto tanpa menempel URL.</h3><p>Upload dari perangkat atau pilih foto yang sudah ada di Media Library.</p></header>
+                        <div class="media-upload-zone" data-media-upload-zone>
+                            <input type="file" name="imageUpload" accept="image/jpeg,image/png,image/webp" data-image-upload>
+                            <span><i data-lucide="image-plus"></i></span>
+                            <div><strong>Tarik foto ke sini atau pilih dari perangkat</strong><p>JPG, PNG, atau WebP. Maksimal 5 MB.</p></div>
+                            <button class="button button-secondary" type="button" data-action="trigger-image-upload">Pilih foto</button>
+                        </div>
+                        <div class="upload-progress" data-upload-progress hidden><span></span><b>Memproses foto...</b></div>
+                        <section class="media-library-picker">
+                            <header><div><h4>Media Library</h4><p>Pilih salah satu foto yang sudah tersedia.</p></div><button type="button" class="button button-ghost" data-action="clear-editor-image">Hapus foto</button></header>
+                            <div data-editor-media-library></div>
+                        </section>
+                        <div class="media-guidance">
+                            <span><i data-lucide="scan-face"></i></span>
+                            <div><strong>Gunakan focal point yang aman</strong><p>Objek utama sebaiknya berada di tengah agar tetap terlihat pada card Bio Menu dan Store Display.</p></div>
+                        </div>
+                    </section>
+
+                    <section class="wizard-panel" data-wizard-panel="3" hidden>
+                        <header><span class="eyebrow">Langkah 3 dari 4</span><h3>Lengkapi pilihan yang membantu customer memahami menu.</h3><p>Bagian ini opsional. Kosongkan jika menu tidak memiliki varian atau add-on.</p></header>
+                        <fieldset class="field checkbox-fieldset">
+                            <legend>Add-on yang ditampilkan</legend>
+                            <div class="dynamic-checkbox-list" data-addon-attachment-options></div>
+                            <button class="button button-secondary align-start" type="button" data-action="new-addon-from-editor"><i data-lucide="plus"></i><span>Buat grup add-on</span></button>
+                        </fieldset>
+                        <fieldset class="field checkbox-fieldset">
+                            <legend>Informasi tambahan</legend>
+                            <label><input type="checkbox" name="containsMilk"> Mengandung susu</label>
+                        </fieldset>
+                        <div class="advanced-info-note"><i data-lucide="info"></i><span>Add-on ditampilkan sebagai informasi pilihan. SagaMenu tidak membuat cart atau checkout.</span></div>
+                    </section>
+
+                    <section class="wizard-panel" data-wizard-panel="4" hidden>
+                        <header><span class="eyebrow">Langkah 4 dari 4</span><h3>Review sebelum menyimpan draft.</h3><p>Periksa informasi utama dan lihat bagaimana item akan dibaca customer.</p></header>
+                        <div class="review-checklist">
+                            <div data-review-check="name"><i data-lucide="circle-check"></i><span><strong>Nama menu</strong><small>Belum diisi</small></span></div>
+                            <div data-review-check="category"><i data-lucide="circle-check"></i><span><strong>Kategori</strong><small>Belum dipilih</small></span></div>
+                            <div data-review-check="price"><i data-lucide="circle-check"></i><span><strong>Harga</strong><small>Belum diisi</small></span></div>
+                            <div data-review-check="image"><i data-lucide="circle-alert"></i><span><strong>Foto menu</strong><small>Opsional untuk layout daftar</small></span></div>
+                        </div>
+                        <div class="draft-safety-note"><i data-lucide="shield-check"></i><span><strong>Perubahan tetap aman sebagai draft.</strong><small>Menu customer baru berubah setelah Anda melakukan publish dari halaman Preview & Publish.</small></span></div>
+                    </section>
                 </div>
-                <div class="editor-kv" aria-hidden="true">
-                    <span class="editor-kv-card"></span>
-                    <span class="editor-kv-arrow">→</span>
-                    <span class="editor-kv-screen"></span>
+
+                <aside class="editor-preview-rail" aria-label="Preview dan validasi item">
+                    <header>
+                        <div><span class="eyebrow">Live preview</span><strong data-editor-preview-mode>Bio Menu</strong></div>
+                        <div class="segmented compact">
+                            <button type="button" class="is-active" data-action="editor-preview-mode" data-mode="mobile">Bio</button>
+                            <button type="button" data-action="editor-preview-mode" data-mode="tablet">Store</button>
+                        </div>
+                    </header>
+                    <div class="editor-preview-card" data-editor-preview-card>
+                        <img data-editor-preview-image src="" alt="">
+                        <div>
+                            <strong data-editor-preview-name>Item baru</strong>
+                            <span data-editor-preview-price>Rp28.000</span>
+                            <p data-editor-preview-description>Deskripsi item akan tampil di sini.</p>
+                            <small data-editor-preview-status>Tersedia</small>
+                        </div>
+                    </div>
+                    <div class="editor-status-card is-warning">
+                        <span><i data-lucide="info"></i></span>
+                        <div><strong>Belum terlihat publik</strong><p>Perubahan baru tampil setelah diterbitkan.</p></div>
+                    </div>
+                </aside>
+            </main>
+
+            <footer class="item-wizard-footer">
+                <button class="button button-secondary" type="button" data-action="close-item-editor">Simpan nanti</button>
+                <div>
+                    <button class="button button-secondary" type="button" data-action="item-step-back" data-editor-back hidden><i data-lucide="arrow-left"></i><span>Kembali</span></button>
+                    <button class="button button-primary" type="button" data-action="item-step-next" data-editor-next><span>Lanjut: Foto & media</span><i data-lucide="arrow-right"></i></button>
+                    <button class="button button-primary" type="submit" data-editor-submit hidden><i data-lucide="check"></i><span>Simpan draft</span></button>
                 </div>
-            </aside>
-            <footer class="modal-footer">
-                <button class="button button-secondary" type="button" data-action="close-item-editor">Batal</button>
-                <button class="button button-primary" type="submit"><i data-lucide="check"></i><span>Simpan menu</span></button>
             </footer>
         </form>
     </dialog>

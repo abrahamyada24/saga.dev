@@ -9,10 +9,12 @@ use App\Models\Collection;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -41,12 +43,11 @@ class CollectionResource extends Resource
                         ->when(! auth()->user()->isSagaDevAdmin(), fn ($query) => $query->where('organization_id', auth()->user()->currentOrganization()?->id))
                         ->pluck('name', 'id'))
                     ->required(),
-                TextInput::make('name')->required()->maxLength(120)->live(onBlur: true)
+                TextInput::make('name')->label('Nama kategori')->required()->maxLength(120)->live(onBlur: true)
                     ->afterStateUpdated(fn ($state, callable $set) => $set('slug', Str::slug((string) $state))),
-                TextInput::make('slug')->required()->alphaDash()->maxLength(120),
-                Textarea::make('description')->rows(3)->maxLength(320),
-                Toggle::make('is_visible')->default(true),
-                TextInput::make('sort_order')->numeric()->minValue(0)->default(0),
+                Hidden::make('slug')->required(),
+                Textarea::make('description')->label('Keterangan')->rows(3)->maxLength(320),
+                Toggle::make('is_visible')->label('Tampilkan kategori')->default(true),
             ])->columns(2),
         ]);
     }
@@ -66,9 +67,21 @@ class CollectionResource extends Resource
                 Action::make('toggleVisibility')->label(fn (Collection $record) => $record->is_visible ? 'Hide' : 'Show')
                     ->icon(Heroicon::OutlinedEye)
                     ->action(fn (Collection $record) => $record->update(['is_visible' => ! $record->is_visible])),
-                EditAction::make(),
+                EditAction::make()->slideOver(),
                 Action::make('archive')->color('danger')->icon(Heroicon::OutlinedArchiveBox)->requiresConfirmation()
-                    ->action(fn (Collection $record) => $record->update(['archived_at' => now(), 'is_visible' => false])),
+                    ->action(function (Collection $record): void {
+                        if ($record->offerings()->exists()) {
+                            Notification::make()
+                                ->title('Kategori masih dipakai')
+                                ->body('Pindahkan menu ke kategori lain sebelum mengarsipkan kategori ini.')
+                                ->warning()
+                                ->send();
+
+                            return;
+                        }
+
+                        $record->update(['archived_at' => now(), 'is_visible' => false]);
+                    }),
             ])
             ->reorderable('sort_order')
             ->defaultSort('sort_order');

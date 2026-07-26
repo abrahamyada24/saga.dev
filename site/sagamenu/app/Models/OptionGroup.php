@@ -11,6 +11,15 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Guarded([])]
 class OptionGroup extends Model
 {
+    protected function casts(): array
+    {
+        return [
+            'min_selections' => 'integer',
+            'max_selections' => 'integer',
+            'is_active' => 'boolean',
+        ];
+    }
+
     public function organization(): BelongsTo
     {
         return $this->belongsTo(Organization::class);

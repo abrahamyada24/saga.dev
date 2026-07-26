@@ -22,7 +22,7 @@
 
 ### Fonts and typography
 
-Manrope provides a clearer operational hierarchy than the earlier dashboard while preserving compact labels and readable public-menu copy. Font weights, line height, wrapping, and letter spacing remain stable at desktop and mobile widths.
+Plus Jakarta Sans provides a clear operational hierarchy while preserving compact labels and readable public-menu copy. Font weights, line height, wrapping, and letter spacing remain stable at desktop and mobile widths.
 
 ### Spacing and layout rhythm
 

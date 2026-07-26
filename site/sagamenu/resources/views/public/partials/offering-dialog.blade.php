@@ -66,6 +66,17 @@
                         <div class="info-group">
                             <strong>{{ $group['name'] }}</strong>
                             @if ($group['description'])<p>{{ $group['description'] }}</p>@endif
+                            @if (($group['min_selections'] ?? 0) > 0 || ($group['max_selections'] ?? null))
+                                <p class="section-note">
+                                    @if (($group['min_selections'] ?? 0) > 0 && ($group['max_selections'] ?? null))
+                                        Pilih {{ $group['min_selections'] }}-{{ $group['max_selections'] }} opsi.
+                                    @elseif (($group['min_selections'] ?? 0) > 0)
+                                        Pilih minimal {{ $group['min_selections'] }} opsi.
+                                    @else
+                                        Pilih maksimal {{ $group['max_selections'] }} opsi.
+                                    @endif
+                                </p>
+                            @endif
                             <ul>
                                 @foreach ($group['values'] as $value)
                                     <li><span>{{ $value['name'] }}</span>@if ($value['price_delta_minor'])<span>+Rp {{ number_format($value['price_delta_minor'], 0, ',', '.') }}</span>@endif</li>

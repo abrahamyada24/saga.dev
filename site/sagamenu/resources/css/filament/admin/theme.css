@@ -13,7 +13,7 @@
     --saga-line: #d7ddd8;
     --saga-muted: #657068;
     --sidebar-width: 17rem;
-    --font-family: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
+    --font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
 }
 
 * {
@@ -661,5 +661,153 @@
 @media (prefers-reduced-motion: reduce) {
     .sm-preview-device {
         transition: none;
+    }
+}
+
+.sm-offering-editor-preview {
+    position: sticky;
+    top: 5.5rem;
+    display: grid;
+    align-self: start;
+    gap: 1rem;
+    padding: 1rem;
+    border: 1px solid var(--saga-line);
+    border-radius: .5rem;
+    background: var(--saga-surface);
+    box-shadow: 0 10px 30px rgb(20 32 25 / 7%);
+}
+
+.sm-offering-editor-preview > header {
+    display: flex;
+    align-items: start;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.sm-offering-editor-preview > header div,
+.sm-offering-preview-card > div:last-child {
+    display: grid;
+    gap: .25rem;
+}
+
+.sm-offering-editor-preview > header span,
+.sm-offering-preview-card p,
+.sm-editor-safety small,
+.sm-offering-review small {
+    color: var(--saga-muted);
+    font-size: .75rem;
+    line-height: 1.5;
+}
+
+.sm-draft-pill {
+    display: inline-flex;
+    min-height: 1.6rem;
+    align-items: center;
+    padding: 0 .6rem;
+    border-radius: 999px;
+    background: #fff4cf;
+    color: #765112 !important;
+    font-weight: 700;
+}
+
+.sm-offering-preview-card {
+    overflow: hidden;
+    border: 1px solid var(--saga-line);
+    border-radius: .45rem;
+    background: var(--saga-paper);
+}
+
+.sm-offering-preview-card > div:last-child {
+    padding: .9rem;
+}
+
+.sm-offering-preview-image {
+    display: grid;
+    min-height: 10.5rem;
+    place-items: center;
+    padding: 1rem;
+    background: #e6ebe7;
+    color: var(--saga-muted);
+    text-align: center;
+}
+
+.sm-offering-preview-image svg {
+    width: 2rem;
+    height: 2rem;
+}
+
+.sm-offering-preview-card b {
+    color: var(--saga-primary);
+    font-size: .82rem;
+}
+
+.sm-offering-preview-card p {
+    margin: .15rem 0;
+}
+
+.sm-offering-preview-card .is-available,
+.sm-offering-preview-card .is-sold-out {
+    width: max-content;
+    padding: .3rem .5rem;
+    border-radius: .3rem;
+    font-size: .68rem;
+    font-weight: 700;
+}
+
+.sm-offering-preview-card .is-available {
+    background: #e4f1ec;
+    color: var(--saga-primary-dark);
+}
+
+.sm-offering-preview-card .is-sold-out {
+    background: #fbe8e5;
+    color: #8c311f;
+}
+
+.sm-editor-safety,
+.sm-offering-review > div {
+    display: grid;
+    grid-template-columns: 1.5rem minmax(0, 1fr);
+    gap: .65rem;
+}
+
+.sm-editor-safety svg,
+.sm-offering-review svg {
+    width: 1.25rem;
+    height: 1.25rem;
+    color: var(--saga-primary);
+}
+
+.sm-editor-safety span,
+.sm-offering-review span {
+    display: grid;
+}
+
+.sm-offering-review {
+    display: grid;
+    gap: 1rem;
+}
+
+.fi-sc-wizard-header {
+    border: 1px solid var(--saga-line);
+    border-radius: .5rem;
+    background: var(--saga-surface);
+    box-shadow: none;
+}
+
+.fi-sc-wizard-header-step.fi-active .fi-sc-wizard-header-step-icon-ctn {
+    background: var(--saga-lime);
+    color: var(--saga-ink);
+}
+
+@media (max-width: 80rem) {
+    .sm-offering-editor-preview {
+        position: static;
+    }
+}
+
+@media (max-width: 95rem) {
+    .fi-sc-wizard-header-step-description {
+        display: none;
     }
 }
