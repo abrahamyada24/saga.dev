@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "scripts": {
     "dev": "npx serve . -l 4178",
-    "check": "node scripts/check.mjs"
+    "check": "node scripts/check.mjs",
+    "qa:sprint0": "node scripts/qa-sprint-0.mjs"
   }
 }

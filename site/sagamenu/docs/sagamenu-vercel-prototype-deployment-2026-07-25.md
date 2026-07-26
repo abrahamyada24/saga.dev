@@ -9,12 +9,12 @@ Product boundary: static interactive review artifact, not the Laravel SaaS runti
 - Stable review URL: `https://sagamenu-prototype-review.vercel.app`
 - Vercel project: `sagamenu-prototype-review`
 - Project ID: `prj_fnhuPOgIhoonBXI4FUzVw3BqY7sY`
-- Latest deployment ID: `dpl_BnA6cjV9uuQiaS9Rd4CcwBA5bmsC`
-- Latest immutable deployment URL: `https://sagamenu-prototype-review-m65fyxk9j-andreas-projects16.vercel.app`
+- Latest deployment ID: `dpl_3vhq4tbjiCG5bPPPejByUHnGCvyf`
+- Latest immutable deployment URL: `https://sagamenu-prototype-review-a4cmvt4iy-andreas-projects16.vercel.app`
 - Vercel target: `production`
 - Vercel state: `READY`
 - Source branch: `codex/sagamenu-wave2-sprint22`
-- Local baseline commit: `0276c69c3aaa9a9c5b8547a27f2e9e0093513356`
+- Sprint 0 starting commit: `9413b1a30024945b65a17d5f5aa3fe046e283f71`
 - Editorial KV Ops source is committed locally at the final implementation gate. It is not pushed or merged.
 
 No custom domain, customer data, Saga Platform credential, payment credential, or live database was attached.
@@ -67,6 +67,20 @@ Vercel evidence:
 - `Referrer-Policy: strict-origin-when-cross-origin`.
 
 Detailed implementation and QA report: `docs/sagamenu-editorial-kv-ops-implementation-report-2026-07-26.md`.
+
+## Sprint 0 Reliability Update
+
+The production prototype was updated on 2026-07-26 with:
+
+- Real WebP upload preview and persistence.
+- Separate recovery drafts for create and each edited menu.
+- Guarded close behavior for pending changes.
+- Indonesian inline validation and error summary.
+- Complete eight-part review checklist.
+- Distinct create and edit save actions.
+- Mobile access to `Simpan & lanjut nanti`.
+
+Focused Sprint 0 E2E passed locally and against the stable Vercel review URL with zero console and page errors. Full evidence is recorded in `docs/sagamenu-sprint-0-reliability-report-2026-07-26.md`.
 
 ## Review Checklist
 

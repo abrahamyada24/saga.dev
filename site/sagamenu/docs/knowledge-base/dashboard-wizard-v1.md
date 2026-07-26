@@ -13,10 +13,23 @@ Dashboard wizard membantu operator membuat dan mengedit e-menu preview-only. Sag
 
 Save hanya menyimpan draft. Customer baru melihat perubahan setelah catalog dipublish.
 
+## Draft Recovery
+
+- `Simpan & lanjut nanti` menyimpan isian prototype ke browser lalu menutup editor.
+- Draft menu baru dan draft edit disimpan terpisah.
+- Draft edit dipetakan ke ID menu agar perubahan satu menu tidak memengaruhi menu lain.
+- Ketika draft ditemukan, editor menampilkan `Draft dipulihkan dari browser` atau `Perubahan edit dipulihkan dari browser`.
+- Menutup editor ketika autosave belum selesai meminta konfirmasi sebelum perubahan disimpan dan editor ditutup.
+- `Buat menu sebagai draft` dipakai untuk menu baru.
+- `Simpan perubahan` dipakai untuk memperbarui menu yang sudah ada.
+- Menyimpan draft tidak menerbitkan perubahan ke customer.
+
 ## Media Rules
 
 - URL foto bukan workflow yang didukung.
 - Upload baru divalidasi sebagai JPG, PNG, atau WebP.
+- Prototype mengompresi upload menjadi WebP dan hanya menerima data image JPEG/PNG/WebP atau URL HTTP/HTTPS sebagai sumber preview.
+- Pesan `Foto selesai diproses dan tersimpan di draft` hanya boleh muncul setelah hasil kompresi benar-benar tersimpan.
 - Asset harus berasal dari organization yang sama dengan menu.
 - Production wajib mengaktifkan malware scanner required mode.
 - Primary image dapat diganti; gallery tidak boleh menduplikasi primary image.
@@ -50,6 +63,8 @@ Save hanya menyimpan draft. Customer baru melihat perubahan setelah catalog dipu
 - Pastikan user berada pada organization yang benar.
 - Pastikan catalog dan kategori tersedia.
 - Pastikan file di bawah 5 MB dan bertipe JPG/PNG/WebP.
+- Jika preview menampilkan foto fallback setelah upload, jangan lanjut publish; ulangi upload dan eskalasi sebagai kegagalan media.
+- Jika draft edit tidak dipulihkan dengan nilai terakhir, jangan menganggap toast autosave sebagai bukti bahwa perubahan aman.
 - Jelaskan bahwa save tidak sama dengan publish.
 - Gunakan Preview sebelum Publish.
 - Jika publish gagal, snapshot live sebelumnya harus tetap tersedia.

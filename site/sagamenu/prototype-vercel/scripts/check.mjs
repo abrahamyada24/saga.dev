@@ -46,7 +46,7 @@ const declaredActions = new Set(
 const handledActions = new Set(
     [...files.js.matchAll(/action === '([a-z0-9-]+)'/g)].map((match) => match[1]),
 );
-const delegatedActions = new Set(['close-item-editor', 'close-simple-dialog', 'close-detail']);
+const delegatedActions = new Set(['close-simple-dialog', 'close-detail']);
 for (const action of declaredActions) {
     if (!handledActions.has(action) && !delegatedActions.has(action)) {
         failures.push(`Action has no explicit handler: ${action}`);

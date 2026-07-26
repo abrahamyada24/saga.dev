@@ -122,10 +122,10 @@
     </section>
 
     <dialog class="item-wizard" data-item-editor>
-        <form method="dialog" class="item-editor-form" data-item-form>
+        <form method="dialog" class="item-editor-form" data-item-form novalidate>
             <header class="item-wizard-header">
                 <div class="item-wizard-title">
-                    <button class="icon-button" type="button" data-action="close-item-editor" aria-label="Tutup editor">
+                    <button class="icon-button" type="button" data-action="dismiss-item-editor" aria-label="Tutup editor">
                         <i data-lucide="x"></i>
                     </button>
                     <div>
@@ -153,22 +153,29 @@
 
                     <section class="wizard-panel" data-wizard-panel="1">
                         <header><span class="eyebrow">Langkah 1 dari 4</span><h3>Mulai dari informasi yang customer cari.</h3><p>Nama, kategori, harga, dan deskripsi akan langsung terlihat pada preview.</p></header>
+                        <div class="form-error-summary" role="alert" aria-live="assertive" data-editor-error-summary hidden>
+                            <i data-lucide="circle-alert"></i>
+                            <span><strong>Periksa informasi wajib.</strong><small data-editor-error-summary-copy></small></span>
+                        </div>
                         <div class="form-grid editor-fields">
                             <label class="field field-span-2">
                                 <span>Nama menu <b>Wajib</b></span>
-                                <input name="name" required maxlength="80" placeholder="Contoh: Iced Aren Latte">
-                                <small>Maksimal 80 karakter.</small>
+                                <input name="name" required maxlength="80" placeholder="Contoh: Iced Aren Latte" aria-describedby="menu-name-help menu-name-error">
+                                <small id="menu-name-help">Maksimal 80 karakter.</small>
+                                <small class="field-error" id="menu-name-error" data-field-error="name" hidden></small>
                             </label>
                             <div class="field">
                                 <span>Kategori <b>Wajib</b></span>
                                 <div class="inline-field-action">
-                                    <select name="categoryId" required data-category-select></select>
+                                    <select name="categoryId" required data-category-select aria-describedby="menu-category-error"></select>
                                     <button class="icon-button" type="button" data-action="new-category-from-editor" aria-label="Tambah kategori"><i data-lucide="plus"></i></button>
                                 </div>
+                                <small class="field-error" id="menu-category-error" data-field-error="categoryId" hidden></small>
                             </div>
                             <label class="field">
                                 <span>Harga <b>Wajib</b></span>
-                                <div class="input-prefix"><span>Rp</span><input name="price" required type="number" min="0" step="1000"></div>
+                                <div class="input-prefix"><span>Rp</span><input name="price" required type="number" min="0" step="1000" aria-describedby="menu-price-error"></div>
+                                <small class="field-error" id="menu-price-error" data-field-error="price" hidden></small>
                             </label>
                             <label class="field field-span-2">
                                 <span>Deskripsi singkat</span>
@@ -230,12 +237,16 @@
                     </section>
 
                     <section class="wizard-panel" data-wizard-panel="4" hidden>
-                        <header><span class="eyebrow">Langkah 4 dari 4</span><h3>Review sebelum menyimpan draft.</h3><p>Periksa informasi utama dan lihat bagaimana item akan dibaca customer.</p></header>
+                        <header><span class="eyebrow">Langkah 4 dari 4</span><h3 data-editor-review-title>Review sebelum menyimpan draft.</h3><p data-editor-review-copy>Periksa seluruh informasi dan lihat bagaimana item akan dibaca customer.</p></header>
                         <div class="review-checklist">
                             <div data-review-check="name"><i data-lucide="circle-check"></i><span><strong>Nama menu</strong><small>Belum diisi</small></span></div>
                             <div data-review-check="category"><i data-lucide="circle-check"></i><span><strong>Kategori</strong><small>Belum dipilih</small></span></div>
                             <div data-review-check="price"><i data-lucide="circle-check"></i><span><strong>Harga</strong><small>Belum diisi</small></span></div>
                             <div data-review-check="image"><i data-lucide="circle-alert"></i><span><strong>Foto menu</strong><small>Opsional untuk layout daftar</small></span></div>
+                            <div data-review-check="description"><i data-lucide="circle-check"></i><span><strong>Deskripsi</strong><small>Belum diisi</small></span></div>
+                            <div data-review-check="availability"><i data-lucide="circle-check"></i><span><strong>Ketersediaan</strong><small>Tersedia</small></span></div>
+                            <div data-review-check="badge"><i data-lucide="circle-check"></i><span><strong>Badge</strong><small>Tanpa badge</small></span></div>
+                            <div data-review-check="choices"><i data-lucide="circle-check"></i><span><strong>Pilihan & informasi</strong><small>Tanpa add-on</small></span></div>
                         </div>
                         <div class="draft-safety-note"><i data-lucide="shield-check"></i><span><strong>Perubahan tetap aman sebagai draft.</strong><small>Menu customer baru berubah setelah Anda melakukan publish dari halaman Preview & Publish.</small></span></div>
                     </section>
@@ -266,11 +277,11 @@
             </main>
 
             <footer class="item-wizard-footer">
-                <button class="button button-secondary" type="button" data-action="close-item-editor">Simpan nanti</button>
+                <button class="button button-secondary" type="button" data-action="save-item-editor-later"><span data-editor-save-later>Simpan & lanjut nanti</span></button>
                 <div>
                     <button class="button button-secondary" type="button" data-action="item-step-back" data-editor-back hidden><i data-lucide="arrow-left"></i><span>Kembali</span></button>
                     <button class="button button-primary" type="button" data-action="item-step-next" data-editor-next><span>Lanjut: Foto & media</span><i data-lucide="arrow-right"></i></button>
-                    <button class="button button-primary" type="submit" data-editor-submit hidden><i data-lucide="check"></i><span>Simpan draft</span></button>
+                    <button class="button button-primary" type="submit" data-editor-submit hidden><i data-lucide="check"></i><span data-editor-submit-copy>Buat menu sebagai draft</span></button>
                 </div>
             </footer>
         </form>

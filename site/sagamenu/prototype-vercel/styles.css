@@ -3757,6 +3757,55 @@ svg {
     background: var(--surface);
 }
 
+.form-error-summary {
+    display: grid;
+    grid-template-columns: 22px minmax(0, 1fr);
+    align-items: start;
+    gap: 10px;
+    margin: -8px 0 16px;
+    padding: 12px 14px;
+    border: 1px solid #e7bcbc;
+    border-radius: 7px;
+    background: var(--danger-soft);
+    color: var(--danger);
+}
+
+.form-error-summary[hidden] {
+    display: none;
+}
+
+.form-error-summary > svg {
+    width: 20px;
+    height: 20px;
+}
+
+.form-error-summary > span {
+    display: grid;
+    gap: 2px;
+}
+
+.form-error-summary small {
+    color: #774646;
+    font-weight: 500;
+}
+
+.field .field-error {
+    color: var(--danger);
+    font-size: 10px;
+    font-weight: 650;
+}
+
+.field [aria-invalid="true"],
+.field .input-prefix:has(input[aria-invalid="true"]) {
+    border-color: var(--danger);
+    box-shadow: 0 0 0 3px rgb(162 61 61 / 10%);
+}
+
+.field .input-prefix input[aria-invalid="true"] {
+    border: 0;
+    box-shadow: none;
+}
+
 .field > span b {
     color: var(--primary);
     font-size: 9px;
@@ -5237,12 +5286,16 @@ svg {
     }
 
     .item-wizard-footer {
+        display: grid;
+        grid-template-columns: 1fr;
         align-items: stretch;
+        gap: 8px;
         padding: 10px 12px;
     }
 
     .item-wizard-footer > .button-secondary {
-        display: none;
+        display: inline-flex;
+        width: 100%;
     }
 
     .item-wizard-footer > div {

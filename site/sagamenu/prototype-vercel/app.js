@@ -235,6 +235,7 @@ let itemEditorStep = 1;
 let itemEditorPreviewMode = 'mobile';
 let itemEditorDirty = false;
 let itemEditorSaveTimer = null;
+let itemEditorValidationAttempted = false;
 
 const main = document.querySelector('[data-dashboard] #main-content');
 const previewShell = document.querySelector('[data-preview-shell]');
@@ -245,6 +246,7 @@ const simpleDialog = document.querySelector('[data-simple-dialog]');
 const simpleForm = document.querySelector('[data-simple-form]');
 const detailDialog = document.querySelector('[data-menu-detail]');
 const EDITOR_DRAFT_KEY = 'sagamenu-prototype-item-editor-draft-v1';
+const EDITOR_EDIT_DRAFT_PREFIX = 'sagamenu-prototype-item-editor-edit-v1:';
 
 function cloneDefaultState() {
     return JSON.parse(JSON.stringify(DEFAULT_STATE));
@@ -350,8 +352,12 @@ function escapeHTML(value = '') {
 }
 
 function normalizeImage(value) {
+    const normalizedValue = String(value || '').trim();
+    if (/^data:image\/(?:jpeg|png|webp);base64,[a-z0-9+/=\s]+$/i.test(normalizedValue)) {
+        return normalizedValue;
+    }
     try {
-        const url = new URL(value);
+        const url = new URL(normalizedValue);
         return ['https:', 'http:'].includes(url.protocol) ? url.toString() : FALLBACK_IMAGE;
     } catch {
         return FALLBACK_IMAGE;
@@ -1423,9 +1429,9 @@ function closePreview() {
 
 function openItemEditor(itemId = '') {
     const item = state.items.find((entry) => entry.id === itemId);
-    const recoveredDraft = !item ? loadEditorDraft() : null;
+    const recoveredDraft = loadEditorDraft(item?.id || '');
     itemForm.reset();
-    const source = item || recoveredDraft || {};
+    const source = recoveredDraft || item || {};
     itemForm.elements.itemId.value = item?.id || '';
     itemForm.elements.name.value = source.name || '';
     itemForm.elements.price.value = source.price || 28000;
@@ -1435,6 +1441,11 @@ function openItemEditor(itemId = '') {
     itemForm.elements.availability.value = source.availability || 'available';
     itemForm.elements.containsMilk.checked = Boolean(source.containsMilk);
     itemForm.querySelector('[data-editor-title]').textContent = item ? 'Edit menu' : 'Tambah menu';
+    itemForm.querySelector('[data-editor-submit-copy]').textContent = item ? 'Simpan perubahan' : 'Buat menu sebagai draft';
+    itemForm.querySelector('[data-editor-review-title]').textContent = item ? 'Review perubahan sebelum disimpan.' : 'Review sebelum membuat menu.';
+    itemForm.querySelector('[data-editor-review-copy]').textContent = item
+        ? 'Pastikan perubahan yang dipilih sudah sesuai sebelum memperbarui draft menu.'
+        : 'Periksa seluruh informasi sebelum menambahkan menu ke draft katalog.';
     const categorySelect = itemForm.querySelector('[data-category-select]');
     categorySelect.innerHTML = state.categories.map((category) => `<option value="${escapeHTML(category.id)}">${escapeHTML(category.name)}</option>`).join('');
     categorySelect.value = source.categoryId || state.categories[0]?.id || '';
@@ -1444,11 +1455,18 @@ function openItemEditor(itemId = '') {
     ];
     renderEditorAddonOptions(selectedGroups);
     renderEditorMediaLibrary();
-    itemEditorDirty = Boolean(recoveredDraft);
+    itemEditorDirty = false;
     itemEditorPreviewMode = 'mobile';
+    itemEditorValidationAttempted = false;
+    clearEditorValidation();
     setItemEditorStep(1, false);
     refreshItemEditorPreview();
-    updateEditorSaveState(recoveredDraft ? 'Draft dipulihkan dari browser' : 'Draft aman, belum tampil ke customer', recoveredDraft ? 'history' : 'cloud');
+    updateEditorSaveState(
+        recoveredDraft
+            ? (item ? 'Perubahan edit dipulihkan dari browser' : 'Draft dipulihkan dari browser')
+            : 'Draft aman, belum tampil ke customer',
+        recoveredDraft ? 'history' : 'cloud',
+    );
     itemEditor.showModal();
     document.body.classList.add('modal-open');
     window.setTimeout(() => itemForm.elements.name.focus(), 30);
@@ -1479,14 +1497,9 @@ function renderEditorMediaLibrary() {
 
 function setItemEditorStep(step, shouldValidate = true) {
     const nextStep = Math.min(4, Math.max(1, Number(step)));
-    const currentPanel = itemForm.querySelector(`[data-wizard-panel="${itemEditorStep}"]`);
     if (shouldValidate && nextStep > itemEditorStep && itemEditorStep === 1) {
-        const invalid = [...currentPanel.querySelectorAll('input, select, textarea')].find((field) => !field.checkValidity());
-        if (invalid) {
-            invalid.reportValidity();
-            invalid.focus();
-            return false;
-        }
+        itemEditorValidationAttempted = true;
+        if (!validateEditorBasics()) return false;
     }
 
     itemEditorStep = nextStep;
@@ -1534,11 +1547,24 @@ function refreshItemEditorPreview() {
 }
 
 function refreshEditorReview() {
+    const description = itemForm.elements.description.value.trim();
+    const selectedGroupNames = [...itemForm.querySelectorAll('input[name="addonGroupIds"]:checked')]
+        .map((input) => state.addonGroups.find((group) => group.id === input.value)?.name)
+        .filter(Boolean);
+    const choiceLabels = [
+        ...selectedGroupNames,
+        ...(itemForm.elements.containsMilk.checked ? ['Mengandung susu'] : []),
+    ];
+    const priceValue = itemForm.elements.price.value;
     const values = {
-        name: [itemForm.elements.name.value.trim(), 'Nama sudah siap'],
+        name: [itemForm.elements.name.value.trim(), itemForm.elements.name.value.trim() || 'Belum diisi'],
         category: [itemForm.elements.categoryId.value, itemForm.elements.categoryId.selectedOptions[0]?.textContent || 'Belum dipilih'],
-        price: [Number(itemForm.elements.price.value) >= 0, formatPrice(Number(itemForm.elements.price.value || 0))],
+        price: [priceValue !== '' && Number(priceValue) >= 0, priceValue === '' ? 'Belum diisi' : formatPrice(Number(priceValue))],
         image: [itemForm.elements.image.value, itemForm.elements.image.value ? 'Foto siap digunakan' : 'Opsional untuk layout daftar'],
+        description: [description, description || 'Belum ada deskripsi'],
+        availability: [true, itemForm.elements.availability.selectedOptions[0]?.textContent || 'Tersedia'],
+        badge: [true, itemForm.elements.badge.value || 'Tanpa badge'],
+        choices: [true, choiceLabels.length ? choiceLabels.join(' · ') : 'Tanpa add-on atau informasi tambahan'],
     };
     Object.entries(values).forEach(([key, [complete, label]]) => {
         const row = itemForm.querySelector(`[data-review-check="${key}"]`);
@@ -1556,9 +1582,66 @@ function updateEditorSaveState(message, icon = 'cloud') {
     refreshIcons();
 }
 
+function queueEditorDraftSave() {
+    itemEditorDirty = true;
+    updateEditorSaveState('Menyimpan perubahan draft...', 'cloud-upload');
+    window.clearTimeout(itemEditorSaveTimer);
+    itemEditorSaveTimer = window.setTimeout(persistEditorDraft, 450);
+}
+
+function editorDraftKey(itemId = '') {
+    return itemId ? `${EDITOR_EDIT_DRAFT_PREFIX}${itemId}` : EDITOR_DRAFT_KEY;
+}
+
+function setEditorFieldError(field, message = '') {
+    const error = itemForm.querySelector(`[data-field-error="${field.name}"]`);
+    if (error) {
+        error.textContent = message;
+        error.hidden = !message;
+    }
+    if (message) field.setAttribute('aria-invalid', 'true');
+    else field.removeAttribute('aria-invalid');
+}
+
+function clearEditorValidation() {
+    itemForm.querySelectorAll('[data-field-error]').forEach((error) => {
+        error.textContent = '';
+        error.hidden = true;
+    });
+    itemForm.querySelectorAll('[aria-invalid="true"]').forEach((field) => field.removeAttribute('aria-invalid'));
+    const summary = itemForm.querySelector('[data-editor-error-summary]');
+    summary.hidden = true;
+}
+
+function validateEditorBasics({ focus = true } = {}) {
+    const fields = [
+        [itemForm.elements.name, itemForm.elements.name.value.trim() ? '' : 'Masukkan nama menu.'],
+        [itemForm.elements.categoryId, itemForm.elements.categoryId.value ? '' : 'Pilih kategori menu.'],
+        [
+            itemForm.elements.price,
+            itemForm.elements.price.value === ''
+                ? 'Masukkan harga menu.'
+                : (Number(itemForm.elements.price.value) < 0 ? 'Harga tidak boleh kurang dari Rp0.' : ''),
+        ],
+    ];
+    fields.forEach(([field, message]) => setEditorFieldError(field, message));
+    const invalid = fields.filter(([, message]) => message);
+    const summary = itemForm.querySelector('[data-editor-error-summary]');
+    summary.hidden = invalid.length === 0;
+    if (invalid.length) {
+        summary.querySelector('[data-editor-error-summary-copy]').textContent =
+            `${invalid.length} informasi perlu diperbaiki sebelum melanjutkan.`;
+        if (focus) invalid[0][0].focus();
+        refreshIcons();
+        return false;
+    }
+    return true;
+}
+
 function captureEditorDraft() {
     const data = new FormData(itemForm);
     return {
+        itemId: String(data.get('itemId') || ''),
         name: String(data.get('name') || ''),
         categoryId: String(data.get('categoryId') || ''),
         price: Math.max(0, Number(data.get('price') || 0)),
@@ -1572,24 +1655,34 @@ function captureEditorDraft() {
 }
 
 function persistEditorDraft() {
-    if (itemForm.elements.itemId.value) {
-        updateEditorSaveState('Perubahan tersimpan sementara sebagai draft', 'cloud-check');
-        return;
-    }
+    const itemId = itemForm.elements.itemId.value;
     try {
-        localStorage.setItem(EDITOR_DRAFT_KEY, JSON.stringify(captureEditorDraft()));
-        updateEditorSaveState('Draft tersimpan di browser', 'cloud-check');
+        localStorage.setItem(editorDraftKey(itemId), JSON.stringify(captureEditorDraft()));
+        updateEditorSaveState(itemId ? 'Perubahan edit tersimpan di browser' : 'Draft tersimpan di browser', 'cloud-check');
+        itemEditorDirty = false;
+        return true;
     } catch {
         updateEditorSaveState('Draft belum dapat disimpan. Selesaikan atau kecilkan foto.', 'cloud-alert');
+        return false;
     }
 }
 
-function loadEditorDraft() {
+function loadEditorDraft(itemId = '') {
     try {
-        return JSON.parse(localStorage.getItem(EDITOR_DRAFT_KEY) || 'null');
+        return JSON.parse(localStorage.getItem(editorDraftKey(itemId)) || 'null');
     } catch {
         return null;
     }
+}
+
+function removeEditorDraft(itemId = '') {
+    localStorage.removeItem(editorDraftKey(itemId));
+}
+
+function clearAllEditorDrafts() {
+    Object.keys(localStorage)
+        .filter((key) => key === EDITOR_DRAFT_KEY || key.startsWith(EDITOR_EDIT_DRAFT_PREFIX))
+        .forEach((key) => localStorage.removeItem(key));
 }
 
 async function imageFileToDataUrl(file) {
@@ -1617,10 +1710,32 @@ async function imageFileToDataUrl(file) {
     return canvas.toDataURL('image/webp', 0.82);
 }
 
-function closeItemEditor() {
-    if (itemEditorDirty) persistEditorDraft();
+function closeItemEditor({ saveDraft = false } = {}) {
+    window.clearTimeout(itemEditorSaveTimer);
+    if (saveDraft && itemEditorDirty && !persistEditorDraft()) return false;
+    itemEditorDirty = false;
     itemEditor.close();
     document.body.classList.remove('modal-open');
+    return true;
+}
+
+function saveItemEditorForLater() {
+    if (itemEditorDirty && !persistEditorDraft()) return;
+    closeItemEditor();
+    toast(
+        itemForm.elements.itemId.value ? 'Perubahan edit disimpan' : 'Draft menu disimpan',
+        'Lanjutkan kembali dari menu ini kapan saja.',
+    );
+}
+
+function dismissItemEditor() {
+    if (!itemEditorDirty) {
+        closeItemEditor();
+        return;
+    }
+    if (window.confirm('Tutup editor dan simpan perubahan untuk dilanjutkan nanti?')) {
+        closeItemEditor({ saveDraft: true });
+    }
 }
 
 function openSimpleDialog({ eyebrow, title, fields, submit, submitLabel = 'Simpan' }) {
@@ -1987,7 +2102,8 @@ document.addEventListener('click', (event) => {
 
     if (action === 'new-item') openItemEditor();
     if (action === 'edit-item') openItemEditor(actionButton.dataset.itemId);
-    if (action === 'close-item-editor') closeItemEditor();
+    if (action === 'dismiss-item-editor') dismissItemEditor();
+    if (action === 'save-item-editor-later') saveItemEditorForLater();
     if (action === 'item-step') setItemEditorStep(actionButton.dataset.step);
     if (action === 'item-step-next') setItemEditorStep(itemEditorStep + 1);
     if (action === 'item-step-back') setItemEditorStep(itemEditorStep - 1, false);
@@ -1996,14 +2112,14 @@ document.addEventListener('click', (event) => {
         itemForm.elements.image.value = actionButton.dataset.image;
         renderEditorMediaLibrary();
         refreshItemEditorPreview();
-        itemEditorDirty = true;
+        queueEditorDraftSave();
     }
     if (action === 'clear-editor-image') {
         itemForm.elements.image.value = '';
         itemForm.elements.imageUpload.value = '';
         renderEditorMediaLibrary();
         refreshItemEditorPreview();
-        itemEditorDirty = true;
+        queueEditorDraftSave();
     }
     if (action === 'editor-preview-mode') {
         itemEditorPreviewMode = actionButton.dataset.mode === 'tablet' ? 'tablet' : 'mobile';
@@ -2017,14 +2133,14 @@ document.addEventListener('click', (event) => {
             const select = itemForm.querySelector('[data-category-select]');
             select.innerHTML = state.categories.map((entry) => `<option value="${escapeHTML(entry.id)}">${escapeHTML(entry.name)}</option>`).join('');
             select.value = category.id;
-            itemEditorDirty = true;
             refreshItemEditorPreview();
+            queueEditorDraftSave();
         });
     }
     if (action === 'new-addon-from-editor') {
         addonDialog('', (group) => {
             renderEditorAddonOptions([group.id]);
-            itemEditorDirty = true;
+            queueEditorDraftSave();
         });
     }
     if (action === 'new-category') categoryDialog();
@@ -2094,6 +2210,7 @@ document.addEventListener('click', (event) => {
         state.publishedSnapshot = buildSnapshot(state);
         localStorage.removeItem(STORAGE_KEY);
         localStorage.removeItem(LEGACY_STORAGE_KEY);
+        clearAllEditorDrafts();
         publishRunState = 'idle';
         publishFailureMessage = '';
         closePreview();
@@ -2218,11 +2335,20 @@ document.addEventListener('click', (event) => {
 document.querySelector('[data-sidebar-backdrop]').addEventListener('click', closeSidebar);
 
 itemForm.addEventListener('input', () => {
-    itemEditorDirty = true;
     refreshItemEditorPreview();
-    updateEditorSaveState('Menyimpan perubahan draft...', 'cloud-upload');
-    window.clearTimeout(itemEditorSaveTimer);
-    itemEditorSaveTimer = window.setTimeout(persistEditorDraft, 450);
+    if (itemEditorValidationAttempted) validateEditorBasics({ focus: false });
+    queueEditorDraftSave();
+});
+
+itemForm.addEventListener('change', (event) => {
+    if (itemEditorValidationAttempted && event.target.matches('input, select, textarea')) {
+        validateEditorBasics({ focus: false });
+    }
+});
+
+itemEditor.addEventListener('cancel', (event) => {
+    event.preventDefault();
+    dismissItemEditor();
 });
 
 itemForm.elements.imageUpload.addEventListener('change', async (event) => {
@@ -2235,10 +2361,12 @@ itemForm.elements.imageUpload.addEventListener('change', async (event) => {
         const image = await imageFileToDataUrl(file);
         progress.querySelector('span').style.width = '100%';
         itemForm.elements.image.value = image;
-        itemEditorDirty = true;
         renderEditorMediaLibrary();
         refreshItemEditorPreview();
-        updateEditorSaveState('Foto selesai diproses dan tersimpan di draft', 'cloud-check');
+        itemEditorDirty = true;
+        if (persistEditorDraft()) {
+            updateEditorSaveState('Foto selesai diproses dan tersimpan di draft', 'cloud-check');
+        }
         window.setTimeout(() => {
             progress.hidden = true;
             progress.querySelector('span').style.width = '0';
@@ -2270,6 +2398,12 @@ editorDropZone.addEventListener('drop', (event) => {
 
 itemForm.addEventListener('submit', (event) => {
     event.preventDefault();
+    itemEditorValidationAttempted = true;
+    if (!validateEditorBasics({ focus: false })) {
+        setItemEditorStep(1, false);
+        validateEditorBasics();
+        return;
+    }
     const data = new FormData(itemForm);
     const id = String(data.get('itemId'));
     const name = String(data.get('name')).trim();
@@ -2292,11 +2426,17 @@ itemForm.addEventListener('submit', (event) => {
         state.items.unshift(item);
     }
     persistState();
-    localStorage.removeItem(EDITOR_DRAFT_KEY);
+    removeEditorDraft(id);
     itemEditorDirty = false;
     closeItemEditor();
     routeTo('menus');
     toast('Menu disimpan', `${name} masuk ke draft.`);
+});
+
+window.addEventListener('beforeunload', (event) => {
+    if (!itemEditor.open || !itemEditorDirty) return;
+    event.preventDefault();
+    event.returnValue = '';
 });
 
 simpleForm.addEventListener('submit', (event) => {
