@@ -9,8 +9,8 @@ Product boundary: static interactive review artifact, not the Laravel SaaS runti
 - Stable review URL: `https://sagamenu-prototype-review.vercel.app`
 - Vercel project: `sagamenu-prototype-review`
 - Project ID: `prj_fnhuPOgIhoonBXI4FUzVw3BqY7sY`
-- Latest deployment ID: `dpl_HcL56buMZ43meauieryx6ZbfZUbJ`
-- Latest immutable deployment URL: `https://sagamenu-prototype-review-cuyq2xp5e-andreas-projects16.vercel.app`
+- Latest deployment ID: `dpl_J2cn4uTbcehut3HeN3hPvpXqGqmd`
+- Latest immutable deployment URL: `https://sagamenu-prototype-review-44h2oy3hb-andreas-projects16.vercel.app`
 - Vercel target: `production`
 - Vercel state: `READY`
 - Source branch: `codex/sagamenu-wave2-sprint22`
@@ -95,6 +95,20 @@ The production prototype was updated on 2026-07-26 with:
 - Mobile-safe action labels and preview launcher bounds.
 
 Focused Sprint 1 E2E, Sprint 0 regression, and the full prototype E2E passed locally and against the stable Vercel review URL with zero console and page errors. Full evidence is recorded in `docs/sagamenu-sprint-1-action-hierarchy-report-2026-07-26.md`.
+
+## Sprint 2 Create and Edit Update
+
+The production prototype was updated on 2026-07-26 with:
+
+- A dedicated four-step create wizard.
+- A focused single-page edit workspace without a repeated stepper or review step.
+- Section navigation for Information, Photo, and Choices.
+- A create-only `Buat & tambah lagi` workflow.
+- A single primary `Simpan perubahan` action for edit.
+- Separate mobile footer arrangements for create and edit.
+- Reliable autosave, guarded close, validation focus, and scroll reset.
+
+Focused Sprint 2 E2E, Sprint 0 regression, Sprint 1 regression, and the full prototype E2E passed locally and against the stable Vercel review URL with zero console and page errors. Full evidence is recorded in `docs/sagamenu-sprint-2-create-edit-separation-report-2026-07-26.md`.
 
 ## Review Checklist
 

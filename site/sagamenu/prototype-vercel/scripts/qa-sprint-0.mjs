@@ -80,7 +80,7 @@ await itemRow.getByRole('button', { name: 'Edit Sprint Zero Cold Brew' }).click(
 editor = page.getByRole('dialog');
 await editor.locator('input[name="price"]').fill('36000');
 await editor.getByText('Perubahan edit tersimpan di browser').waitFor();
-await editor.getByRole('button', { name: 'Simpan & lanjut nanti' }).click();
+await editor.getByRole('button', { name: 'Tutup', exact: true }).click();
 
 itemRow = page.locator('[data-item-row]').filter({ hasText: 'Sprint Zero Cold Brew' });
 await itemRow.getByRole('button', { name: 'Edit Sprint Zero Cold Brew' }).click();
@@ -92,13 +92,12 @@ const editRecovery = {
 
 await editor.locator('input[name="price"]').fill('37000');
 page.once('dialog', (dialog) => dialog.accept());
-await editor.getByRole('button', { name: 'Tutup editor' }).click();
+await editor.getByRole('button', { name: /^Tutup edit Sprint Zero Cold Brew$/ }).click();
 itemRow = page.locator('[data-item-row]').filter({ hasText: 'Sprint Zero Cold Brew' });
 await itemRow.getByRole('button', { name: 'Edit Sprint Zero Cold Brew' }).click();
 editor = page.getByRole('dialog');
 const guardedCloseRecovery = await editor.locator('input[name="price"]').inputValue();
 
-await editor.getByRole('button', { name: /4\s*Review/ }).click();
 await editor.getByRole('button', { name: 'Simpan perubahan' }).click();
 itemRow = page.locator('[data-item-row]').filter({ hasText: 'Sprint Zero Cold Brew' });
 const finalRow = await itemRow.innerText();

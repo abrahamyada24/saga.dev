@@ -13,9 +13,32 @@ Dashboard wizard membantu operator membuat dan mengedit e-menu preview-only. Sag
 
 Save hanya menyimpan draft. Customer baru melihat perubahan setelah catalog dipublish.
 
+## Create and Edit Experience
+
+### Tambah Menu
+
+- `Tambah menu` memakai wizard linear empat langkah.
+- Hanya satu langkah ditampilkan pada satu waktu.
+- Informasi wajib divalidasi sebelum user meninggalkan langkah pertama.
+- Langkah Review menjelaskan kelengkapan menu dan perbedaan draft dengan versi publik.
+- `Buat menu sebagai draft` menyimpan lalu kembali ke daftar menu.
+- `Buat & tambah lagi` menyimpan menu saat ini lalu membuka wizard baru yang kosong.
+- `Simpan & lanjut nanti` hanya tersedia pada create wizard.
+
+### Edit Menu
+
+- `Edit menu` memakai focused single-page editor, bukan wizard.
+- Informasi, Foto, serta Pilihan & detail ditampilkan dalam satu workspace.
+- Navigator bagian membawa user langsung ke bagian yang ingin diperbarui.
+- Stepper dan halaman Review tidak ditampilkan saat edit.
+- Hanya ada satu aksi utama: `Simpan perubahan`.
+- Validasi gagal membawa fokus kembali ke field bermasalah pada bagian Informasi.
+- Setiap pembukaan editor dimulai dari posisi scroll paling atas.
+- Footer menjelaskan bahwa versi publik tetap aman sampai draft diterbitkan.
+
 ## Draft Recovery
 
-- `Simpan & lanjut nanti` menyimpan isian prototype ke browser lalu menutup editor.
+- `Simpan & lanjut nanti` menyimpan isian create prototype ke browser lalu menutup wizard.
 - Draft menu baru dan draft edit disimpan terpisah.
 - Draft edit dipetakan ke ID menu agar perubahan satu menu tidak memengaruhi menu lain.
 - Ketika draft ditemukan, editor menampilkan `Draft dipulihkan dari browser` atau `Perubahan edit dipulihkan dari browser`.

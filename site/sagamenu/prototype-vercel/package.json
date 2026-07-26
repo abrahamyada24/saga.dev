@@ -6,6 +6,7 @@
     "dev": "npx serve . -l 4178",
     "check": "node scripts/check.mjs",
     "qa:sprint0": "node scripts/qa-sprint-0.mjs",
-    "qa:sprint1": "node scripts/qa-sprint-1.mjs"
+    "qa:sprint1": "node scripts/qa-sprint-1.mjs",
+    "qa:sprint2": "node scripts/qa-sprint-2.mjs"
   }
 }

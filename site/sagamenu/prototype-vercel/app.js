@@ -232,6 +232,7 @@ let simpleDialogHandler = null;
 let publishRunState = 'idle';
 let publishFailureMessage = '';
 let itemEditorStep = 1;
+let itemEditorMode = 'create';
 let itemEditorPreviewMode = 'mobile';
 let itemEditorDirty = false;
 let itemEditorSaveTimer = null;
@@ -1445,6 +1446,10 @@ function openItemEditor(itemId = '') {
     const item = state.items.find((entry) => entry.id === itemId);
     const recoveredDraft = loadEditorDraft(item?.id || '');
     itemForm.reset();
+    itemEditorMode = item ? 'edit' : 'create';
+    itemEditor.dataset.mode = itemEditorMode;
+    itemForm.classList.toggle('is-edit-mode', itemEditorMode === 'edit');
+    itemForm.classList.toggle('is-create-mode', itemEditorMode === 'create');
     const source = recoveredDraft || item || {};
     itemForm.elements.itemId.value = item?.id || '';
     itemForm.elements.name.value = source.name || '';
@@ -1454,12 +1459,7 @@ function openItemEditor(itemId = '') {
     itemForm.elements.badge.value = source.badge || '';
     itemForm.elements.availability.value = source.availability || 'available';
     itemForm.elements.containsMilk.checked = Boolean(source.containsMilk);
-    itemForm.querySelector('[data-editor-title]').textContent = item ? 'Edit menu' : 'Tambah menu';
-    itemForm.querySelector('[data-editor-submit-copy]').textContent = item ? 'Simpan perubahan' : 'Buat menu sebagai draft';
-    itemForm.querySelector('[data-editor-review-title]').textContent = item ? 'Review perubahan sebelum disimpan.' : 'Review sebelum membuat menu.';
-    itemForm.querySelector('[data-editor-review-copy]').textContent = item
-        ? 'Pastikan perubahan yang dipilih sudah sesuai sebelum memperbarui draft menu.'
-        : 'Periksa seluruh informasi sebelum menambahkan menu ke draft katalog.';
+    configureItemEditorMode(item);
     const categorySelect = itemForm.querySelector('[data-category-select]');
     categorySelect.innerHTML = state.categories.map((category) => `<option value="${escapeHTML(category.id)}">${escapeHTML(category.name)}</option>`).join('');
     categorySelect.value = source.categoryId || state.categories[0]?.id || '';
@@ -1473,7 +1473,8 @@ function openItemEditor(itemId = '') {
     itemEditorPreviewMode = 'mobile';
     itemEditorValidationAttempted = false;
     clearEditorValidation();
-    setItemEditorStep(1, false);
+    if (itemEditorMode === 'create') setItemEditorStep(1, false);
+    else showAllEditSections();
     refreshItemEditorPreview();
     updateEditorSaveState(
         recoveredDraft
@@ -1483,7 +1484,70 @@ function openItemEditor(itemId = '') {
     );
     itemEditor.showModal();
     document.body.classList.add('modal-open');
-    window.setTimeout(() => itemForm.elements.name.focus(), 30);
+    window.setTimeout(() => {
+        itemForm.querySelector('.item-wizard-content').scrollTop = 0;
+        itemForm.querySelector('.item-wizard-main').scrollTop = 0;
+        itemForm.elements.name.focus({ preventScroll: true });
+    }, 30);
+}
+
+function configureItemEditorMode(item) {
+    const isEdit = itemEditorMode === 'edit';
+    itemForm.querySelector('[data-editor-eyebrow]').textContent = isEdit ? 'Edit menu' : 'Menu baru';
+    itemForm.querySelector('[data-editor-title]').textContent = isEdit ? item.name : 'Tambah menu';
+    itemForm.querySelector('[data-editor-context]').textContent = isEdit
+        ? 'Perbarui bagian yang diperlukan tanpa mengulang wizard.'
+        : 'Buat satu menu baru melalui empat langkah singkat.';
+    itemForm.querySelector('[data-editor-submit-copy]').textContent = 'Buat menu sebagai draft';
+    itemForm.querySelector('[data-editor-review-title]').textContent = 'Review sebelum membuat menu.';
+    itemForm.querySelector('[data-editor-review-copy]').textContent =
+        'Periksa seluruh informasi sebelum menambahkan menu ke draft katalog.';
+    itemForm.querySelector('[data-create-footer]').hidden = isEdit;
+    itemForm.querySelector('[data-edit-footer]').hidden = !isEdit;
+    itemForm.querySelector('[data-edit-sections]').hidden = !isEdit;
+    itemForm.querySelector('.item-wizard-steps').hidden = isEdit;
+
+    const closeButton = itemForm.querySelector('.item-wizard-header [data-action="dismiss-item-editor"]');
+    closeButton.setAttribute('aria-label', isEdit ? `Tutup edit ${item.name}` : 'Tutup wizard tambah menu');
+
+    const panelCopy = isEdit
+        ? [
+            ['Informasi utama', 'Perbarui informasi yang dilihat customer.', 'Nama, kategori, harga, dan status dapat diubah langsung.'],
+            ['Foto menu', 'Ganti atau pertahankan foto saat ini.', 'Upload foto baru atau pilih kembali dari Media Library.'],
+            ['Pilihan customer', 'Atur add-on dan informasi tambahan.', 'Perubahan pada bagian ini bersifat opsional.'],
+        ]
+        : [
+            ['Langkah 1 dari 4', 'Mulai dari informasi yang customer cari.', 'Nama, kategori, harga, dan deskripsi akan langsung terlihat pada preview.'],
+            ['Langkah 2 dari 4', 'Tambahkan foto tanpa menempel URL.', 'Upload dari perangkat atau pilih foto yang sudah ada di Media Library.'],
+            ['Langkah 3 dari 4', 'Lengkapi pilihan yang membantu customer memahami menu.', 'Bagian ini opsional. Kosongkan jika menu tidak memiliki varian atau add-on.'],
+        ];
+
+    itemForm.querySelectorAll('[data-wizard-panel]').forEach((panel, index) => {
+        if (index >= panelCopy.length) return;
+        const [eyebrow, title, copy] = panelCopy[index];
+        panel.querySelector('[data-panel-eyebrow]').textContent = eyebrow;
+        panel.querySelector('[data-panel-title]').textContent = title;
+        panel.querySelector('[data-panel-copy]').textContent = copy;
+    });
+}
+
+function showAllEditSections() {
+    itemForm.querySelectorAll('[data-wizard-panel]').forEach((panel) => {
+        panel.hidden = Number(panel.dataset.wizardPanel) === 4;
+    });
+    itemForm.querySelectorAll('[data-action="edit-section"]').forEach((button, index) => {
+        button.classList.toggle('is-active', index === 0);
+    });
+}
+
+function focusEditSection(section) {
+    const target = itemForm.querySelector(`[data-wizard-panel="${section}"]`);
+    if (!target || itemEditorMode !== 'edit') return;
+    itemForm.querySelectorAll('[data-action="edit-section"]').forEach((button) => {
+        button.classList.toggle('is-active', button.dataset.section === String(section));
+    });
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    window.setTimeout(() => target.querySelector('input, select, textarea, button')?.focus({ preventScroll: true }), 220);
 }
 
 function renderEditorAddonOptions(selectedGroups = []) {
@@ -1510,6 +1574,10 @@ function renderEditorMediaLibrary() {
 }
 
 function setItemEditorStep(step, shouldValidate = true) {
+    if (itemEditorMode === 'edit') {
+        focusEditSection(step);
+        return true;
+    }
     const nextStep = Math.min(4, Math.max(1, Number(step)));
     if (shouldValidate && nextStep > itemEditorStep && itemEditorStep === 1) {
         itemEditorValidationAttempted = true;
@@ -1532,9 +1600,11 @@ function setItemEditorStep(step, shouldValidate = true) {
     const back = itemForm.querySelector('[data-editor-back]');
     const next = itemForm.querySelector('[data-editor-next]');
     const submit = itemForm.querySelector('[data-editor-submit]');
+    const addAnother = itemForm.querySelector('[data-create-another]');
     back.hidden = itemEditorStep === 1;
     next.hidden = itemEditorStep === 4;
     submit.hidden = itemEditorStep !== 4;
+    addAnother.hidden = itemEditorStep !== 4;
     if (itemEditorStep < 4) next.querySelector('span').textContent = `Lanjut: ${labels[itemEditorStep - 1]}`;
     if (itemEditorStep === 4) refreshEditorReview();
     itemForm.querySelector(`[data-wizard-panel="${itemEditorStep}"] header`)?.scrollIntoView({ block: 'nearest' });
@@ -2151,6 +2221,7 @@ document.addEventListener('click', (event) => {
     if (action === 'item-step') setItemEditorStep(actionButton.dataset.step);
     if (action === 'item-step-next') setItemEditorStep(itemEditorStep + 1);
     if (action === 'item-step-back') setItemEditorStep(itemEditorStep - 1, false);
+    if (action === 'edit-section') focusEditSection(actionButton.dataset.section);
     if (action === 'trigger-image-upload') itemForm.elements.imageUpload.click();
     if (action === 'choose-editor-media') {
         itemForm.elements.image.value = actionButton.dataset.image;
@@ -2451,6 +2522,7 @@ editorDropZone.addEventListener('drop', (event) => {
 
 itemForm.addEventListener('submit', (event) => {
     event.preventDefault();
+    const shouldAddAnother = itemEditorMode === 'create' && event.submitter?.dataset.submitIntent === 'add-another';
     itemEditorValidationAttempted = true;
     if (!validateEditorBasics({ focus: false })) {
         setItemEditorStep(1, false);
@@ -2484,6 +2556,9 @@ itemForm.addEventListener('submit', (event) => {
     closeItemEditor();
     routeTo('menus');
     toast('Menu disimpan', `${name} masuk ke draft.`);
+    if (shouldAddAnother) {
+        window.setTimeout(() => openItemEditor(), 80);
+    }
 });
 
 window.addEventListener('beforeunload', (event) => {

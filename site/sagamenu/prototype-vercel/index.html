@@ -141,8 +141,9 @@
                         <i data-lucide="x"></i>
                     </button>
                     <div>
-                        <span class="eyebrow">Menu & Katalog</span>
+                        <span class="eyebrow" data-editor-eyebrow>Menu & Katalog</span>
                         <h2 data-editor-title>Tambah menu</h2>
+                        <small class="item-editor-context" data-editor-context>Buat satu menu baru melalui empat langkah singkat.</small>
                     </div>
                 </div>
                 <div class="item-save-state" role="status" aria-live="polite" data-editor-save-state>
@@ -158,13 +159,19 @@
                 <button type="button" data-action="item-step" data-step="4"><span>4</span><b>Review</b><small>Cek sebelum simpan</small></button>
             </nav>
 
+            <nav class="item-edit-sections" aria-label="Bagian edit menu" data-edit-sections hidden>
+                <button type="button" class="is-active" data-action="edit-section" data-section="1"><i data-lucide="notebook-pen"></i><span>Informasi</span></button>
+                <button type="button" data-action="edit-section" data-section="2"><i data-lucide="image"></i><span>Foto</span></button>
+                <button type="button" data-action="edit-section" data-section="3"><i data-lucide="list-plus"></i><span>Pilihan & detail</span></button>
+            </nav>
+
             <main class="item-wizard-main">
                 <div class="item-wizard-content">
                     <input type="hidden" name="itemId">
                     <input type="hidden" name="image">
 
-                    <section class="wizard-panel" data-wizard-panel="1">
-                        <header><span class="eyebrow">Langkah 1 dari 4</span><h3>Mulai dari informasi yang customer cari.</h3><p>Nama, kategori, harga, dan deskripsi akan langsung terlihat pada preview.</p></header>
+                    <section class="wizard-panel" id="menu-editor-section-1" data-wizard-panel="1">
+                        <header><span class="eyebrow" data-panel-eyebrow>Langkah 1 dari 4</span><h3 data-panel-title>Mulai dari informasi yang customer cari.</h3><p data-panel-copy>Nama, kategori, harga, dan deskripsi akan langsung terlihat pada preview.</p></header>
                         <div class="form-error-summary" role="alert" aria-live="assertive" data-editor-error-summary hidden>
                             <i data-lucide="circle-alert"></i>
                             <span><strong>Periksa informasi wajib.</strong><small data-editor-error-summary-copy></small></span>
@@ -215,8 +222,8 @@
                         </div>
                     </section>
 
-                    <section class="wizard-panel" data-wizard-panel="2" hidden>
-                        <header><span class="eyebrow">Langkah 2 dari 4</span><h3>Tambahkan foto tanpa menempel URL.</h3><p>Upload dari perangkat atau pilih foto yang sudah ada di Media Library.</p></header>
+                    <section class="wizard-panel" id="menu-editor-section-2" data-wizard-panel="2" hidden>
+                        <header><span class="eyebrow" data-panel-eyebrow>Langkah 2 dari 4</span><h3 data-panel-title>Tambahkan foto tanpa menempel URL.</h3><p data-panel-copy>Upload dari perangkat atau pilih foto yang sudah ada di Media Library.</p></header>
                         <div class="media-upload-zone" data-media-upload-zone>
                             <input type="file" name="imageUpload" accept="image/jpeg,image/png,image/webp" data-image-upload>
                             <span><i data-lucide="image-plus"></i></span>
@@ -234,8 +241,8 @@
                         </div>
                     </section>
 
-                    <section class="wizard-panel" data-wizard-panel="3" hidden>
-                        <header><span class="eyebrow">Langkah 3 dari 4</span><h3>Lengkapi pilihan yang membantu customer memahami menu.</h3><p>Bagian ini opsional. Kosongkan jika menu tidak memiliki varian atau add-on.</p></header>
+                    <section class="wizard-panel" id="menu-editor-section-3" data-wizard-panel="3" hidden>
+                        <header><span class="eyebrow" data-panel-eyebrow>Langkah 3 dari 4</span><h3 data-panel-title>Lengkapi pilihan yang membantu customer memahami menu.</h3><p data-panel-copy>Bagian ini opsional. Kosongkan jika menu tidak memiliki varian atau add-on.</p></header>
                         <fieldset class="field checkbox-fieldset">
                             <legend>Add-on yang ditampilkan</legend>
                             <div class="dynamic-checkbox-list" data-addon-attachment-options></div>
@@ -248,8 +255,8 @@
                         <div class="advanced-info-note"><i data-lucide="info"></i><span>Add-on ditampilkan sebagai informasi pilihan. SagaMenu tidak membuat cart atau checkout.</span></div>
                     </section>
 
-                    <section class="wizard-panel" data-wizard-panel="4" hidden>
-                        <header><span class="eyebrow">Langkah 4 dari 4</span><h3 data-editor-review-title>Review sebelum menyimpan draft.</h3><p data-editor-review-copy>Periksa seluruh informasi dan lihat bagaimana item akan dibaca customer.</p></header>
+                    <section class="wizard-panel" id="menu-editor-section-4" data-wizard-panel="4" hidden>
+                        <header><span class="eyebrow" data-panel-eyebrow>Langkah 4 dari 4</span><h3 data-editor-review-title>Review sebelum menyimpan draft.</h3><p data-editor-review-copy>Periksa seluruh informasi dan lihat bagaimana item akan dibaca customer.</p></header>
                         <div class="review-checklist">
                             <div data-review-check="name"><i data-lucide="circle-check"></i><span><strong>Nama menu</strong><small>Belum diisi</small></span></div>
                             <div data-review-check="category"><i data-lucide="circle-check"></i><span><strong>Kategori</strong><small>Belum dipilih</small></span></div>
@@ -288,12 +295,21 @@
                 </aside>
             </main>
 
-            <footer class="item-wizard-footer">
+            <footer class="item-wizard-footer" data-create-footer>
                 <button class="button button-secondary" type="button" data-action="save-item-editor-later"><span data-editor-save-later>Simpan & lanjut nanti</span></button>
                 <div>
                     <button class="button button-secondary" type="button" data-action="item-step-back" data-editor-back hidden><i data-lucide="arrow-left"></i><span>Kembali</span></button>
                     <button class="button button-primary" type="button" data-action="item-step-next" data-editor-next><span>Lanjut: Foto & media</span><i data-lucide="arrow-right"></i></button>
                     <button class="button button-primary" type="submit" data-editor-submit hidden><i data-lucide="check"></i><span data-editor-submit-copy>Buat menu sebagai draft</span></button>
+                    <button class="button button-secondary" type="submit" data-create-another data-submit-intent="add-another" hidden><i data-lucide="copy-plus"></i><span>Buat & tambah lagi</span></button>
+                </div>
+            </footer>
+
+            <footer class="item-edit-footer" data-edit-footer hidden>
+                <div class="edit-footer-note"><i data-lucide="shield-check"></i><span><strong>Versi publik tetap aman</strong><small>Perubahan masuk ke draft sampai diterbitkan.</small></span></div>
+                <div>
+                    <button class="button button-secondary" type="button" data-action="dismiss-item-editor">Tutup</button>
+                    <button class="button button-primary" type="submit" data-edit-submit><i data-lucide="check"></i><span>Simpan perubahan</span></button>
                 </div>
             </footer>
         </form>

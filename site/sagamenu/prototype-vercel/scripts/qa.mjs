@@ -175,7 +175,7 @@ const mobileWizardOverflow = await mobile.evaluate(
 );
 const mobileWizardFooterVisible = await mobile.locator('.item-wizard-footer').isVisible();
 await mobile.screenshot({ path: `${output}/menu-wizard-mobile-390.png`, fullPage: true });
-await mobile.getByRole('button', { name: 'Tutup editor' }).click();
+await mobile.getByRole('button', { name: 'Tutup wizard tambah menu' }).click();
 
 await mobile.getByRole('button', { name: 'Buka navigasi' }).click();
 await mobile.getByRole('button', { name: 'Tampilan' }).click();
