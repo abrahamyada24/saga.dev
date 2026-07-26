@@ -50,6 +50,17 @@ site/coyabag/
 *.mp4
 *.mov
 *.avi
+
+# Keep approved product-design targets used as implementation references.
+!site/sagamenu/docs/design-references/
+!site/sagamenu/docs/design-references/*.png
+!site/sagamenu/docs/design-references/**/*.png
+!site/sagamenu/prototype-vercel/assets/
+!site/sagamenu/prototype-vercel/assets/illustrations/
+!site/sagamenu/prototype-vercel/assets/illustrations/*.webp
+!site/sagamenu/public/assets/
+!site/sagamenu/public/assets/illustrations/
+!site/sagamenu/public/assets/illustrations/*.webp
 *.glb
 *.gltf
 *.fbx

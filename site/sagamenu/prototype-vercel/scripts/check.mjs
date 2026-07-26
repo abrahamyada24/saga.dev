@@ -40,6 +40,19 @@ if (/sk_live_|sk_test_|AKIA[0-9A-Z]{16}|PRIVATE KEY/.test(Object.values(files).j
     failures.push('Potential secret pattern detected');
 }
 
+const declaredActions = new Set(
+    [...`${files.html}\n${files.js}`.matchAll(/data-action=["']([a-z0-9-]+)["']/g)].map((match) => match[1]),
+);
+const handledActions = new Set(
+    [...files.js.matchAll(/action === '([a-z0-9-]+)'/g)].map((match) => match[1]),
+);
+const delegatedActions = new Set(['close-item-editor', 'close-simple-dialog', 'close-detail']);
+for (const action of declaredActions) {
+    if (!handledActions.has(action) && !delegatedActions.has(action)) {
+        failures.push(`Action has no explicit handler: ${action}`);
+    }
+}
+
 if (failures.length) {
     console.error(JSON.stringify({ result: 'failed', failures }, null, 2));
     process.exit(1);
@@ -52,4 +65,5 @@ console.log(JSON.stringify({
     jsBytes: files.js.length,
     routes: ['overview', 'menus', 'categories', 'addons', 'appearance', 'publish', 'analytics'],
     previews: ['mobile', 'tablet', 'maintenance'],
+    actionsChecked: declaredActions.size,
 }, null, 2));

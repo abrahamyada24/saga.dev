@@ -966,3 +966,253 @@ body[data-image-treatment='soft'] .offering-dialog__media img {
         scroll-behavior: auto;
     }
 }
+
+/* Editorial KV Ops public surfaces */
+.catalog-shell--store {
+    padding: 24px 32px 32px;
+}
+
+.store-header {
+    min-height: 92px;
+    margin-bottom: 8px;
+    padding: 18px 20px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--surface);
+}
+
+.brand-mark {
+    background: var(--brand-primary);
+    color: white;
+}
+
+.surface-label {
+    color: var(--brand-primary);
+    font-weight: 850;
+}
+
+.collection-rail {
+    gap: 7px;
+    padding-block: 11px;
+}
+
+.collection-rail a {
+    min-height: 40px;
+    border-radius: 6px;
+    background: var(--surface);
+}
+
+.collection-rail a:hover,
+.collection-rail a.is-active {
+    border-color: var(--brand-accent);
+    background: var(--brand-accent);
+    color: var(--ink);
+}
+
+.catalog-content {
+    gap: 52px;
+    margin-top: 30px;
+}
+
+.section-heading h2 {
+    font-size: 30px;
+}
+
+.offering-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+}
+
+.offering-card {
+    box-shadow: none;
+}
+
+.offering-card__media {
+    aspect-ratio: 16 / 10;
+}
+
+.offering-card__body {
+    min-height: 160px;
+    padding: 17px;
+}
+
+.offering-card h3 {
+    font-size: 18px;
+}
+
+.detail-hint {
+    color: var(--brand-primary);
+}
+
+.badge-row span {
+    border-radius: 5px;
+    background: color-mix(in srgb, var(--brand-accent) 32%, white);
+    color: var(--ink);
+}
+
+.catalog-shell--mobile {
+    max-width: 560px;
+    min-height: 100dvh;
+    border-inline: 1px solid var(--line);
+}
+
+.mobile-header {
+    padding: 22px 20px 20px;
+    border-bottom: 1px solid var(--line);
+    background: var(--surface);
+}
+
+.mobile-brand-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.mobile-header .brand-mark {
+    margin: 0;
+}
+
+.open-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 10px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--brand-primary) 10%, white);
+    color: var(--brand-primary);
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.open-status::before {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--brand-accent);
+    content: '';
+}
+
+.mobile-header .surface-label {
+    margin-top: 20px;
+}
+
+.mobile-header h1 {
+    font-size: 32px;
+}
+
+.business-strip {
+    gap: 8px;
+    margin-top: 18px;
+    padding-top: 14px;
+}
+
+.business-strip div {
+    padding: 10px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--brand-paper);
+}
+
+.mobile-tools {
+    padding-top: 12px;
+    background: color-mix(in srgb, var(--brand-paper) 95%, white);
+}
+
+.search-field input {
+    min-height: 48px;
+    background: var(--surface);
+}
+
+.collection-rail--mobile {
+    padding-top: 11px;
+}
+
+.collection-rail--mobile a {
+    min-height: 38px;
+    border-radius: 6px;
+}
+
+.catalog-shell--mobile .catalog-content {
+    gap: 42px;
+    padding-top: 28px;
+}
+
+.section-heading--mobile h2 {
+    font-size: 24px;
+}
+
+.section-heading--mobile > span {
+    border-radius: 6px;
+    background: var(--brand-accent);
+}
+
+.offering-list {
+    gap: 11px;
+}
+
+.offering-card--mobile .offering-card__button {
+    grid-template-columns: 120px minmax(0, 1fr);
+    min-height: 142px;
+}
+
+.offering-card--mobile .offering-card__media {
+    min-height: 142px;
+}
+
+.offering-card--mobile .offering-card__body {
+    padding: 15px;
+}
+
+.offering-card--mobile .detail-hint {
+    color: var(--brand-primary);
+}
+
+.offering-dialog {
+    box-shadow: 0 20px 60px rgb(20 32 25 / 22%);
+}
+
+.availability-text {
+    border-radius: 5px;
+    background: color-mix(in srgb, var(--brand-accent) 32%, white);
+    color: var(--ink);
+}
+
+.empty-state img,
+.search-empty img {
+    width: min(100%, 220px);
+    aspect-ratio: 1;
+    margin: 0 auto 16px;
+    object-fit: cover;
+}
+
+@media (max-width: 1180px) {
+    .offering-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 820px) {
+    .catalog-shell--store {
+        padding: 18px;
+    }
+
+    .offering-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 560px) {
+    .catalog-shell--mobile {
+        border-inline: 0;
+    }
+
+    .offering-card--mobile .offering-card__button {
+        grid-template-columns: 112px minmax(0, 1fr);
+    }
+
+    .section-heading--mobile {
+        align-items: start;
+        flex-direction: row;
+    }
+}

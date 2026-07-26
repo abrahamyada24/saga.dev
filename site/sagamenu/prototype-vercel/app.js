@@ -1,22 +1,31 @@
-const STORAGE_KEY = 'sagamenu-prototype-v1';
+const STORAGE_KEY = 'sagamenu-prototype-editorial-kv-v2';
+const LEGACY_STORAGE_KEY = 'sagamenu-prototype-editorial-kv-v1';
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1000&q=82';
 
 const DEFAULT_STATE = {
+    schemaVersion: 2,
     business: {
-        name: 'Saga Coffee Demo',
+        name: 'Bachelor Coffee',
         location: 'Madiun',
-        hours: 'Setiap hari, 08.00–22.00 WIB',
+        hours: 'Setiap hari, 08.00-22.00 WIB',
         address: 'Jl. Pahlawan, Madiun, Jawa Timur',
+        tagline: 'Kopi untuk jeda yang lebih baik.',
     },
     appearance: {
-        preset: 'warm',
-        primary: '#a4492d',
-        accent: '#28665b',
-        paper: '#f7f3ed',
+        preset: 'editorial',
+        primary: '#236354',
+        accent: '#cbf45a',
+        paper: '#f3f5f1',
         customFontName: '',
+        itemLayout: 'photo',
     },
+    preview: {
+        mode: 'tablet',
+        zoom: 1,
+    },
+    analyticsPeriod: '30',
     categories: [
-        { id: 'signature', name: 'Signature', description: 'Racikan khas Saga Coffee.', visible: true },
+        { id: 'signature', name: 'Signature', description: 'Pilihan khas Bachelor Coffee.', visible: true },
         { id: 'coffee', name: 'Coffee', description: 'Espresso-based dan manual brew.', visible: true },
         { id: 'non-coffee', name: 'Non-Coffee', description: 'Pilihan segar tanpa espresso.', visible: true },
         { id: 'food', name: 'Food', description: 'Comfort food untuk makan santai.', visible: true },
@@ -28,6 +37,9 @@ const DEFAULT_STATE = {
             id: 'milk',
             name: 'Pilihan Susu',
             description: 'Tersedia sebagai informasi opsi penyajian.',
+            type: 'single',
+            min: 0,
+            max: 1,
             values: [
                 { name: 'Fresh Milk', price: 0 },
                 { name: 'Oat Milk', price: 7000 },
@@ -38,6 +50,9 @@ const DEFAULT_STATE = {
             id: 'extras',
             name: 'Tambahan',
             description: 'Konfirmasi pilihan kepada staf saat berkunjung.',
+            type: 'multiple',
+            min: 0,
+            max: 3,
             values: [
                 { name: 'Extra Shot', price: 8000 },
                 { name: 'Vanilla Syrup', price: 5000 },
@@ -47,13 +62,13 @@ const DEFAULT_STATE = {
     ],
     items: [
         {
-            id: 'iced-aren-latte',
-            name: 'Iced Aren Latte',
+            id: 'es-kopi-susu-aren',
+            name: 'Es Kopi Susu Aren',
             categoryId: 'signature',
             price: 28000,
             description: 'Espresso, susu, dan gula aren dengan rasa karamel yang lembut.',
             image: 'https://images.unsplash.com/photo-1517701604599-bb29b565090c?auto=format&fit=crop&w=1000&q=82',
-            badge: 'Best Seller',
+            badge: 'Best seller',
             availability: 'available',
             milkOptions: true,
             extraOptions: true,
@@ -203,16 +218,19 @@ const DEFAULT_STATE = {
             containsMilk: false,
         },
     ],
-    draft: false,
+    draft: true,
     maintenance: false,
-    publishedVersion: 1,
-    lastPublished: '25 Jul 2026, 20.15 WIB',
+    publishedVersion: 3,
+    lastPublished: '25 Jul 2026, 14.22 WIB',
+    publishedSnapshot: null,
 };
 
 let state = loadState();
 let currentRoute = getRoute();
 let previewMode = 'mobile';
 let simpleDialogHandler = null;
+let publishRunState = 'idle';
+let publishFailureMessage = '';
 
 const main = document.querySelector('[data-dashboard] #main-content');
 const previewShell = document.querySelector('[data-preview-shell]');
@@ -227,21 +245,65 @@ function cloneDefaultState() {
     return JSON.parse(JSON.stringify(DEFAULT_STATE));
 }
 
+function buildSnapshot(source) {
+    return JSON.parse(JSON.stringify({
+        business: source.business,
+        appearance: source.appearance,
+        categories: source.categories,
+        addonGroups: source.addonGroups,
+        items: source.items,
+    }));
+}
+
 function loadState() {
     try {
-        const value = localStorage.getItem(STORAGE_KEY);
-        return value ? { ...cloneDefaultState(), ...JSON.parse(value) } : cloneDefaultState();
+        const value = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY);
+        const defaults = cloneDefaultState();
+        if (!value) {
+            defaults.publishedSnapshot = buildSnapshot(defaults);
+            return defaults;
+        }
+        const stored = JSON.parse(value);
+        const merged = {
+            ...defaults,
+            ...stored,
+            business: { ...defaults.business, ...(stored.business || {}) },
+            appearance: { ...defaults.appearance, ...(stored.appearance || {}) },
+            preview: { ...defaults.preview, ...(stored.preview || {}) },
+        };
+        merged.schemaVersion = 2;
+        merged.addonGroups = merged.addonGroups.map((group) => ({
+            type: 'multiple',
+            min: 0,
+            max: Math.max(1, group.values?.length || 1),
+            ...group,
+        }));
+        merged.items = merged.items.map((item) => ({
+            ...item,
+            addonGroupIds: item.addonGroupIds || [
+                ...(item.milkOptions ? ['milk'] : []),
+                ...(item.extraOptions ? ['extras'] : []),
+            ],
+        }));
+        merged.publishedSnapshot ||= buildSnapshot(merged);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+        localStorage.removeItem(LEGACY_STORAGE_KEY);
+        return merged;
     } catch {
-        return cloneDefaultState();
+        const defaults = cloneDefaultState();
+        defaults.publishedSnapshot = buildSnapshot(defaults);
+        return defaults;
     }
 }
 
-function persistState({ markDraft = true } = {}) {
+function persistState({ markDraft = true, showSaveState = true } = {}) {
     if (markDraft) {
         state.draft = true;
     }
+    state.schemaVersion = 2;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     updateGlobalState();
+    if (!showSaveState) return;
     const saveState = document.querySelector('[data-save-state]');
     if (saveState) {
         saveState.classList.add('is-saving');
@@ -252,6 +314,10 @@ function persistState({ markDraft = true } = {}) {
             refreshIcons();
         }, 450);
     }
+}
+
+function persistUiState() {
+    persistState({ markDraft: false, showSaveState: false });
 }
 
 function getRoute() {
@@ -330,6 +396,9 @@ function updateGlobalState() {
 
 function toast(title, message = '') {
     const region = document.querySelector('[data-toast-region]');
+    while (region.children.length >= 3) {
+        region.firstElementChild?.remove();
+    }
     const node = document.createElement('div');
     node.className = 'toast';
     node.innerHTML = `
@@ -360,12 +429,12 @@ function render() {
     });
 
     const view = {
-        overview: renderOverview,
+        overview: renderEditorialOverview,
         menus: renderMenus,
         categories: renderCategories,
         addons: renderAddons,
-        appearance: renderAppearance,
-        publish: renderPublish,
+        appearance: renderEditorialAppearance,
+        publish: renderEditorialPublish,
         analytics: renderAnalytics,
     }[currentRoute] || renderOverview;
 
@@ -538,7 +607,11 @@ function renderMenus() {
                         ${state.items.map(renderMenuRow).join('')}
                     </tbody>
                 </table>
-                <div class="empty-state" data-menu-empty hidden><i data-lucide="search-x"></i><span>Menu tidak ditemukan.</span></div>
+                <div class="empty-state" data-menu-empty hidden>
+                    <img src="assets/illustrations/empty-catalog.webp" alt="" width="640" height="640">
+                    <strong>Menu tidak ditemukan</strong>
+                    <span>Coba kata kunci atau kategori lain.</span>
+                </div>
             </div>
         </article>
     `;
@@ -560,6 +633,7 @@ function renderMenuRow(item) {
             <td>
                 <div class="row-actions">
                     <button class="icon-button" type="button" data-action="toggle-availability" data-item-id="${escapeHTML(item.id)}" title="${item.availability === 'available' ? 'Tandai sold out' : 'Tandai tersedia'}" aria-label="${item.availability === 'available' ? 'Tandai sold out' : 'Tandai tersedia'}"><i data-lucide="${item.availability === 'available' ? 'eye-off' : 'eye'}"></i></button>
+                    <button class="icon-button" type="button" data-action="duplicate-item" data-item-id="${escapeHTML(item.id)}" title="Duplikat menu" aria-label="Duplikat ${escapeHTML(item.name)}"><i data-lucide="copy-plus"></i></button>
                     <button class="icon-button" type="button" data-action="edit-item" data-item-id="${escapeHTML(item.id)}" title="Edit menu" aria-label="Edit ${escapeHTML(item.name)}"><i data-lucide="pencil"></i></button>
                     <button class="icon-button" type="button" data-action="delete-item" data-item-id="${escapeHTML(item.id)}" title="Hapus menu" aria-label="Hapus ${escapeHTML(item.name)}"><i data-lucide="trash-2"></i></button>
                 </div>
@@ -583,14 +657,16 @@ function renderCategories() {
             </header>
             <div class="category-list">
                 ${state.categories.map((category, index) => `
-                    <div class="category-row">
-                        <i class="drag-handle" data-lucide="grip-vertical"></i>
+                    <div class="category-row" data-category-row data-category-id="${escapeHTML(category.id)}">
+                        <button class="drag-handle" type="button" data-action="move-category-down" data-category-id="${escapeHTML(category.id)}" aria-label="Geser ${escapeHTML(category.name)} ke bawah" ${index === state.categories.length - 1 ? 'disabled' : ''}><i data-lucide="grip-vertical"></i></button>
                         <span><strong>${escapeHTML(category.name)}</strong><span>${escapeHTML(category.description)}</span></span>
                         <span>${state.items.filter((item) => item.categoryId === category.id).length} menu</span>
                         <button class="toggle" type="button" role="switch" aria-checked="${category.visible}" data-action="toggle-category" data-category-id="${escapeHTML(category.id)}" aria-label="Tampilkan ${escapeHTML(category.name)}"></button>
                         <div class="row-actions">
                             <button class="icon-button" type="button" data-action="move-category-up" data-category-id="${escapeHTML(category.id)}" aria-label="Naikkan ${escapeHTML(category.name)}" ${index === 0 ? 'disabled' : ''}><i data-lucide="arrow-up"></i></button>
+                            <button class="icon-button" type="button" data-action="move-category-down" data-category-id="${escapeHTML(category.id)}" aria-label="Turunkan ${escapeHTML(category.name)}" ${index === state.categories.length - 1 ? 'disabled' : ''}><i data-lucide="arrow-down"></i></button>
                             <button class="icon-button" type="button" data-action="edit-category" data-category-id="${escapeHTML(category.id)}" aria-label="Edit ${escapeHTML(category.name)}"><i data-lucide="pencil"></i></button>
+                            <button class="icon-button" type="button" data-action="delete-category" data-category-id="${escapeHTML(category.id)}" aria-label="Hapus ${escapeHTML(category.name)}"><i data-lucide="trash-2"></i></button>
                         </div>
                     </div>
                 `).join('')}
@@ -612,7 +688,7 @@ function renderAddons() {
             <div class="addon-list">
                 ${state.addonGroups.map((group) => `
                     <div class="addon-row">
-                        <span><strong>${escapeHTML(group.name)}</strong><span>${escapeHTML(group.description)}</span></span>
+                        <span><strong>${escapeHTML(group.name)}</strong><span>${escapeHTML(group.description)}</span><small>${group.type === 'single' ? 'Pilih satu' : `Pilih hingga ${group.max || group.values.length}`}</small></span>
                         <span>${group.values.map((value) => `${escapeHTML(value.name)}${value.price ? ` (+${formatPrice(value.price)})` : ''}`).join(' · ')}</span>
                         <div class="row-actions">
                             <button class="icon-button" type="button" data-action="edit-addon" data-addon-id="${escapeHTML(group.id)}" aria-label="Edit ${escapeHTML(group.name)}"><i data-lucide="pencil"></i></button>
@@ -626,8 +702,8 @@ function renderAddons() {
             <header class="panel-header"><div><h2>Pemakaian</h2><p>Menu dengan informasi add-on</p></div></header>
             <div class="panel-body">
                 <div class="metrics-grid" style="margin-bottom:0">
-                    ${metricCard('milk', 'Pilihan susu', String(state.items.filter((item) => item.milkOptions).length), 'menu', 'menampilkan opsi')}
-                    ${metricCard('plus-circle', 'Tambahan', String(state.items.filter((item) => item.extraOptions).length), 'menu', 'menampilkan opsi')}
+                    ${metricCard('milk', 'Pilihan susu', String(state.items.filter((item) => item.addonGroupIds?.includes('milk') || item.milkOptions).length), 'menu', 'menampilkan opsi')}
+                    ${metricCard('plus-circle', 'Tambahan', String(state.items.filter((item) => item.addonGroupIds?.includes('extras') || item.extraOptions).length), 'menu', 'menampilkan opsi')}
                     ${metricCard('info', 'Alergen susu', String(state.items.filter((item) => item.containsMilk).length), 'menu', 'diberi informasi')}
                     ${metricCard('shopping-cart', 'Order flow', '0', 'Preview only', 'tanpa checkout')}
                 </div>
@@ -781,23 +857,32 @@ function shareRow(icon, title, url, action) {
 }
 
 function renderAnalytics() {
-    const bars = [54, 68, 62, 81, 74, 91, 86];
+    const analytics = {
+        '7': { label: '7 hari terakhir', views: 824, opens: 361, search: 172, qr: 208, growth: '+7,8%', bars: [48, 61, 56, 74, 69, 88, 81] },
+        '30': { label: '30 hari terakhir', views: 2847, opens: 1206, search: 634, qr: 684, growth: '+18%', bars: [54, 68, 62, 81, 74, 91, 86] },
+        '90': { label: '90 hari terakhir', views: 7914, opens: 3268, search: 1841, qr: 1967, growth: '+24,6%', bars: [63, 72, 68, 78, 83, 94, 89] },
+    }[state.analyticsPeriod] || null;
+    const bars = analytics.bars;
     return `
         ${pageHead(
             'Performa',
             'Analytics',
             'Interaksi agregat untuk memahami menu yang paling berguna.',
-            `<select class="filter-select" aria-label="Periode analytics"><option>30 hari terakhir</option><option>7 hari terakhir</option></select>`,
+            `<select class="filter-select" aria-label="Periode analytics" data-analytics-period>
+                <option value="7" ${state.analyticsPeriod === '7' ? 'selected' : ''}>7 hari terakhir</option>
+                <option value="30" ${state.analyticsPeriod === '30' ? 'selected' : ''}>30 hari terakhir</option>
+                <option value="90" ${state.analyticsPeriod === '90' ? 'selected' : ''}>90 hari terakhir</option>
+            </select>`,
         )}
         <section class="metrics-grid">
-            ${metricCard('eye', 'Menu views', '2.847', '+18%', 'dibanding periode lalu')}
-            ${metricCard('mouse-pointer-click', 'Detail dibuka', '1.206', '42,4%', 'engagement rate')}
-            ${metricCard('search', 'Pencarian', '634', '8,7%', 'zero result')}
-            ${metricCard('qr-code', 'Scan QR', '684', '24%', 'dari total views')}
+            ${metricCard('eye', 'Menu views', analytics.views.toLocaleString('id-ID'), analytics.growth, 'dibanding periode lalu')}
+            ${metricCard('mouse-pointer-click', 'Detail dibuka', analytics.opens.toLocaleString('id-ID'), `${Math.round((analytics.opens / analytics.views) * 1000) / 10}%`, 'engagement rate')}
+            ${metricCard('search', 'Pencarian', analytics.search.toLocaleString('id-ID'), `${Math.round((analytics.search / analytics.views) * 1000) / 10}%`, 'dari total views')}
+            ${metricCard('qr-code', 'Scan QR', analytics.qr.toLocaleString('id-ID'), `${Math.round((analytics.qr / analytics.views) * 1000) / 10}%`, 'dari total views')}
         </section>
         <section class="content-grid">
             <article class="panel chart-panel">
-                <header class="panel-header"><div><h2>Menu views</h2><p>7 hari terakhir</p></div><span class="badge badge-green">+12,6%</span></header>
+                <header class="panel-header"><div><h2>Menu views</h2><p>${analytics.label}</p></div><span class="badge badge-green">${analytics.growth}</span></header>
                 <div class="panel-body">
                     <div class="bar-chart" role="img" aria-label="Grafik menu views tujuh hari terakhir">
                         ${bars.map((height, index) => `<div class="bar-column"><span class="bar" style="height:${height}%"></span><span>${['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'][index]}</span></div>`).join('')}
@@ -815,22 +900,376 @@ function renderAnalytics() {
             <header class="panel-header"><div><h2>Channel kunjungan</h2><p>Sumber pembukaan katalog</p></div></header>
             <div class="panel-body">
                 <div class="metrics-grid" style="margin-bottom:0">
-                    ${metricCard('instagram', 'Link in bio', '1.438', '50,5%', 'dari total views')}
-                    ${metricCard('qr-code', 'QR counter', '684', '24%', 'dari total views')}
-                    ${metricCard('link', 'Direct link', '512', '18%', 'dari total views')}
-                    ${metricCard('map-pin', 'Google Business', '213', '7,5%', 'dari total views')}
+                    ${metricCard('instagram', 'Link in bio', Math.round(analytics.views * .505).toLocaleString('id-ID'), '50,5%', 'dari total views')}
+                    ${metricCard('qr-code', 'QR counter', analytics.qr.toLocaleString('id-ID'), `${Math.round((analytics.qr / analytics.views) * 1000) / 10}%`, 'dari total views')}
+                    ${metricCard('link', 'Direct link', Math.round(analytics.views * .18).toLocaleString('id-ID'), '18%', 'dari total views')}
+                    ${metricCard('map-pin', 'Google Business', Math.round(analytics.views * .075).toLocaleString('id-ID'), '7,5%', 'dari total views')}
                 </div>
             </div>
         </article>
     `;
 }
 
+function renderEditorialOverview() {
+    const available = state.items.filter((item) => item.availability === 'available').length;
+    const soldOut = state.items.length - available;
+    const recentItems = state.items.slice(0, 6);
+
+    return `
+        ${pageHead(
+            'Dashboard',
+            'Selamat datang, Andreas',
+            'Kelola menu dan katalog preview Bachelor Coffee.',
+            `<button class="button button-secondary" type="button" data-action="preview-mobile"><i data-lucide="eye"></i><span>Lihat preview</span></button>
+             <button class="button button-primary" type="button" data-action="open-publish"><i data-lucide="send"></i><span>Terbitkan perubahan</span></button>`,
+        )}
+        <section class="editorial-story-strip" aria-label="Status trial dan draft">
+            <div class="story-copy">
+                <span class="story-label">Workspace hari ini</span>
+                <h2>Menu siap dilihat, draft menunggu diterbitkan.</h2>
+                <p>Satu catalog menggerakkan Store Display dan Bio Menu.</p>
+            </div>
+            <div class="story-facts">
+                ${editorialFact('calendar-days', '9 hari masa trial', 'Hari ke-5 dari 14', 'lime')}
+                ${editorialFact('file-pen-line', '3 perubahan draft', 'Belum diterbitkan', 'pink')}
+                ${editorialFact('images', '18 media', 'Foto dan video', 'blue')}
+            </div>
+            <img class="editorial-story-art" src="assets/illustrations/dashboard-story.webp" alt="" width="1280" height="420">
+            <div class="editorial-kv-placeholder" aria-hidden="true">
+                <span class="kv-person"></span>
+                <span class="kv-paper"></span>
+                <span class="kv-arrow">→</span>
+                <span class="kv-tablet"></span>
+                <span class="kv-phone"></span>
+            </div>
+        </section>
+        <section class="overview-editorial-workspace">
+            ${renderLivePreviewWorkspace('overview')}
+            <aside class="overview-focus-rail">
+                <article class="panel attention-panel">
+                    <header class="panel-header"><div><h2>Perlu perhatian</h2><p>Prioritas sebelum customer melihat menu</p></div><span class="badge badge-pink">3 tugas</span></header>
+                    <div class="attention-list">
+                        ${attentionRow('file-pen-line', '3 perubahan draft belum diterbitkan', 'Versi live tetap aman', 'Tinjau', 'open-publish', 'pink')}
+                        ${attentionRow('circle-off', `${soldOut} item sedang sold out`, 'Periksa ketersediaan', 'Kelola', 'menus', 'yellow', true)}
+                        ${attentionRow('image', '4 foto perlu alt text', 'Lengkapi aksesibilitas media', 'Lengkapi', 'menus', 'blue', true)}
+                    </div>
+                </article>
+                <article class="catalog-metadata" aria-label="Kesehatan katalog">
+                    ${healthStat('list-checks', available, 'item aktif', 'lime')}
+                    ${healthStat('circle-off', soldOut, 'sold out', 'yellow')}
+                    ${healthStat('file-pen-line', state.draft ? 3 : 0, 'draft', 'pink')}
+                    ${healthStat('images', 18, 'media', 'blue')}
+                </article>
+                <article class="publish-rail-card">
+                    <span class="publish-rail-icon"><i data-lucide="calendar-check"></i></span>
+                    <div><small>Terakhir terbit</small><strong>${escapeHTML(state.lastPublished)}</strong><p>Versi ${state.publishedVersion} tetap aktif.</p></div>
+                    <button class="button button-primary" type="button" data-action="open-publish"><span>Terbitkan perubahan</span><i data-lucide="send"></i></button>
+                </article>
+            </aside>
+        </section>
+        <article class="panel overview-recent-items">
+            <header class="panel-header">
+                <div><h2>Item terbaru</h2><p>Menampilkan ${recentItems.length} dari ${state.items.length} item</p></div>
+                <button class="text-action" type="button" data-route="menus">Lihat semua</button>
+            </header>
+            <div class="dashboard-item-list">
+                ${recentItems.map((item, index) => `
+                    <div class="dashboard-item-row">
+                        <img src="${safeImage(item.image)}" alt="">
+                        <span><strong>${escapeHTML(item.name)}</strong><small>${escapeHTML(categoryName(item.categoryId))}</small></span>
+                        <span>${formatPrice(item.price)}</span>
+                        <span class="badge ${item.availability === 'available' ? 'badge-green' : 'badge-red'}">${item.availability === 'available' ? 'Aktif' : 'Sold out'}</span>
+                        <time>${index < 2 ? 'Hari ini' : `${index} hari lalu`}</time>
+                        <button class="icon-button" type="button" data-action="edit-item" data-item-id="${escapeHTML(item.id)}" aria-label="Edit ${escapeHTML(item.name)}"><i data-lucide="pencil"></i></button>
+                    </div>
+                `).join('')}
+            </div>
+        </article>
+    `;
+}
+
+function renderLivePreviewWorkspace(context = 'appearance') {
+    const mode = state.preview.mode;
+    const label = mode === 'tablet' ? 'Store Display' : 'Bio Menu';
+    const zoomPercent = Math.round(state.preview.zoom * 100);
+    return `
+        <section class="live-preview-workspace is-${context}" data-live-preview data-mode="${mode}">
+            <header class="live-preview-toolbar">
+                <div>
+                    <span class="eyebrow">Live draft</span>
+                    <h2>${label}</h2>
+                    <p>Perubahan editor langsung terlihat di sini.</p>
+                </div>
+                <div class="live-preview-actions">
+                    <div class="dashboard-preview-tabs" aria-label="Pilih perangkat preview">
+                        <button class="${mode === 'tablet' ? 'is-active' : ''}" type="button" data-action="switch-embedded-preview" data-mode="tablet"><i data-lucide="tablet"></i><span>Store Display</span></button>
+                        <button class="${mode === 'mobile' ? 'is-active' : ''}" type="button" data-action="switch-embedded-preview" data-mode="mobile"><i data-lucide="smartphone"></i><span>Bio Menu</span></button>
+                    </div>
+                    <div class="preview-zoom-controls" aria-label="Ukuran preview">
+                        <button class="icon-button" type="button" data-action="preview-zoom-out" aria-label="Perkecil preview"><i data-lucide="minus"></i></button>
+                        <button class="zoom-value" type="button" data-action="preview-zoom-reset" aria-label="Kembalikan ukuran preview">${zoomPercent}%</button>
+                        <button class="icon-button" type="button" data-action="preview-zoom-in" aria-label="Perbesar preview"><i data-lucide="plus"></i></button>
+                        <button class="icon-button" type="button" data-action="preview-${mode}" aria-label="Buka ${label} ukuran penuh"><i data-lucide="maximize-2"></i></button>
+                    </div>
+                </div>
+            </header>
+            <div class="live-preview-viewport" data-preview-viewport>
+                <div class="live-preview-device is-${mode}" data-preview-device>
+                    ${renderPublicMenu(mode, mode === 'mobile')}
+                </div>
+            </div>
+            <footer class="live-preview-footer">
+                <span><i data-lucide="file-pen-line"></i>Draft versi ${state.publishedVersion + (state.draft ? 1 : 0)}</span>
+                <span>Customer masih melihat versi ${state.publishedVersion}</span>
+            </footer>
+        </section>
+    `;
+}
+
+function editorialFact(icon, title, description, tone) {
+    return `<div><span class="story-fact-icon is-${tone}"><i data-lucide="${icon}"></i></span><strong>${escapeHTML(title)}</strong><small>${escapeHTML(description)}</small></div>`;
+}
+
+function attentionRow(icon, title, description, actionLabel, action, tone, route = false) {
+    return `
+        <div class="attention-row">
+            <span class="attention-icon is-${tone}"><i data-lucide="${icon}"></i></span>
+            <span><strong>${escapeHTML(title)}</strong><small>${escapeHTML(description)}</small></span>
+            <button class="button button-secondary" type="button" ${route ? `data-route="${action}"` : `data-action="${action}"`}>${escapeHTML(actionLabel)}</button>
+        </div>
+    `;
+}
+
+function healthStat(icon, value, label, tone) {
+    return `<div class="health-stat is-${tone}"><span><i data-lucide="${icon}"></i></span><strong>${escapeHTML(String(value))}</strong><small>${escapeHTML(label)}</small></div>`;
+}
+
+function renderEditorialAppearance() {
+    return `
+        ${pageHead(
+            'Pengaturan',
+            'Tampilan & branding',
+            'Perubahan baru tampil publik setelah diterbitkan.',
+            `<button class="button button-secondary" type="button" data-action="reset-demo"><i data-lucide="rotate-ccw"></i><span>Reset</span></button>
+             <button class="button button-primary" type="button" data-action="save-appearance"><i data-lucide="save"></i><span>Simpan tampilan</span></button>`,
+        )}
+        <section class="appearance-workspace">
+            <article class="appearance-controls">
+                <section class="setting-section">
+                    <h3>Preset</h3>
+                    <div class="preset-grid editorial-presets">
+                        ${presetButton('editorial', 'Editorial KV', 'Hangat dan operasional', '#236354', '#f3f5f1')}
+                        ${presetButton('warm', 'Warm Minimal', 'Lembut dan familiar', '#a4492d', '#f7f3ed')}
+                        ${presetButton('clean', 'Clean Premium', 'Terang dan presisi', '#1f5e52', '#f3f6f4')}
+                    </div>
+                </section>
+                <section class="setting-section">
+                    <h3>Warna brand</h3>
+                    <div class="color-grid">
+                        ${colorField('primary', 'Warna utama', state.appearance.primary)}
+                        ${colorField('accent', 'Warna aksen', state.appearance.accent)}
+                        ${colorField('paper', 'Latar belakang', state.appearance.paper)}
+                    </div>
+                    <div class="contrast-result is-safe"><i data-lucide="circle-check"></i><span>Kontras aman untuk teks utama.</span></div>
+                </section>
+                <section class="setting-section">
+                    <h3>Tipografi</h3>
+                    <label class="field"><span>Heading font</span><select><option>Manrope Bold</option><option>Brand font</option></select></label>
+                    <label class="field"><span>Body font</span><select><option>Manrope Regular</option></select></label>
+                </section>
+                <section class="setting-section">
+                    <h3>Font brand</h3>
+                    <label class="upload-box compact-upload">
+                        <i data-lucide="upload-cloud"></i>
+                        <strong>${state.appearance.customFontName ? escapeHTML(state.appearance.customFontName) : 'Unggah WOFF/WOFF2'}</strong>
+                        <span>Fallback: Manrope</span>
+                        <input type="file" accept=".woff,.woff2,font/woff,font/woff2" data-font-upload>
+                    </label>
+                    ${state.appearance.customFontName ? '<button class="text-action remove-font-action" type="button" data-action="remove-custom-font">Hapus font dan gunakan fallback</button>' : ''}
+                </section>
+                <section class="setting-section">
+                    <h3>Tampilan item</h3>
+                    <div class="dashboard-preview-tabs">
+                        <button class="${state.appearance.itemLayout === 'list' ? 'is-active' : ''}" type="button" data-action="select-item-layout" data-layout="list">Daftar</button>
+                        <button class="${state.appearance.itemLayout === 'photo' ? 'is-active' : ''}" type="button" data-action="select-item-layout" data-layout="photo">Foto besar</button>
+                    </div>
+                </section>
+                <div class="appearance-note"><i data-lucide="info"></i><span>Perubahan tersimpan sebagai draft sampai Anda menerbitkannya.</span></div>
+            </article>
+            ${renderLivePreviewWorkspace('appearance')}
+        </section>
+    `;
+}
+
+function renderAppearanceFrame(mode) {
+    const items = state.items.slice(0, mode === 'tablet' ? 8 : 4);
+    return `
+        <button class="appearance-frame is-${mode}" type="button" data-action="preview-${mode}">
+            <span class="appearance-frame-brand"><b>BC</b><span><strong>Bachelor Coffee</strong><small>${escapeHTML(state.business.tagline || '')}</small></span></span>
+            <span class="appearance-frame-search"><i data-lucide="search"></i>Cari menu</span>
+            <span class="appearance-frame-categories"><b>Signature</b><small>Coffee</small><small>Non-Coffee</small><small>Food</small></span>
+            <span class="appearance-frame-items">
+                ${items.map((item) => `<span><img src="${safeImage(item.image)}" alt=""><b>${escapeHTML(item.name)}</b><small>${formatPrice(item.price)}</small></span>`).join('')}
+            </span>
+        </button>
+    `;
+}
+
+function renderEditorialPublish() {
+    if (publishRunState === 'publishing') {
+        return `
+            ${pageHead('Publikasi', 'Menerbitkan snapshot', 'Versi live lama tetap aktif selama proses berlangsung.')}
+            <section class="publish-process-state" role="status" aria-live="polite">
+                <div class="publish-progress-icon"><i data-lucide="loader-circle"></i></div>
+                <span class="eyebrow">Langkah 2 dari 3</span>
+                <h2>Memvalidasi dan menyimpan versi baru</h2>
+                <p>Draft sedang dibentuk menjadi snapshot atomik. Jangan tutup halaman ini.</p>
+                <div class="publish-progress-track"><span></span></div>
+                <ol>
+                    <li class="is-complete"><i data-lucide="check"></i>Validasi konten</li>
+                    <li class="is-active"><i data-lucide="loader-circle"></i>Simpan snapshot</li>
+                    <li><i data-lucide="circle"></i>Aktifkan versi</li>
+                </ol>
+            </section>
+        `;
+    }
+    if (publishRunState === 'failed') {
+        return `
+            ${pageHead('Publikasi', 'Publish belum berhasil', 'Versi live lama tidak berubah.')}
+            <section class="publish-process-state is-error" role="alert">
+                <img src="assets/illustrations/safe-error.webp" alt="" width="640" height="640">
+                <span class="eyebrow">Safe failure</span>
+                <h2>Draft tidak dapat diterbitkan</h2>
+                <p>${escapeHTML(publishFailureMessage || 'Koneksi terputus saat menyimpan snapshot.')}</p>
+                <div class="safe-live-version"><i data-lucide="shield-check"></i><span><strong>Versi ${state.publishedVersion} tetap aktif</strong><small>${escapeHTML(state.lastPublished)}</small></span></div>
+                <div class="page-actions">
+                    <button class="button button-secondary" type="button" data-action="cancel-publish-failure">Kembali ke checklist</button>
+                    <button class="button button-primary" type="button" data-action="publish-now"><i data-lucide="refresh-cw"></i><span>Coba lagi</span></button>
+                </div>
+            </section>
+        `;
+    }
+    if (!state.draft) return renderEditorialPublishSuccess();
+    const available = state.items.filter((item) => item.availability === 'available').length;
+    const soldOut = state.items.length - available;
+
+    return `
+        ${pageHead('Publikasi', 'Preview & Publish', 'Periksa perubahan sebelum menerbitkan satu snapshot baru.')}
+        <section class="editorial-publish-grid">
+            <div class="publish-readiness">
+                <div class="publish-meta-line"><span><i data-lucide="briefcase-business"></i>Bachelor Coffee</span><span>Draft versi <b>v${state.publishedVersion + 1}</b></span><span>Terakhir diterbitkan ${escapeHTML(state.lastPublished)}</span></div>
+                <article class="panel">
+                    <header class="panel-header publish-check-header">
+                        <div><h2>Pemeriksaan sebelum terbit</h2><p>Pastikan menu siap dilihat customer.</p></div>
+                        <div class="publish-kv-mini" aria-hidden="true"><span></span><i>✓</i><b>→</b><em></em></div>
+                    </header>
+                    <div class="publish-check-list">
+                        ${publishCheck('circle-check', 'Informasi catalog lengkap', 'Nama, deskripsi, kategori, harga, dan media sudah lengkap.', 'success')}
+                        ${publishCheck('circle-check', `${available} item siap ditampilkan`, 'Semua item aktif memiliki foto utama.', 'success')}
+                        ${publishCheck('info', `${soldOut} item sold out`, 'Item sold out tetap memiliki label yang jelas.', 'info')}
+                        ${publishCheck('triangle-alert', 'Font brand memakai fallback', 'Periksa tampilan pada perangkat yang tidak mendukung font.', 'warning', 'Tinjau font', 'appearance')}
+                    </div>
+                </article>
+                <article class="panel">
+                    <header class="panel-header"><div><h2>Perubahan dalam versi ini</h2><p>7 perubahan oleh Andreas</p></div></header>
+                    <div class="change-list">
+                        ${changeRow('pencil', '3 item', 'Es Kopi Susu Aren, Matcha Cream, Avocado Toast', 'Hari ini 10.32')}
+                        ${changeRow('list-ordered', '1 kategori', 'Urutan kategori diperbarui', 'Hari ini 10.28')}
+                        ${changeRow('palette', '1 tampilan', 'Warna brand dan layout item', 'Hari ini 10.15')}
+                        ${changeRow('circle-check', '2 ketersediaan', 'Status item diperbarui', 'Hari ini 09.58')}
+                    </div>
+                </article>
+            </div>
+            <aside class="publish-action-rail">
+                <article class="panel">
+                    <div class="dashboard-preview-tabs"><button class="is-active" type="button" data-action="preview-tablet">Preview Tablet</button><button type="button" data-action="preview-mobile">Preview Mobile</button></div>
+                    ${renderAppearanceFrame('tablet')}
+                </article>
+                <article class="panel release-scope">
+                    <h3>Cakupan rilis</h3>
+                    <div><span>Item</span><strong>${state.items.length}</strong></div>
+                    <div><span>Kategori</span><strong>${visibleCategories().length}</strong></div>
+                    <div><span>Media</span><strong>18</strong></div>
+                    <div class="maintenance-control editorial-maintenance-control">
+                        <span>
+                            <strong>Mode maintenance</strong>
+                            <small>Sembunyikan katalog publik sementara tanpa menghapus draft.</small>
+                        </span>
+                        <button class="toggle" type="button" role="switch" aria-checked="${state.maintenance}" data-action="toggle-maintenance" aria-label="Mode maintenance"></button>
+                    </div>
+                    <label class="field"><span>Catatan versi (opsional)</span><textarea rows="3" placeholder="Tuliskan ringkasan perubahan versi ini..."></textarea></label>
+                    <button class="button button-primary publish-action-button" type="button" data-action="publish-now"><span>Terbitkan perubahan</span><i data-lucide="send"></i></button>
+                    <button class="button button-secondary prototype-failure-action" type="button" data-action="simulate-publish-failure"><i data-lucide="flask-conical"></i><span>Uji safe failure</span></button>
+                    <p class="publish-safety"><i data-lucide="lock-keyhole"></i><span>Versi publik saat ini tetap aktif sampai proses terbit berhasil.</span></p>
+                </article>
+            </aside>
+        </section>
+    `;
+}
+
+function publishCheck(icon, title, description, tone, actionLabel = '', route = '') {
+    return `
+        <div class="publish-check-row is-${tone}">
+            <span><i data-lucide="${icon}"></i></span>
+            <div><strong>${escapeHTML(title)}</strong><small>${escapeHTML(description)}</small></div>
+            ${actionLabel ? `<button class="button button-secondary" type="button" data-route="${route}">${escapeHTML(actionLabel)}</button>` : ''}
+        </div>
+    `;
+}
+
+function changeRow(icon, title, description, time) {
+    return `<div class="change-row"><span><i data-lucide="${icon}"></i></span><strong>${escapeHTML(title)}</strong><p>${escapeHTML(description)}</p><time>${escapeHTML(time)}</time><small>Andreas</small></div>`;
+}
+
+function renderEditorialPublishSuccess() {
+    const mobileUrl = `${window.location.origin}${window.location.pathname}#preview-mobile`;
+    return `
+        ${pageHead('Publikasi', 'Berhasil diterbitkan', `Versi v${state.publishedVersion} sekarang aktif.`)}
+        <section class="publish-success-grid">
+            <div>
+                <article class="success-hero-panel">
+                    <div class="success-copy">
+                        <span class="success-mark"><i data-lucide="check"></i></span>
+                        <div><h2>Menu berhasil diterbitkan</h2><strong>Versi v${state.publishedVersion} sekarang aktif</strong><p>Diterbitkan ${escapeHTML(state.lastPublished)} oleh Andreas.</p></div>
+                    </div>
+                    <img class="success-art" src="assets/illustrations/publish-success.webp" alt="" width="640" height="640">
+                    <p class="success-info"><i data-lucide="info"></i><span>Store Display dan Bio Menu sudah menggunakan versi terbaru.</span></p>
+                    <div class="success-actions">
+                        <button class="button button-primary" type="button" data-action="preview-tablet"><i data-lucide="external-link"></i><span>Lihat menu publik</span></button>
+                        <button class="button button-secondary" type="button" data-action="copy-mobile-link"><i data-lucide="copy"></i><span>Salin link publik</span></button>
+                        <button class="button button-secondary" type="button" data-action="preview-mobile"><i data-lucide="qr-code"></i><span>Lihat QR</span></button>
+                    </div>
+                </article>
+                <article class="panel publication-history">
+                    <header class="panel-header"><div><h2>Riwayat publikasi</h2><p>Versi sebelumnya tetap tersimpan</p></div></header>
+                    <div class="history-row"><strong>v${state.publishedVersion}</strong><span class="badge badge-green">Aktif</span><p>${escapeHTML(state.lastPublished)}</p><small>Andreas</small></div>
+                    <div class="history-row"><strong>v${Math.max(1, state.publishedVersion - 1)}</strong><span class="badge badge-blue">Tersimpan</span><p>20 Jul 2026, 11.32 WIB</p><small>Andreas</small></div>
+                </article>
+            </div>
+            <aside class="success-share-rail">
+                <article class="panel">
+                    <header class="panel-header"><div><h2>Menu publik</h2><p>Dua surface sudah diperbarui</p></div></header>
+                    <div class="success-preview-pair">${renderAppearanceFrame('tablet')}${renderAppearanceFrame('mobile')}</div>
+                </article>
+                <article class="panel">
+                    <h3>Bagikan menu publik</h3>
+                    ${shareRow('tablet', 'Store Display', mobileUrl.replace('#preview-mobile', '#preview-tablet'), 'copy-tablet-link')}
+                    ${shareRow('smartphone', 'Bio Menu', mobileUrl, 'copy-mobile-link')}
+                </article>
+                <article class="safe-history-note"><i data-lucide="shield-check"></i><span><strong>Aman & tersimpan</strong><small>Versi sebelumnya tetap tersedia di riwayat publikasi.</small></span></article>
+            </aside>
+        </section>
+    `;
+}
+
 function renderPublicMenu(mode, compact = false) {
+    const layoutClass = `is-layout-${state.appearance.itemLayout}`;
     if (state.maintenance) {
         return `
-            <div class="public-menu maintenance-page" style="${appearanceStyle()}">
+            <div class="public-menu maintenance-page ${layoutClass}" style="${appearanceStyle()}">
                 <div class="maintenance-card">
                     <span class="public-brand-mark">SC</span>
+                    <img src="assets/illustrations/maintenance.webp" alt="" width="640" height="640">
                     <h2>Menu sedang maintenance</h2>
                     <p>Kami sedang menyiapkan kembali tampilan menu. Silakan coba beberapa saat lagi.</p>
                 </div>
@@ -852,12 +1291,19 @@ function appearanceStyle() {
 
 function renderMobileMenu(categories, compact) {
     return `
-        <div class="public-menu" style="${appearanceStyle()}" data-public-menu>
+        <div class="public-menu is-layout-${escapeHTML(state.appearance.itemLayout)}" style="${appearanceStyle()}" data-public-menu>
             <header class="public-mobile-header">
-                <span class="public-brand-mark">SC</span>
-                <span class="public-open">Buka sekarang</span>
+                <div class="public-mobile-brand-row">
+                    <span class="public-brand-mark">BC</span>
+                    <span class="public-open">Buka sekarang</span>
+                </div>
+                <span class="public-surface-label">Bio Menu</span>
                 <h1>${escapeHTML(state.business.name)}</h1>
-                <p>Kopi pilihan, comfort food, dan seasonal menu untuk waktu santai di Madiun.</p>
+                <p>${escapeHTML(state.business.tagline)}</p>
+                <div class="public-business-note">
+                    <span><i data-lucide="clock-3"></i>${escapeHTML(state.business.hours)}</span>
+                    <span><i data-lucide="map-pin"></i>Madiun</span>
+                </div>
             </header>
             <div class="mobile-public-body">
                 <label class="public-search">
@@ -880,11 +1326,11 @@ function renderMobileMenu(categories, compact) {
 
 function renderTabletMenu(categories) {
     return `
-        <div class="public-menu" style="${appearanceStyle()}" data-public-menu>
+        <div class="public-menu is-layout-${escapeHTML(state.appearance.itemLayout)}" style="${appearanceStyle()}" data-public-menu>
             <header class="tablet-public-header">
                 <div class="tablet-brand">
-                    <span class="public-brand-mark">SC</span>
-                    <div><h1>${escapeHTML(state.business.name)}</h1><p>Kopi pilihan, comfort food, dan seasonal menu untuk waktu santai di Madiun.</p></div>
+                    <span class="public-brand-mark">BC</span>
+                    <div><span class="public-surface-label">Store Display</span><h1>${escapeHTML(state.business.name)}</h1><p>${escapeHTML(state.business.tagline)}</p></div>
                 </div>
                 <div class="tablet-meta">
                     <div><span>JAM BUKA</span><strong>${escapeHTML(state.business.hours)}</strong></div>
@@ -908,7 +1354,7 @@ function renderPromoBanner() {
     const promo = state.items.find((item) => item.badge === 'Promo') || state.items[0];
     return `
         <button class="promo-banner" type="button" data-public-item="${escapeHTML(promo.id)}">
-            <span class="promo-copy"><span>Promo pilihan</span><strong>${escapeHTML(promo.name)}</strong><p>${escapeHTML(promo.description)}</p></span>
+            <span class="promo-copy"><span>Pilihan minggu ini</span><strong>${escapeHTML(promo.name)}</strong><p>${escapeHTML(promo.description)}</p></span>
             <img src="${safeImage(promo.image)}" alt="">
         </button>
     `;
@@ -948,6 +1394,8 @@ function renderPublicCard(item, mode) {
 
 function showPreview(mode) {
     previewMode = mode;
+    state.preview.mode = mode;
+    persistUiState();
     previewShell.hidden = false;
     document.querySelector('[data-dashboard]').hidden = true;
     document.body.classList.add('modal-open');
@@ -978,13 +1426,27 @@ function openItemEditor(itemId = '') {
     itemForm.elements.image.value = item?.image || '';
     itemForm.elements.badge.value = item?.badge || '';
     itemForm.elements.availability.value = item?.availability || 'available';
-    itemForm.elements.milkOptions.checked = Boolean(item?.milkOptions);
-    itemForm.elements.extraOptions.checked = Boolean(item?.extraOptions);
     itemForm.elements.containsMilk.checked = Boolean(item?.containsMilk);
     itemForm.querySelector('[data-editor-title]').textContent = item ? 'Edit menu' : 'Tambah menu';
+    itemForm.querySelector('[data-editor-preview-name]').textContent = item?.name || 'Item baru';
+    itemForm.querySelector('[data-editor-preview-price]').textContent = formatPrice(item?.price || 28000);
+    itemForm.querySelector('[data-editor-preview-description]').textContent = item?.description || 'Deskripsi item akan tampil di sini.';
+    const editorPreviewImage = itemForm.querySelector('[data-editor-preview-image]');
+    editorPreviewImage.src = safeImage(item?.image || FALLBACK_IMAGE);
+    editorPreviewImage.alt = item?.name || '';
     const categorySelect = itemForm.querySelector('[data-category-select]');
     categorySelect.innerHTML = state.categories.map((category) => `<option value="${escapeHTML(category.id)}">${escapeHTML(category.name)}</option>`).join('');
     categorySelect.value = item?.categoryId || state.categories[0]?.id || '';
+    const selectedGroups = item?.addonGroupIds || [
+        ...(item?.milkOptions ? ['milk'] : []),
+        ...(item?.extraOptions ? ['extras'] : []),
+    ];
+    itemForm.querySelector('[data-addon-attachment-options]').innerHTML = state.addonGroups.map((group) => `
+        <label>
+            <input type="checkbox" name="addonGroupIds" value="${escapeHTML(group.id)}" ${selectedGroups.includes(group.id) ? 'checked' : ''}>
+            <span><strong>${escapeHTML(group.name)}</strong><small>${escapeHTML(group.description)}</small></span>
+        </label>
+    `).join('');
     itemEditor.showModal();
     document.body.classList.add('modal-open');
     window.setTimeout(() => itemForm.elements.name.focus(), 30);
@@ -995,14 +1457,53 @@ function closeItemEditor() {
     document.body.classList.remove('modal-open');
 }
 
-function openSimpleDialog({ eyebrow, title, fields, submit }) {
+function openSimpleDialog({ eyebrow, title, fields, submit, submitLabel = 'Simpan' }) {
     simpleDialog.querySelector('[data-simple-eyebrow]').textContent = eyebrow;
     simpleDialog.querySelector('[data-simple-title]').textContent = title;
     simpleDialog.querySelector('[data-simple-fields]').innerHTML = fields;
+    simpleDialog.querySelector('[data-simple-submit-label]').textContent = submitLabel;
     simpleDialogHandler = submit;
     simpleDialog.showModal();
     document.body.classList.add('modal-open');
     window.setTimeout(() => simpleForm.querySelector('input, textarea')?.focus(), 30);
+}
+
+function openBusinessSwitcher() {
+    openSimpleDialog({
+        eyebrow: 'Workspace',
+        title: 'Pilih bisnis',
+        submitLabel: 'Selesai',
+        fields: `
+            <button class="business-option is-active" type="submit">
+                <span class="business-logo">BC</span>
+                <span><strong>${escapeHTML(state.business.name)}</strong><small>Menu utama · ${escapeHTML(state.business.location)}</small></span>
+                <i data-lucide="check"></i>
+            </button>
+            <p class="dialog-helper">Prototype review menggunakan satu bisnis. Multi-business akan mengikuti entitlement SaaS.</p>
+        `,
+        submit: () => toast('Workspace aktif', `${state.business.name} tetap dipilih.`),
+    });
+    refreshIcons();
+}
+
+function openProfileDialog() {
+    openSimpleDialog({
+        eyebrow: 'Akun owner',
+        title: 'Profil Andreas',
+        submitLabel: 'Tutup',
+        fields: `
+            <div class="profile-summary">
+                <span class="avatar">AS</span>
+                <span><strong>Andreas</strong><small>Owner · akses penuh</small></span>
+            </div>
+            <dl class="profile-metadata">
+                <div><dt>Bisnis aktif</dt><dd>${escapeHTML(state.business.name)}</dd></div>
+                <div><dt>Status</dt><dd>Trial aktif · 9 hari tersisa</dd></div>
+                <div><dt>Session</dt><dd>Prototype lokal browser</dd></div>
+            </dl>
+        `,
+        submit: () => {},
+    });
 }
 
 function closeSimpleDialog() {
@@ -1052,6 +1553,10 @@ function addonDialog(addonId = '') {
             <input type="hidden" name="entityId" value="${escapeHTML(group?.id || '')}">
             <label class="field"><span>Nama grup</span><input name="name" required maxlength="60" value="${escapeHTML(group?.name || '')}" placeholder="Contoh: Level pedas"></label>
             <label class="field" style="margin-top:14px"><span>Deskripsi</span><input name="description" maxlength="120" value="${escapeHTML(group?.description || '')}" placeholder="Keterangan singkat"></label>
+            <div class="form-grid" style="margin-top:14px">
+                <label class="field"><span>Jenis pilihan</span><select name="type"><option value="single" ${group?.type === 'single' ? 'selected' : ''}>Pilih satu</option><option value="multiple" ${group?.type !== 'single' ? 'selected' : ''}>Pilih beberapa</option></select></label>
+                <label class="field"><span>Maksimum pilihan</span><input name="max" type="number" min="1" max="20" value="${escapeHTML(group?.max || group?.values.length || 1)}"></label>
+            </div>
             <label class="field" style="margin-top:14px"><span>Pilihan, satu per baris</span><textarea name="values" required rows="6" placeholder="Regular|0&#10;Large|8000">${escapeHTML(lines)}</textarea><small>Format: Nama|Harga</small></label>
         `,
         submit: (formData) => {
@@ -1068,12 +1573,18 @@ function addonDialog(addonId = '') {
                 const existing = state.addonGroups.find((entry) => entry.id === id);
                 existing.name = String(formData.get('name'));
                 existing.description = String(formData.get('description'));
+                existing.type = String(formData.get('type')) === 'single' ? 'single' : 'multiple';
+                existing.min = 0;
+                existing.max = Math.min(values.length, Math.max(1, Number(formData.get('max') || 1)));
                 existing.values = values;
             } else {
                 state.addonGroups.push({
                     id: `${slugify(formData.get('name'))}-${Date.now().toString(36).slice(-4)}`,
                     name: String(formData.get('name')),
                     description: String(formData.get('description')),
+                    type: String(formData.get('type')) === 'single' ? 'single' : 'multiple',
+                    min: 0,
+                    max: Math.min(values.length, Math.max(1, Number(formData.get('max') || 1))),
                     values,
                 });
             }
@@ -1087,9 +1598,11 @@ function addonDialog(addonId = '') {
 function openDetail(itemId) {
     const item = state.items.find((entry) => entry.id === itemId);
     if (!item) return;
-    const groups = [];
-    if (item.milkOptions) groups.push(state.addonGroups.find((group) => group.id === 'milk') || state.addonGroups[0]);
-    if (item.extraOptions) groups.push(state.addonGroups.find((group) => group.id === 'extras') || state.addonGroups[1]);
+    const groupIds = item.addonGroupIds || [
+        ...(item.milkOptions ? ['milk'] : []),
+        ...(item.extraOptions ? ['extras'] : []),
+    ];
+    const groups = groupIds.map((id) => state.addonGroups.find((group) => group.id === id)).filter(Boolean);
     detailDialog.querySelector('[data-detail-content]').innerHTML = `
         <div class="detail-layout">
             <img class="detail-image" src="${safeImage(item.image)}" alt="${escapeHTML(item.name)}">
@@ -1145,6 +1658,15 @@ function bindViewEvents() {
     });
 
     document.querySelector('[data-font-upload]')?.addEventListener('change', handleFontUpload);
+    document.querySelector('[data-analytics-period]')?.addEventListener('change', (event) => {
+        state.analyticsPeriod = ['7', '30', '90'].includes(event.target.value) ? event.target.value : '30';
+        persistUiState();
+        render();
+    });
+    document.querySelectorAll('[data-live-preview]').forEach((workspace) => {
+        bindPublicEvents(workspace);
+    });
+    window.requestAnimationFrame(refreshEmbeddedPreviewScales);
 }
 
 function filterMenuTable() {
@@ -1162,36 +1684,61 @@ function filterMenuTable() {
     document.querySelector('[data-menu-empty]').hidden = visible > 0;
 }
 
-function bindPublicEvents() {
-    previewStage.querySelectorAll('[data-public-category]').forEach((button) => {
+function bindPublicEvents(root = previewStage) {
+    root.querySelectorAll('[data-public-category]').forEach((button) => {
         button.addEventListener('click', () => {
-            previewStage.querySelectorAll('[data-public-category]').forEach((entry) => entry.classList.remove('is-active'));
+            root.querySelectorAll('[data-public-category]').forEach((entry) => entry.classList.remove('is-active'));
             button.classList.add('is-active');
             const category = button.dataset.publicCategory;
-            previewStage.querySelectorAll('[data-public-section]').forEach((section) => {
+            root.querySelectorAll('[data-public-section]').forEach((section) => {
                 section.hidden = Boolean(category) && section.dataset.publicSection !== category;
             });
         });
     });
-    previewStage.querySelector('[data-public-search]')?.addEventListener('input', (event) => {
+    root.querySelector('[data-public-search]')?.addEventListener('input', (event) => {
         const term = event.target.value.trim().toLocaleLowerCase('id');
-        previewStage.querySelectorAll('[data-public-card]').forEach((card) => {
+        root.querySelectorAll('[data-public-card]').forEach((card) => {
             card.hidden = Boolean(term) && !card.dataset.name.includes(term);
         });
-        previewStage.querySelectorAll('[data-public-section]').forEach((section) => {
+        root.querySelectorAll('[data-public-section]').forEach((section) => {
             section.hidden = !section.querySelector('[data-public-card]:not([hidden])');
         });
     });
-    previewStage.querySelectorAll('[data-public-item]').forEach((button) => {
+    root.querySelectorAll('[data-public-item]').forEach((button) => {
         button.addEventListener('click', () => openDetail(button.dataset.publicItem));
+    });
+}
+
+function refreshEmbeddedPreviewScales() {
+    document.querySelectorAll('[data-live-preview]').forEach((workspace) => {
+        const viewport = workspace.querySelector('[data-preview-viewport]');
+        const device = workspace.querySelector('[data-preview-device]');
+        if (!viewport || !device) return;
+        const mobile = workspace.dataset.mode === 'mobile';
+        const logicalWidth = mobile ? 390 : 1024;
+        const logicalHeight = mobile ? 844 : 768;
+        const availableWidth = Math.max(1, viewport.clientWidth - 32);
+        const availableHeight = Math.max(1, viewport.clientHeight - 32);
+        const fitScale = Math.min(availableWidth / logicalWidth, availableHeight / logicalHeight);
+        const scale = Math.max(.2, fitScale * state.preview.zoom);
+        device.style.width = `${logicalWidth}px`;
+        device.style.height = `${logicalHeight}px`;
+        device.style.transform = `translateX(-50%) scale(${scale})`;
     });
 }
 
 function handleFontUpload(event) {
     const file = event.target.files?.[0];
     if (!file) return;
+    const extension = file.name.split('.').pop()?.toLocaleLowerCase('en') || '';
+    if (!['woff', 'woff2'].includes(extension)) {
+        toast('Format font tidak didukung', 'Gunakan file WOFF atau WOFF2.');
+        event.target.value = '';
+        return;
+    }
     if (file.size > 2 * 1024 * 1024) {
         toast('Font terlalu besar', 'Gunakan file maksimum 2 MB.');
+        event.target.value = '';
         return;
     }
     const reader = new FileReader();
@@ -1218,20 +1765,34 @@ async function copyLink(mode) {
     }
 }
 
-function publishNow() {
-    state.draft = false;
-    state.publishedVersion += 1;
-    state.lastPublished = new Intl.DateTimeFormat('id-ID', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        timeZone: 'Asia/Jakarta',
-    }).format(new Date()).replace('.', ':') + ' WIB';
-    persistState({ markDraft: false });
+function publishNow({ forceFailure = false } = {}) {
+    if (!state.draft || publishRunState === 'publishing') return;
+    publishRunState = 'publishing';
     render();
-    toast('Menu berhasil dipublish', `Versi ${state.publishedVersion} sekarang aktif.`);
+    window.setTimeout(() => {
+        if (forceFailure) {
+            publishRunState = 'failed';
+            publishFailureMessage = 'Simulasi prototype: penyimpanan snapshot dihentikan sebelum versi live berubah.';
+            render();
+            return;
+        }
+        state.publishedSnapshot = buildSnapshot(state);
+        state.draft = false;
+        state.publishedVersion += 1;
+        state.lastPublished = new Intl.DateTimeFormat('id-ID', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            timeZone: 'Asia/Jakarta',
+        }).format(new Date()).replace('.', ':') + ' WIB';
+        publishRunState = 'idle';
+        publishFailureMessage = '';
+        persistState({ markDraft: false });
+        render();
+        toast('Menu berhasil dipublish', `Versi ${state.publishedVersion} sekarang aktif.`);
+    }, 900);
 }
 
 function closeSidebar() {
@@ -1264,8 +1825,51 @@ document.addEventListener('click', (event) => {
     if (action === 'close-preview') closePreview();
     if (action === 'open-publish') routeTo('publish');
     if (action === 'publish-now') publishNow();
+    if (action === 'simulate-publish-failure') publishNow({ forceFailure: true });
+    if (action === 'cancel-publish-failure') {
+        publishRunState = 'idle';
+        publishFailureMessage = '';
+        render();
+    }
     if (action === 'copy-mobile-link') copyLink('mobile');
     if (action === 'copy-tablet-link') copyLink('tablet');
+    if (action === 'open-business-switcher') openBusinessSwitcher();
+    if (action === 'open-profile') openProfileDialog();
+
+    if (action === 'switch-embedded-preview') {
+        state.preview.mode = actionButton.dataset.mode === 'mobile' ? 'mobile' : 'tablet';
+        persistUiState();
+        render();
+    }
+
+    if (action === 'preview-zoom-in' || action === 'preview-zoom-out' || action === 'preview-zoom-reset') {
+        const delta = action === 'preview-zoom-in' ? .1 : action === 'preview-zoom-out' ? -.1 : 0;
+        state.preview.zoom = action === 'preview-zoom-reset'
+            ? 1
+            : Math.min(1.3, Math.max(.7, Number((state.preview.zoom + delta).toFixed(1))));
+        persistUiState();
+        render();
+    }
+
+    if (action === 'select-item-layout') {
+        state.appearance.itemLayout = actionButton.dataset.layout === 'list' ? 'list' : 'photo';
+        persistState();
+        render();
+        toast('Layout preview diperbarui', state.appearance.itemLayout === 'list' ? 'Mode daftar aktif.' : 'Mode foto besar aktif.');
+    }
+
+    if (action === 'save-appearance') {
+        persistState();
+        render();
+        toast('Tampilan disimpan', 'Perubahan tetap sebagai draft sampai diterbitkan.');
+    }
+
+    if (action === 'remove-custom-font') {
+        state.appearance.customFontName = '';
+        persistState();
+        render();
+        toast('Font dihapus', 'Preview kembali menggunakan Manrope.');
+    }
 
     if (action === 'toggle-sidebar') {
         document.querySelector('.sidebar')?.classList.toggle('is-open');
@@ -1274,7 +1878,11 @@ document.addEventListener('click', (event) => {
 
     if (action === 'reset-demo' && window.confirm('Reset semua perubahan prototype di browser ini?')) {
         state = cloneDefaultState();
+        state.publishedSnapshot = buildSnapshot(state);
         localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(LEGACY_STORAGE_KEY);
+        publishRunState = 'idle';
+        publishFailureMessage = '';
         closePreview();
         routeTo('overview');
         toast('Demo direset', 'Data kembali ke kondisi awal.');
@@ -1298,6 +1906,22 @@ document.addEventListener('click', (event) => {
         }
     }
 
+    if (action === 'duplicate-item') {
+        const item = state.items.find((entry) => entry.id === actionButton.dataset.itemId);
+        if (item) {
+            const copy = {
+                ...JSON.parse(JSON.stringify(item)),
+                id: `${item.id}-copy-${Date.now().toString(36).slice(-4)}`,
+                name: `${item.name} Copy`,
+                badge: 'Draft copy',
+            };
+            state.items.unshift(copy);
+            persistState();
+            render();
+            toast('Menu diduplikat', `${copy.name} masuk ke draft.`);
+        }
+    }
+
     if (action === 'toggle-category') {
         const category = state.categories.find((entry) => entry.id === actionButton.dataset.categoryId);
         category.visible = !category.visible;
@@ -1315,8 +1939,41 @@ document.addEventListener('click', (event) => {
         }
     }
 
+    if (action === 'move-category-down') {
+        const index = state.categories.findIndex((entry) => entry.id === actionButton.dataset.categoryId);
+        if (index >= 0 && index < state.categories.length - 1) {
+            [state.categories[index], state.categories[index + 1]] = [state.categories[index + 1], state.categories[index]];
+            persistState();
+            render();
+            toast('Urutan kategori diperbarui', 'Preview mengikuti urutan terbaru.');
+        }
+    }
+
+    if (action === 'delete-category') {
+        const category = state.categories.find((entry) => entry.id === actionButton.dataset.categoryId);
+        const inUse = state.items.filter((item) => item.categoryId === category?.id).length;
+        if (!category) return;
+        if (inUse > 0) {
+            toast('Kategori masih digunakan', `Pindahkan ${inUse} menu sebelum menghapus ${category.name}.`);
+            return;
+        }
+        if (window.confirm(`Hapus kategori ${category.name}?`)) {
+            state.categories = state.categories.filter((entry) => entry.id !== category.id);
+            persistState();
+            render();
+            toast('Kategori dihapus', 'Perubahan masuk ke draft.');
+        }
+    }
+
     if (action === 'delete-addon') {
         const group = state.addonGroups.find((entry) => entry.id === actionButton.dataset.addonId);
+        const inUse = state.items.filter((item) => item.addonGroupIds?.includes(group?.id)
+            || (group?.id === 'milk' && item.milkOptions)
+            || (group?.id === 'extras' && item.extraOptions)).length;
+        if (group && inUse > 0) {
+            toast('Grup masih digunakan', `Lepaskan dari ${inUse} menu sebelum menghapus ${group.name}.`);
+            return;
+        }
         if (group && window.confirm(`Hapus grup ${group.name}?`)) {
             state.addonGroups = state.addonGroups.filter((entry) => entry.id !== group.id);
             persistState();
@@ -1347,6 +2004,19 @@ document.addEventListener('click', (event) => {
 
 document.querySelector('[data-sidebar-backdrop]').addEventListener('click', closeSidebar);
 
+itemForm.addEventListener('input', () => {
+    const name = itemForm.elements.name.value.trim() || 'Item baru';
+    const price = Math.max(0, Number(itemForm.elements.price.value || 0));
+    const description = itemForm.elements.description.value.trim() || 'Deskripsi item akan tampil di sini.';
+    const image = normalizeImage(itemForm.elements.image.value);
+    itemForm.querySelector('[data-editor-preview-name]').textContent = name;
+    itemForm.querySelector('[data-editor-preview-price]').textContent = formatPrice(price);
+    itemForm.querySelector('[data-editor-preview-description]').textContent = description;
+    const previewImage = itemForm.querySelector('[data-editor-preview-image]');
+    previewImage.src = image;
+    previewImage.alt = name;
+});
+
 itemForm.addEventListener('submit', (event) => {
     event.preventDefault();
     const data = new FormData(itemForm);
@@ -1362,8 +2032,7 @@ itemForm.addEventListener('submit', (event) => {
         image: normalizeImage(String(data.get('image'))),
         badge: String(data.get('badge')),
         availability: String(data.get('availability')),
-        milkOptions: data.get('milkOptions') === 'on',
-        extraOptions: data.get('extraOptions') === 'on',
+        addonGroupIds: data.getAll('addonGroupIds').map(String),
         containsMilk: data.get('containsMilk') === 'on',
     };
     if (existing) {
@@ -1406,6 +2075,7 @@ window.addEventListener('hashchange', () => {
         render();
     }
 });
+window.addEventListener('resize', refreshEmbeddedPreviewScales);
 
 function initialize() {
     const hash = window.location.hash.replace('#', '');

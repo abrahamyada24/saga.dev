@@ -43,7 +43,7 @@ class PublicCatalogTest extends TestCase
     {
         $this->get('/m/saga-coffee/main-menu')
             ->assertOk()
-            ->assertSee('Mobile Catalog')
+            ->assertSee('Bio Menu')
             ->assertSee('Iced Aren Latte')
             ->assertDontSee('WhatsApp Order');
     }

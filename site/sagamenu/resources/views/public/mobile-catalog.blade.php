@@ -1,6 +1,6 @@
 @extends('layouts.public')
 
-@section('title', data_get($payload, 'seo.title').' - Mobile Catalog')
+@section('title', data_get($payload, 'seo.title').' - Bio Menu')
 
 @section('body')
     @php
@@ -12,17 +12,25 @@
                 ->values()->all();
             return $collection;
         })->filter(fn ($collection) => count($collection['offerings']) > 0)->values();
+        $brandInitials = collect(preg_split('/\s+/', trim($organization['name'])))
+            ->filter()
+            ->take(2)
+            ->map(fn ($word) => mb_strtoupper(mb_substr($word, 0, 1)))
+            ->implode('');
     @endphp
 
     <main class="catalog-shell catalog-shell--mobile">
         <header class="mobile-header">
-            <div class="brand-mark" aria-hidden="true">S</div>
-            <p class="surface-label">Mobile Catalog</p>
+            <div class="mobile-brand-row">
+                <div class="brand-mark" aria-hidden="true">{{ $brandInitials }}</div>
+                <span class="open-status">Buka sekarang</span>
+            </div>
+            <p class="surface-label">Bio Menu</p>
             <h1>{{ $organization['name'] }}</h1>
             <p>{{ $catalog['hero_subtitle'] }}</p>
             <dl class="business-strip">
                 <div>
-                    <dt>Buka</dt>
+                    <dt>Jam buka</dt>
                     <dd>{{ data_get($catalog, 'business_info.hours', 'Cek outlet') }}</dd>
                 </div>
                 <div>
@@ -39,7 +47,7 @@
             </label>
             <nav class="collection-rail collection-rail--mobile" aria-label="Kategori menu">
                 @foreach ($collections as $collection)
-                    <a href="#collection-{{ $collection['slug'] }}" data-collection-link="{{ $collection['slug'] }}">
+                    <a class="{{ $loop->first ? 'is-active' : '' }}" href="#collection-{{ $collection['slug'] }}" data-collection-link="{{ $collection['slug'] }}">
                         {{ $collection['name'] }}
                     </a>
                 @endforeach
@@ -64,12 +72,14 @@
                 </section>
             @empty
                 <section class="empty-state">
+                    <img src="{{ asset('assets/illustrations/empty-catalog.webp') }}" alt="" width="640" height="640">
                     <h2>Catalog sedang diperbarui</h2>
                     <p>Coba buka kembali beberapa saat lagi.</p>
                 </section>
             @endforelse
 
             <section class="search-empty" data-search-empty hidden>
+                <img src="{{ asset('assets/illustrations/empty-catalog.webp') }}" alt="" width="640" height="640">
                 <h2>Menu tidak ditemukan</h2>
                 <p>Coba kata yang lebih singkat atau pilih kategori di atas.</p>
                 <button type="button" data-search-reset>Reset pencarian</button>

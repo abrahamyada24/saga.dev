@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="description" content="{{ data_get($payload ?? [], 'seo.description', 'Visual catalog powered by Saga Menu') }}">
-    <meta name="theme-color" content="{{ data_get($payload ?? [], 'catalog.appearance.primary_color', '#a4492d') }}">
+    <meta name="theme-color" content="{{ data_get($payload ?? [], 'catalog.appearance.primary_color', '#236354') }}">
     @if (($surface ?? 'mobile') === 'store' || ($isPreview ?? false))
         <meta name="robots" content="noindex, nofollow">
     @else
@@ -30,9 +30,9 @@
         }
         @endif
         :root {
-            --brand-primary: {{ $safeColor(data_get($appearance, 'primary_color'), '#a4492d') }};
-            --brand-accent: {{ $safeColor(data_get($appearance, 'accent_color'), '#28665b') }};
-            --brand-paper: {{ $safeColor(data_get($appearance, 'paper_color'), '#f7f3ed') }};
+            --brand-primary: {{ $safeColor(data_get($appearance, 'primary_color'), '#236354') }};
+            --brand-accent: {{ $safeColor(data_get($appearance, 'accent_color'), '#cbf45a') }};
+            --brand-paper: {{ $safeColor(data_get($appearance, 'paper_color'), '#f3f5f1') }};
             --brand-heading-font: {{ data_get($appearance, 'custom_font_enabled') ? "'SagaCustom'" : "'{$headingFont}'" }}, ui-sans-serif, system-ui, sans-serif;
             --brand-body-font: '{{ $bodyFont }}', ui-sans-serif, system-ui, sans-serif;
         }

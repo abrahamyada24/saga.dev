@@ -5,7 +5,8 @@
     "scripts": {
         "build": "vite build",
         "dev": "vite",
-        "qa:auth": "node scripts/qa-auth.mjs"
+        "qa:auth": "node scripts/qa-auth.mjs",
+        "qa:admin": "node scripts/qa-admin-editorial.mjs"
     },
     "devDependencies": {
         "@tailwindcss/vite": "^4.0.0",

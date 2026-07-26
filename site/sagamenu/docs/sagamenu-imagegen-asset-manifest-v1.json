@@ -1,0 +1,713 @@
+{
+  "manifest_version": "1.0.0",
+  "product": "SagaMenu",
+  "visual_dna": "SagaMenu Fun Ops v1",
+  "created_at": "2026-07-25",
+  "status": "implemented_local_qa_passed",
+  "generation_started": true,
+  "selected_direction": {
+    "name": "Editorial KV Ops",
+    "refinement": 2,
+    "selected_at": "2026-07-25",
+    "reference_file": "docs/design-references/sagamenu-editorial-kv-ops-dashboard-selected-v1.png",
+    "implementation_status": "implemented_local_qa_passed"
+  },
+  "product_constraints": [
+    "preview_only",
+    "no_ordering",
+    "no_cart",
+    "no_checkout",
+    "store_display_categories_on_top",
+    "bio_menu_mobile_first",
+    "restricted_accounts_show_maintenance",
+    "no_visitor_level_analytics"
+  ],
+  "palette": {
+    "ink": "#171D1A",
+    "canvas": "#F3F5F1",
+    "surface": "#FFFFFF",
+    "primary": "#236354",
+    "terracotta": "#B34F32",
+    "lime": "#CBF45A",
+    "yellow": "#F4D35E",
+    "pink": "#E9A7CB",
+    "blue": "#A9C6F5",
+    "mint": "#CDEBDD",
+    "danger": "#A23D3D",
+    "line": "#DCE2DE"
+  },
+  "reference_images": [
+    {
+      "id": "R1",
+      "file": "C:/Users/Windows 11/Downloads/cf1749b03232343876ebdf35582de80e.jpg",
+      "width": 736,
+      "height": 552,
+      "role": "dashboard_structure_dark_sidebar_lime_active"
+    },
+    {
+      "id": "R2",
+      "file": "C:/Users/Windows 11/Downloads/336055ecaef025de4fdf04079972d5c8.jpg",
+      "width": 1200,
+      "height": 900,
+      "role": "semantic_pastel_blocks_context_rail"
+    },
+    {
+      "id": "R3",
+      "file": "C:/Users/Windows 11/Downloads/1c16bae9a511cedb4dc57f1d828c82b8.jpg",
+      "width": 720,
+      "height": 1240,
+      "role": "editorial_illustration_whitespace_lime"
+    },
+    {
+      "id": "R4",
+      "file": "C:/Users/Windows 11/Downloads/a1ba43067ea8796dd0402ac12f567577.jpg",
+      "width": 1200,
+      "height": 900,
+      "role": "category_glyphs_micro_assets_profile_rail"
+    },
+    {
+      "id": "R5",
+      "file": "C:/Users/Windows 11/Downloads/7e0071fc6cba2de756d9c21b41946ac9.jpg",
+      "width": 1199,
+      "height": 758,
+      "role": "dense_operational_layout_status_colors"
+    },
+    {
+      "id": "R6",
+      "file": "C:/Users/Windows 11/Downloads/f4fa4aa359ec79ce7294b09303f56497.jpg",
+      "width": 752,
+      "height": 564,
+      "role": "micro_illustrations_black_emphasis_card"
+    }
+  ],
+  "preview_frames": [
+    {
+      "id": "desktop_dashboard",
+      "width": 1440,
+      "height": 1024
+    },
+    {
+      "id": "tablet_landscape_primary",
+      "width": 1194,
+      "height": 834
+    },
+    {
+      "id": "tablet_landscape_compatibility",
+      "width": 1024,
+      "height": 768
+    },
+    {
+      "id": "tablet_portrait",
+      "width": 834,
+      "height": 1194
+    },
+    {
+      "id": "mobile_primary",
+      "width": 390,
+      "height": 844
+    }
+  ],
+  "icon_policy": {
+    "generated_action_icons": false,
+    "action_icon_source": [
+      "Lucide",
+      "Heroicons"
+    ],
+    "generated_categories_allowed": true,
+    "generated_state_illustrations_allowed": true,
+    "code_native": [
+      "navigation",
+      "actions",
+      "spinner",
+      "skeleton",
+      "toast",
+      "banner",
+      "badge",
+      "chart",
+      "qr",
+      "progress",
+      "toggle",
+      "checkbox",
+      "focus_ring"
+    ]
+  },
+  "preview_batches": [
+    {
+      "id": "B0",
+      "name": "style_calibration",
+      "requires_selection_after": true,
+      "screens": [
+        "DSH-01-ink-lime-studio",
+        "DSH-01-pastel-counter",
+        "DSH-01-editorial-cafe-ops"
+      ],
+      "rule": "exactly_three_independent_imagegen_calls"
+    },
+    {
+      "id": "B1",
+      "name": "core_anchors",
+      "requires_selection_after": false,
+      "screens": [
+        "DSH-01",
+        "ITM-01",
+        "ITM-02",
+        "APP-05",
+        "PBL-01",
+        "ANL-01",
+        "PUB-01",
+        "PUB-02",
+        "PUB-05",
+        "PUB-06"
+      ]
+    },
+    {
+      "id": "B2",
+      "name": "owner_workflows",
+      "requires_selection_after": false,
+      "screen_families": [
+        "AUTH",
+        "ONB",
+        "CAT",
+        "ITM",
+        "OPT",
+        "MED",
+        "APP"
+      ]
+    },
+    {
+      "id": "B3",
+      "name": "public_workflows",
+      "requires_selection_after": false,
+      "screen_families": [
+        "PUB",
+        "PBL",
+        "SHR"
+      ]
+    },
+    {
+      "id": "B4",
+      "name": "operations",
+      "requires_selection_after": false,
+      "screen_families": [
+        "ANL",
+        "TMS",
+        "SUB",
+        "SUP"
+      ]
+    },
+    {
+      "id": "B5",
+      "name": "final_assets",
+      "requires_selection_after": false,
+      "asset_families": [
+        "onboarding",
+        "empty",
+        "error",
+        "success",
+        "maintenance",
+        "category_glyph",
+        "demo_offering",
+        "demo_service",
+        "demo_video_thumbnail"
+      ]
+    }
+  ],
+  "assets": [
+    {
+      "id": "SM-ONB-WELCOME",
+      "family": "onboarding",
+      "subject": "owner starts a new digital menu workspace",
+      "master_size": "1600x1200",
+      "exports": [
+        "800x600"
+      ],
+      "alpha": true,
+      "priority": "P0"
+    },
+    {
+      "id": "SM-ONB-FIRST-MENU",
+      "family": "onboarding",
+      "subject": "owner builds the first menu card",
+      "master_size": "1600x1200",
+      "exports": [
+        "800x600"
+      ],
+      "alpha": true,
+      "priority": "P0"
+    },
+    {
+      "id": "SM-ONB-APPEARANCE",
+      "family": "onboarding",
+      "subject": "owner adjusts color and brand typography",
+      "master_size": "1600x1200",
+      "exports": [
+        "800x600"
+      ],
+      "alpha": true,
+      "priority": "P1"
+    },
+    {
+      "id": "SM-ONB-PUBLISH",
+      "family": "onboarding",
+      "subject": "one draft safely reaches tablet and mobile previews",
+      "master_size": "1600x1200",
+      "exports": [
+        "800x600"
+      ],
+      "alpha": true,
+      "priority": "P0"
+    },
+    {
+      "id": "SM-EMPTY-CATALOG",
+      "family": "empty",
+      "subject": "owner in front of a clean empty menu board",
+      "master_size": "1200x900",
+      "exports": [
+        "480x360",
+        "320x240"
+      ],
+      "alpha": true,
+      "priority": "P0"
+    },
+    {
+      "id": "SM-EMPTY-CATEGORY",
+      "family": "empty",
+      "subject": "empty category labels ready to be organized",
+      "master_size": "1200x900",
+      "exports": [
+        "480x360",
+        "320x240"
+      ],
+      "alpha": true,
+      "priority": "P0"
+    },
+    {
+      "id": "SM-EMPTY-ITEM",
+      "family": "empty",
+      "subject": "empty display tray ready for the first offering",
+      "master_size": "1200x900",
+      "exports": [
+        "480x360",
+        "320x240"
+      ],
+      "alpha": true,
+      "priority": "P0"
+    },
+    {
+      "id": "SM-EMPTY-OPTION",
+      "family": "empty",
+      "subject": "unconnected informational add-on cards",
+      "master_size": "1200x900",
+      "exports": [
+        "480x360",
+        "320x240"
+      ],
+      "alpha": true,
+      "priority": "P1"
+    },
+    {
+      "id": "SM-EMPTY-MEDIA",
+      "family": "empty",
+      "subject": "empty photo and video frames",
+      "master_size": "1200x900",
+      "exports": [
+        "480x360",
+        "320x240"
+      ],
+      "alpha": true,
+      "priority": "P0"
+    },
+    {
+      "id": "SM-EMPTY-ANALYTICS",
+      "family": "empty",
+      "subject": "analytics begins after a catalog is shared",
+      "master_size": "1200x900",
+      "exports": [
+        "480x360",
+        "320x240"
+      ],
+      "alpha": true,
+      "priority": "P1"
+    },
+    {
+      "id": "SM-EMPTY-TEAM",
+      "family": "empty",
+      "subject": "one owner prepares a workspace seat for a teammate",
+      "master_size": "1200x900",
+      "exports": [
+        "480x360",
+        "320x240"
+      ],
+      "alpha": true,
+      "priority": "P2"
+    },
+    {
+      "id": "SM-EMPTY-SEARCH",
+      "family": "empty",
+      "subject": "magnifier between clean menu cards",
+      "master_size": "1200x900",
+      "exports": [
+        "320x240"
+      ],
+      "alpha": true,
+      "priority": "P1"
+    },
+    {
+      "id": "SM-ERROR-SERVER",
+      "family": "error",
+      "subject": "menu board connection is interrupted while data remains safe",
+      "master_size": "1200x900",
+      "exports": [
+        "480x360",
+        "320x240"
+      ],
+      "alpha": true,
+      "priority": "P1"
+    },
+    {
+      "id": "SM-ERROR-OFFLINE",
+      "family": "error",
+      "subject": "tablet is offline with a subtle cached preview cue",
+      "master_size": "1200x900",
+      "exports": [
+        "480x360",
+        "320x240"
+      ],
+      "alpha": true,
+      "priority": "P1"
+    },
+    {
+      "id": "SM-ERROR-PERMISSION",
+      "family": "error",
+      "subject": "friendly role boundary and locked owner action",
+      "master_size": "1200x900",
+      "exports": [
+        "480x360",
+        "320x240"
+      ],
+      "alpha": true,
+      "priority": "P1"
+    },
+    {
+      "id": "SM-ERROR-UPLOAD",
+      "family": "error",
+      "subject": "photo or video does not pass the upload tray",
+      "master_size": "1200x900",
+      "exports": [
+        "480x360",
+        "320x240"
+      ],
+      "alpha": true,
+      "priority": "P0"
+    },
+    {
+      "id": "SM-ERROR-PUBLISH",
+      "family": "error",
+      "subject": "publish path stops but the previous live menu stays standing",
+      "master_size": "1200x900",
+      "exports": [
+        "480x360",
+        "320x240"
+      ],
+      "alpha": true,
+      "priority": "P0"
+    },
+    {
+      "id": "SM-ERROR-QUOTA",
+      "family": "error",
+      "subject": "media shelf is full without suggesting data loss",
+      "master_size": "1200x900",
+      "exports": [
+        "480x360",
+        "320x240"
+      ],
+      "alpha": true,
+      "priority": "P2"
+    },
+    {
+      "id": "SM-SUCCESS-TRIAL",
+      "family": "success",
+      "subject": "workspace becomes active for a 14 day trial",
+      "master_size": "1200x900",
+      "exports": [
+        "480x360",
+        "320x240"
+      ],
+      "alpha": true,
+      "priority": "P0"
+    },
+    {
+      "id": "SM-SUCCESS-FIRST-ITEM",
+      "family": "success",
+      "subject": "the first offering card is complete",
+      "master_size": "1200x900",
+      "exports": [
+        "480x360",
+        "320x240"
+      ],
+      "alpha": true,
+      "priority": "P1"
+    },
+    {
+      "id": "SM-SUCCESS-FONT",
+      "family": "success",
+      "subject": "brand typography enters both public previews",
+      "master_size": "1200x900",
+      "exports": [
+        "480x360",
+        "320x240"
+      ],
+      "alpha": true,
+      "priority": "P1"
+    },
+    {
+      "id": "SM-SUCCESS-PUBLISH",
+      "family": "success",
+      "subject": "one catalog safely reaches tablet and mobile surfaces",
+      "master_size": "1200x900",
+      "exports": [
+        "480x360",
+        "320x240"
+      ],
+      "alpha": true,
+      "priority": "P0"
+    },
+    {
+      "id": "SM-SUCCESS-QR",
+      "family": "success",
+      "subject": "a QR pathway connects public menu surfaces",
+      "master_size": "1200x900",
+      "exports": [
+        "480x360",
+        "320x240"
+      ],
+      "alpha": true,
+      "priority": "P1"
+    },
+    {
+      "id": "SM-MAINTENANCE-PUBLIC",
+      "family": "maintenance",
+      "subject": "a temporarily closed storefront with no catalog content visible",
+      "master_size": "1536x1024",
+      "exports": [
+        "960x640",
+        "480x320"
+      ],
+      "alpha": false,
+      "priority": "P0"
+    },
+    {
+      "id": "SM-MAINTENANCE-ACCOUNT",
+      "family": "maintenance",
+      "subject": "owner sees a safe account maintenance state and support route",
+      "master_size": "1536x1024",
+      "exports": [
+        "960x640",
+        "480x320"
+      ],
+      "alpha": false,
+      "priority": "P0"
+    },
+    {
+      "id": "SM-GLYPH-CATEGORIES",
+      "family": "category_glyph",
+      "subjects": [
+        "coffee",
+        "non_coffee",
+        "food",
+        "snack",
+        "dessert",
+        "promo",
+        "package",
+        "photobooth",
+        "salon",
+        "spa",
+        "service",
+        "other"
+      ],
+      "master_size": "512x512",
+      "exports": [
+        "96x96",
+        "64x64",
+        "48x48"
+      ],
+      "alpha": true,
+      "priority": "P1",
+      "generation_rule": "one_call_per_glyph"
+    },
+    {
+      "id": "SM-DEMO-OFFERINGS",
+      "family": "demo_offering",
+      "subjects_count": 24,
+      "master_size": "1600x1200",
+      "exports": [
+        "800x600",
+        "400x300"
+      ],
+      "alpha": false,
+      "priority": "P1",
+      "generation_rule": "one_call_per_product_photo"
+    },
+    {
+      "id": "SM-DEMO-SERVICES",
+      "family": "demo_service",
+      "subjects_count": 12,
+      "master_size": "1600x1200",
+      "exports": [
+        "800x600",
+        "400x300"
+      ],
+      "alpha": false,
+      "priority": "P2",
+      "generation_rule": "one_call_per_service_photo"
+    },
+    {
+      "id": "SM-DEMO-VIDEO-THUMBNAILS",
+      "family": "demo_video_thumbnail",
+      "subjects_count": 8,
+      "master_size": "1280x720",
+      "exports": [
+        "640x360"
+      ],
+      "alpha": false,
+      "priority": "P2",
+      "generation_rule": "one_call_per_thumbnail"
+    }
+  ],
+  "alpha_workflow": {
+    "default": "built_in_imagegen_chroma_key_then_local_removal",
+    "flat_key_required": true,
+    "no_cast_shadow": true,
+    "validate": [
+      "alpha_channel_exists",
+      "corners_are_transparent",
+      "no_key_color_fringe",
+      "subject_not_cropped",
+      "readable_at_target_export"
+    ]
+  },
+  "acceptance_gates": [
+    "one_coherent_product_language",
+    "primary_action_found_within_three_seconds",
+    "no_text_clipping_or_overlap",
+    "wcag_aa_text_contrast",
+    "touch_targets_at_least_44px_on_mobile_public_surfaces",
+    "color_not_only_status_indicator",
+    "no_raster_action_icons",
+    "public_product_photography_remains_primary",
+    "failed_publish_preserves_previous_live_snapshot_message",
+    "restricted_state_exposes_no_catalog_content",
+    "assets_have_explicit_dimensions_and_loading_strategy"
+  ],
+  "anchor_previews": [
+    {
+      "screen_id": "PUB-01",
+      "file": "docs/design-references/anchors/pub-01-store-display-home.png"
+    },
+    {
+      "screen_id": "PUB-05",
+      "file": "docs/design-references/anchors/pub-05-bio-menu-home.png"
+    },
+    {
+      "screen_id": "PUB-02",
+      "file": "docs/design-references/anchors/pub-02-store-item-detail.png"
+    },
+    {
+      "screen_id": "PUB-06",
+      "file": "docs/design-references/anchors/pub-06-bio-item-detail.png"
+    },
+    {
+      "screen_id": "ITM-02",
+      "file": "docs/design-references/anchors/itm-02-owner-item-editor.png"
+    },
+    {
+      "screen_id": "APP-05",
+      "file": "docs/design-references/anchors/app-05-appearance-dual-preview.png"
+    },
+    {
+      "screen_id": "PBL-01",
+      "file": "docs/design-references/anchors/pbl-01-pre-publish-checklist.png"
+    },
+    {
+      "screen_id": "PBL-03",
+      "file": "docs/design-references/anchors/pbl-03-publish-success.png"
+    }
+  ],
+  "generated_assets": [
+    {
+      "id": "SM-DASHBOARD-STORY",
+      "source": "docs/design-references/assets-p0/dashboard-story-source.png",
+      "runtime": "prototype-vercel/assets/illustrations/dashboard-story.webp",
+      "runtime_size": "1280x420",
+      "runtime_bytes": 50090,
+      "used_in": [
+        "owner_dashboard"
+      ],
+      "status": "integrated"
+    },
+    {
+      "id": "SM-EMPTY-CATALOG",
+      "source": "docs/design-references/assets-p0/empty-catalog-source.png",
+      "runtime": "prototype-vercel/assets/illustrations/empty-catalog.webp",
+      "laravel_runtime": "public/assets/illustrations/empty-catalog.webp",
+      "runtime_size": "640x640",
+      "runtime_bytes": 28802,
+      "used_in": [
+        "owner_search_empty",
+        "store_empty",
+        "bio_search_empty"
+      ],
+      "status": "integrated"
+    },
+    {
+      "id": "SM-SUCCESS-PUBLISH",
+      "source": "docs/design-references/assets-p0/publish-success-source.png",
+      "runtime": "prototype-vercel/assets/illustrations/publish-success.webp",
+      "runtime_size": "640x640",
+      "runtime_bytes": 23376,
+      "used_in": [
+        "publish_success"
+      ],
+      "status": "integrated"
+    },
+    {
+      "id": "SM-MAINTENANCE-PUBLIC",
+      "source": "docs/design-references/assets-p0/maintenance-source.png",
+      "runtime": "prototype-vercel/assets/illustrations/maintenance.webp",
+      "laravel_runtime": "public/assets/illustrations/maintenance.webp",
+      "runtime_size": "640x640",
+      "runtime_bytes": 23986,
+      "used_in": [
+        "prototype_maintenance",
+        "laravel_restricted_account_maintenance"
+      ],
+      "status": "integrated"
+    },
+    {
+      "id": "SM-ERROR-PUBLISH",
+      "source": "docs/design-references/assets-p0/safe-error-source.png",
+      "runtime": "prototype-vercel/assets/illustrations/safe-error.webp",
+      "runtime_size": "640x640",
+      "runtime_bytes": 28056,
+      "used_in": [
+        "reserved_publish_failure_state"
+      ],
+      "status": "ready_not_shown_in_normal_flow"
+    }
+  ],
+  "next_job": {
+    "batch_id": "release_review",
+    "name": "prototype_deployment_and_user_review",
+    "selected_reference": "docs/design-references/sagamenu-editorial-kv-ops-dashboard-selected-v1.png",
+    "design_system": "docs/sagamenu-editorial-kv-ops-design-system-v1.md",
+    "generate_all_assets_before_prototype": false,
+    "public_laravel_views_locked_until_qa": false,
+    "local_qa": {
+      "prototype_browser": "passed",
+      "laravel_public_browser": "passed",
+      "laravel_tests": "52_passed_384_assertions",
+      "vite_build": "passed",
+      "pint": "passed"
+    }
+  }
+}

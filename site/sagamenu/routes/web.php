@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AdminCatalogPreviewController;
 use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\PublicCatalogController;
 use App\Http\Controllers\QrRedirectController;
@@ -8,6 +9,11 @@ use App\Http\Controllers\SagaPlatformBillingController;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/admin');
+
+Route::get('/owner-preview/catalogs/{catalog}/{surface}', AdminCatalogPreviewController::class)
+    ->middleware('auth')
+    ->whereIn('surface', ['mobile', 'store'])
+    ->name('admin.catalog-preview');
 
 Route::middleware(['saga-platform.enabled', 'throttle:20,1'])->group(function (): void {
     Route::get('/signup', [SagaPlatformAuthController::class, 'showSignup'])->name('saga-platform.signup.show');

@@ -96,11 +96,6 @@
                 </section>
             @endif
 
-            @if (data_get($offering, 'external_action.url'))
-                <a class="information-action" href="{{ data_get($offering, 'external_action.url') }}" target="_blank" rel="noopener noreferrer" data-external-action="{{ data_get($offering, 'external_action.label') }}">
-                    {{ data_get($offering, 'external_action.label') }}
-                </a>
-            @endif
         </div>
     </div>
 </dialog>

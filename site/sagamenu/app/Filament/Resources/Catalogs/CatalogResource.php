@@ -80,13 +80,14 @@ class CatalogResource extends Resource
             ])->columns(2),
             Section::make('Appearance')->schema([
                 Select::make('appearance.preset')->options([
+                    'editorial_kv' => 'Editorial KV',
                     'warm_minimal' => 'Warm Minimal',
                     'bold_street' => 'Bold Street',
                     'clean_premium' => 'Clean Premium',
-                ])->default('warm_minimal')->required(),
-                ColorPicker::make('appearance.primary_color')->default('#a4492d'),
-                ColorPicker::make('appearance.accent_color')->default('#28665b'),
-                ColorPicker::make('appearance.paper_color')->default('#f7f3ed'),
+                ])->default('editorial_kv')->required(),
+                ColorPicker::make('appearance.primary_color')->default('#236354'),
+                ColorPicker::make('appearance.accent_color')->default('#cbf45a'),
+                ColorPicker::make('appearance.paper_color')->default('#f3f5f1'),
                 Select::make('appearance.heading_font')->options(['Instrument Sans' => 'Instrument Sans', 'Inter' => 'Inter', 'Georgia' => 'Georgia'])->default('Instrument Sans'),
                 Select::make('appearance.body_font')->options(['Instrument Sans' => 'Instrument Sans', 'Inter' => 'Inter', 'Georgia' => 'Georgia'])->default('Instrument Sans'),
                 Select::make('custom_font_id')->label('Uploaded brand font')
@@ -147,6 +148,7 @@ class CatalogResource extends Resource
                 Action::make('applyPreset')->label('Apply preset')->icon(Heroicon::OutlinedSwatch)
                     ->schema([
                         Select::make('preset')->options([
+                            'editorial_kv' => 'Editorial KV',
                             'warm_minimal' => 'Warm Minimal',
                             'bold_street' => 'Bold Street',
                             'clean_premium' => 'Clean Premium',

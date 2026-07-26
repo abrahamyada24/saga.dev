@@ -16,6 +16,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->redirectGuestsTo(fn (Request $request): string => config('sagamenu.saga_platform.enabled')
+            ? route('saga-platform.login.show')
+            : route('filament.admin.auth.login'));
+
         $middleware->web(append: [
             InvalidateDisabledSagaPlatformSession::class,
         ]);

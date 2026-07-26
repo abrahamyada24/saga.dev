@@ -15,7 +15,9 @@ return [
         'contract_version' => env('SAGAMENU_SAGA_PLATFORM_CONTRACT_VERSION', '1.0'),
         'issuer' => env('SAGAMENU_SAGA_PLATFORM_ISSUER', 'saga-platform'),
         'audience' => env('SAGAMENU_SAGA_PLATFORM_AUDIENCE', 'sagamenu-web'),
-        'plan_code' => env('SAGAMENU_SAGA_PLATFORM_PLAN_CODE'),
+        'plan_code' => blank(env('SAGAMENU_SAGA_PLATFORM_PLAN_CODE'))
+            ? null
+            : env('SAGAMENU_SAGA_PLATFORM_PLAN_CODE'),
         'terms_version' => env('SAGAMENU_SAGA_PLATFORM_TERMS_VERSION', '2026-07-16'),
         'connect_timeout_seconds' => (int) env('SAGAMENU_SAGA_PLATFORM_CONNECT_TIMEOUT_SECONDS', 3),
         'timeout_seconds' => (int) env('SAGAMENU_SAGA_PLATFORM_TIMEOUT_SECONDS', 10),

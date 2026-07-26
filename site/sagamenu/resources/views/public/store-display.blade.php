@@ -13,12 +13,17 @@
             return $collection;
         })->filter(fn ($collection) => count($collection['offerings']) > 0)->values();
         $qrRoute = $catalogModel->qrRoutes()->where('status', 'active')->first();
+        $brandInitials = collect(preg_split('/\s+/', trim($organization['name'])))
+            ->filter()
+            ->take(2)
+            ->map(fn ($word) => mb_strtoupper(mb_substr($word, 0, 1)))
+            ->implode('');
     @endphp
 
     <main class="catalog-shell catalog-shell--store">
         <header class="store-header">
             <div class="brand-lockup">
-                <span class="brand-mark" aria-hidden="true">S</span>
+                <span class="brand-mark" aria-hidden="true">{{ $brandInitials }}</span>
                 <div>
                     <p class="surface-label">Store Display</p>
                     <h1>{{ $organization['name'] }}</h1>
@@ -32,8 +37,7 @@
                 </div>
                 @if ($qrRoute)
                     <a class="qr-link" href="{{ route('qr.redirect', ['code' => $qrRoute->code]) }}">
-                        <span aria-hidden="true">#</span>
-                        Buka di ponsel
+                        Lihat Bio Menu
                     </a>
                 @endif
             </div>
@@ -41,7 +45,7 @@
 
         <nav class="collection-rail" aria-label="Kategori menu">
             @foreach ($collections as $collection)
-                <a href="#collection-{{ $collection['slug'] }}" data-collection-link="{{ $collection['slug'] }}">
+                <a class="{{ $loop->first ? 'is-active' : '' }}" href="#collection-{{ $collection['slug'] }}" data-collection-link="{{ $collection['slug'] }}">
                     {{ $collection['name'] }}
                 </a>
             @endforeach
@@ -67,6 +71,7 @@
                 </section>
             @empty
                 <section class="empty-state">
+                    <img src="{{ asset('assets/illustrations/empty-catalog.webp') }}" alt="" width="640" height="640">
                     <h2>Catalog sedang diperbarui</h2>
                     <p>Silakan tanyakan menu yang tersedia kepada staf.</p>
                 </section>

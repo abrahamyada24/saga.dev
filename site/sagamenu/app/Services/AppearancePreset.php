@@ -9,6 +9,15 @@ use Illuminate\Validation\ValidationException;
 class AppearancePreset
 {
     public const PRESETS = [
+        'editorial_kv' => [
+            'primary_color' => '#236354',
+            'accent_color' => '#cbf45a',
+            'paper_color' => '#f3f5f1',
+            'heading_font' => 'Instrument Sans',
+            'body_font' => 'Instrument Sans',
+            'density' => 'comfortable',
+            'image_treatment' => 'natural',
+        ],
         'warm_minimal' => [
             'primary_color' => '#a4492d',
             'accent_color' => '#28665b',

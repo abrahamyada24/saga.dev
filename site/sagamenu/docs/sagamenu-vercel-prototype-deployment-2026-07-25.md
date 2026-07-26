@@ -1,7 +1,7 @@
 # SagaMenu Vercel Prototype Deployment
 
-Date: 25 July 2026  
-Status: `DEPLOYED_PROTOTYPE_READY`  
+Date: 26 July 2026
+Status: `DEPLOYED_PROTOTYPE_READY`
 Product boundary: static interactive review artifact, not the Laravel SaaS runtime
 
 ## Deployment
@@ -9,23 +9,23 @@ Product boundary: static interactive review artifact, not the Laravel SaaS runti
 - Stable review URL: `https://sagamenu-prototype-review.vercel.app`
 - Vercel project: `sagamenu-prototype-review`
 - Project ID: `prj_fnhuPOgIhoonBXI4FUzVw3BqY7sY`
-- Final deployment ID: `dpl_BvSV6nVt3pu7BFEgWMSjweqe53UT`
-- Final immutable deployment URL: `https://sagamenu-prototype-review-3qg1664cu-andreas-projects16.vercel.app`
+- Latest deployment ID: `dpl_BnA6cjV9uuQiaS9Rd4CcwBA5bmsC`
+- Latest immutable deployment URL: `https://sagamenu-prototype-review-m65fyxk9j-andreas-projects16.vercel.app`
 - Vercel target: `production`
 - Vercel state: `READY`
 - Source branch: `codex/sagamenu-wave2-sprint22`
-- Source commit: `de19df864c2ad98b06014366ea40a3f7a342e961`
-- Prototype implementation commit: `b5c27e092e86ea57545e622302b51eb9d6f0612c`
+- Local baseline commit: `0276c69c3aaa9a9c5b8547a27f2e9e0093513356`
+- Editorial KV Ops source is committed locally at the final implementation gate. It is not pushed or merged.
 
 No custom domain, customer data, Saga Platform credential, payment credential, or live database was attached.
 
 ## Prototype Features
 
-- Operational owner dashboard.
+- Editorial KV Ops operational owner dashboard.
 - Menu list, search, category filter, status filter, create, edit, delete, and sold-out toggle.
 - Category add, edit, visibility, and ordering controls.
 - Add-on group add, edit, and delete.
-- Appearance presets, custom color controls, and browser-session font preview.
+- Editorial KV preset, custom color controls, and browser-session font preview.
 - Draft indicator and publish version simulation.
 - Bio Menu mobile preview.
 - Store Display tablet preview with categories above the menu.
@@ -35,6 +35,7 @@ No custom domain, customer data, Saga Platform credential, payment credential, o
 - Maintenance mode.
 - Aggregate analytics demo.
 - Browser-local reset.
+- ImageGen 2 story, empty, success, maintenance, and safe-error assets.
 
 ## Verification Evidence
 
@@ -44,13 +45,15 @@ Local and deployed browser QA both passed:
 - Rows after create flow: 13.
 - Maintenance state: visible.
 - Menu detail: visible.
-- Tablet cards: 13.
-- Loaded tablet images: 13.
+- Tablet cards: 14.
+- Loaded tablet images: 14.
 - Desktop and mobile horizontal overflow: none.
 - Mobile navigation: passed.
 - Console errors: none.
 - Page errors: none.
 - Publish simulation: passed.
+- ImageGen runtime assets: loaded.
+- Buttons without accessible names: none.
 
 Vercel evidence:
 
@@ -58,10 +61,12 @@ Vercel evidence:
 - Build error-only scan contained no error.
 - Runtime error/fatal scan for the final deployment returned no logs.
 - Root URL returned HTTP 200.
+- `Content-Security-Policy` present.
+- `X-Frame-Options: SAMEORIGIN`.
 - `X-Content-Type-Options: nosniff`.
 - `Referrer-Policy: strict-origin-when-cross-origin`.
 
-Design QA: `prototype-vercel/design-qa.md` with `final result: passed`.
+Detailed implementation and QA report: `docs/sagamenu-editorial-kv-ops-implementation-report-2026-07-26.md`.
 
 ## Review Checklist
 
