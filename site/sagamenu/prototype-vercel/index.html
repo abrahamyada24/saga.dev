@@ -48,7 +48,7 @@
                     <i data-lucide="palette"></i><span>Tampilan</span>
                 </button>
                 <button class="nav-item" type="button" data-route="publish">
-                    <i data-lucide="send"></i><span>Preview & Publish</span>
+                    <i data-lucide="send"></i><span>Preview & Terbitkan</span>
                     <span class="nav-dot" data-draft-dot></span>
                 </button>
                 <button class="nav-item" type="button" data-route="analytics">
@@ -86,14 +86,26 @@
                     <div class="save-state" data-save-state>
                         <i data-lucide="cloud-check"></i><span>Tersimpan</span>
                     </div>
-                    <button class="button button-secondary" type="button" data-action="preview-mobile">
-                        <i data-lucide="smartphone"></i><span>Bio Menu</span>
-                    </button>
-                    <button class="button button-secondary tablet-preview-button" type="button" data-action="preview-tablet">
-                        <i data-lucide="tablet"></i><span>Store Display</span>
-                    </button>
-                    <button class="button button-primary" type="button" data-action="open-publish">
-                        <i data-lucide="send"></i><span>Terbitkan</span>
+                    <div class="preview-launcher" data-preview-launcher>
+                        <button class="button button-secondary" type="button" data-action="toggle-preview-launcher" aria-label="Preview menu" aria-haspopup="menu" aria-expanded="false" aria-controls="global-preview-menu">
+                            <i data-lucide="eye"></i><span>Preview menu</span><i class="button-chevron" data-lucide="chevron-down"></i>
+                        </button>
+                        <div class="topbar-preview-menu" id="global-preview-menu" role="menu" aria-label="Pilih tampilan preview" hidden>
+                            <span class="topbar-preview-label">Buka preview sebagai</span>
+                            <button class="preview-menu-option" type="button" role="menuitem" data-action="preview-mobile">
+                                <i data-lucide="smartphone"></i>
+                                <span><strong>Bio Menu</strong><small>Preview mobile untuk link di bio</small></span>
+                                <i data-lucide="arrow-up-right"></i>
+                            </button>
+                            <button class="preview-menu-option" type="button" role="menuitem" data-action="preview-tablet">
+                                <i data-lucide="tablet"></i>
+                                <span><strong>Store Display</strong><small>Preview tablet untuk customer di lokasi</small></span>
+                                <i data-lucide="arrow-up-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <button class="button button-primary" type="button" data-action="open-publish" data-global-publish aria-label="Tinjau & terbitkan">
+                        <i data-lucide="send"></i><span data-global-publish-label>Tinjau & terbitkan</span>
                         <span class="button-dot" data-publish-dot></span>
                     </button>
                 </div>
@@ -248,7 +260,7 @@
                             <div data-review-check="badge"><i data-lucide="circle-check"></i><span><strong>Badge</strong><small>Tanpa badge</small></span></div>
                             <div data-review-check="choices"><i data-lucide="circle-check"></i><span><strong>Pilihan & informasi</strong><small>Tanpa add-on</small></span></div>
                         </div>
-                        <div class="draft-safety-note"><i data-lucide="shield-check"></i><span><strong>Perubahan tetap aman sebagai draft.</strong><small>Menu customer baru berubah setelah Anda melakukan publish dari halaman Preview & Publish.</small></span></div>
+                        <div class="draft-safety-note"><i data-lucide="shield-check"></i><span><strong>Perubahan tetap aman sebagai draft.</strong><small>Menu customer baru berubah setelah Anda menerbitkan draft dari halaman Preview & Terbitkan.</small></span></div>
                     </section>
                 </div>
 

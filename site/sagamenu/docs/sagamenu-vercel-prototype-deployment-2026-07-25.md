@@ -9,8 +9,8 @@ Product boundary: static interactive review artifact, not the Laravel SaaS runti
 - Stable review URL: `https://sagamenu-prototype-review.vercel.app`
 - Vercel project: `sagamenu-prototype-review`
 - Project ID: `prj_fnhuPOgIhoonBXI4FUzVw3BqY7sY`
-- Latest deployment ID: `dpl_3vhq4tbjiCG5bPPPejByUHnGCvyf`
-- Latest immutable deployment URL: `https://sagamenu-prototype-review-a4cmvt4iy-andreas-projects16.vercel.app`
+- Latest deployment ID: `dpl_HcL56buMZ43meauieryx6ZbfZUbJ`
+- Latest immutable deployment URL: `https://sagamenu-prototype-review-cuyq2xp5e-andreas-projects16.vercel.app`
 - Vercel target: `production`
 - Vercel state: `READY`
 - Source branch: `codex/sagamenu-wave2-sprint22`
@@ -81,6 +81,20 @@ The production prototype was updated on 2026-07-26 with:
 - Mobile access to `Simpan & lanjut nanti`.
 
 Focused Sprint 0 E2E passed locally and against the stable Vercel review URL with zero console and page errors. Full evidence is recorded in `docs/sagamenu-sprint-0-reliability-report-2026-07-26.md`.
+
+## Sprint 1 Action Hierarchy Update
+
+The production prototype was updated on 2026-07-26 with:
+
+- One global `Preview menu` launcher for Bio Menu and Store Display.
+- One global `Tinjau & terbitkan` entry.
+- Contextual `Tambah menu` page actions without duplicate preview or publish buttons.
+- Visible availability and edit controls on menu rows.
+- Duplicate and delete actions in an accessible overflow menu.
+- Consistent Indonesian publication terminology.
+- Mobile-safe action labels and preview launcher bounds.
+
+Focused Sprint 1 E2E, Sprint 0 regression, and the full prototype E2E passed locally and against the stable Vercel review URL with zero console and page errors. Full evidence is recorded in `docs/sagamenu-sprint-1-action-hierarchy-report-2026-07-26.md`.
 
 ## Review Checklist
 

@@ -245,6 +245,7 @@ const itemForm = document.querySelector('[data-item-form]');
 const simpleDialog = document.querySelector('[data-simple-dialog]');
 const simpleForm = document.querySelector('[data-simple-form]');
 const detailDialog = document.querySelector('[data-menu-detail]');
+const previewLauncher = document.querySelector('[data-preview-launcher]');
 const EDITOR_DRAFT_KEY = 'sagamenu-prototype-item-editor-draft-v1';
 const EDITOR_EDIT_DRAFT_PREFIX = 'sagamenu-prototype-item-editor-edit-v1:';
 
@@ -339,6 +340,8 @@ function routeTo(route) {
     window.location.hash = route;
     closeSidebar();
     render();
+    window.scrollTo(0, 0);
+    window.setTimeout(() => window.scrollTo(0, 0), 0);
     main?.focus({ preventScroll: true });
 }
 
@@ -403,6 +406,14 @@ function updateGlobalState() {
     document.querySelectorAll('[data-draft-dot], [data-publish-dot]').forEach((node) => {
         node.hidden = !state.draft;
     });
+    const publishButton = document.querySelector('[data-global-publish]');
+    const publishLabel = document.querySelector('[data-global-publish-label]');
+    if (publishButton && publishLabel) {
+        publishButton.classList.toggle('button-primary', state.draft);
+        publishButton.classList.toggle('button-secondary', !state.draft);
+        publishLabel.textContent = state.draft ? 'Tinjau & terbitkan' : 'Publikasi';
+        publishButton.setAttribute('aria-label', publishLabel.textContent);
+    }
 }
 
 function toast(title, message = '') {
@@ -460,12 +471,12 @@ function renderStatusBanner() {
         <section class="status-banner ${state.draft ? 'is-draft' : ''}">
             <span class="status-icon"><i data-lucide="${state.draft ? 'file-pen-line' : 'circle-check-big'}"></i></span>
             <div>
-                <strong>${state.draft ? 'Ada perubahan yang belum dipublish' : 'Menu publik sudah terbaru'}</strong>
-                <span>${state.draft ? 'Customer masih melihat versi publish terakhir.' : `Versi ${state.publishedVersion} · ${state.lastPublished}`}</span>
+                <strong>${state.draft ? 'Ada perubahan yang belum diterbitkan' : 'Menu publik sudah terbaru'}</strong>
+                <span>${state.draft ? 'Customer masih melihat versi terbit terakhir.' : `Versi ${state.publishedVersion} · ${state.lastPublished}`}</span>
             </div>
             <button class="button ${state.draft ? 'button-primary' : 'button-secondary'}" type="button" data-action="${state.draft ? 'open-publish' : 'preview-mobile'}">
                 <i data-lucide="${state.draft ? 'send' : 'eye'}"></i>
-                <span>${state.draft ? 'Review & publish' : 'Lihat menu'}</span>
+                <span>${state.draft ? 'Tinjau & terbitkan' : 'Lihat menu'}</span>
             </button>
         </section>
     `;
@@ -479,8 +490,7 @@ function renderOverview() {
             'Workspace',
             'Ringkasan',
             'Status menu Saga Coffee Demo hari ini.',
-            `<button class="button button-secondary" type="button" data-action="preview-mobile"><i data-lucide="eye"></i><span>Lihat preview</span></button>
-             <button class="button button-primary" type="button" data-action="new-item"><i data-lucide="plus"></i><span>Tambah menu</span></button>`,
+            `<button class="button button-primary" type="button" data-action="new-item"><i data-lucide="plus"></i><span>Tambah menu</span></button>`,
         )}
         ${renderStatusBanner()}
         <section class="metrics-grid" aria-label="Ringkasan performa">
@@ -589,8 +599,7 @@ function renderMenus() {
             'Katalog',
             'Menu',
             'Atur foto, harga, deskripsi, status, dan detail menu.',
-            `<button class="button button-secondary" type="button" data-action="preview-mobile"><i data-lucide="eye"></i><span>Preview</span></button>
-             <button class="button button-primary" type="button" data-action="new-item"><i data-lucide="plus"></i><span>Tambah menu</span></button>`,
+            `<button class="button button-primary" type="button" data-action="new-item"><i data-lucide="plus"></i><span>Tambah menu</span></button>`,
         )}
         <article class="panel">
             <div class="table-toolbar">
@@ -644,9 +653,14 @@ function renderMenuRow(item) {
             <td>
                 <div class="row-actions">
                     <button class="icon-button" type="button" data-action="toggle-availability" data-item-id="${escapeHTML(item.id)}" title="${item.availability === 'available' ? 'Tandai sold out' : 'Tandai tersedia'}" aria-label="${item.availability === 'available' ? 'Tandai sold out' : 'Tandai tersedia'}"><i data-lucide="${item.availability === 'available' ? 'eye-off' : 'eye'}"></i></button>
-                    <button class="icon-button" type="button" data-action="duplicate-item" data-item-id="${escapeHTML(item.id)}" title="Duplikat menu" aria-label="Duplikat ${escapeHTML(item.name)}"><i data-lucide="copy-plus"></i></button>
                     <button class="icon-button" type="button" data-action="edit-item" data-item-id="${escapeHTML(item.id)}" title="Edit menu" aria-label="Edit ${escapeHTML(item.name)}"><i data-lucide="pencil"></i></button>
-                    <button class="icon-button" type="button" data-action="delete-item" data-item-id="${escapeHTML(item.id)}" title="Hapus menu" aria-label="Hapus ${escapeHTML(item.name)}"><i data-lucide="trash-2"></i></button>
+                    <details class="row-action-menu">
+                        <summary class="icon-button" title="Aksi lainnya" aria-label="Aksi lainnya ${escapeHTML(item.name)}"><i data-lucide="ellipsis"></i></summary>
+                        <div class="row-action-popover" role="menu" aria-label="Aksi untuk ${escapeHTML(item.name)}">
+                            <button type="button" role="menuitem" data-action="duplicate-item" data-item-id="${escapeHTML(item.id)}" aria-label="Duplikat ${escapeHTML(item.name)}"><i data-lucide="copy-plus"></i><span>Duplikat menu</span></button>
+                            <button class="is-danger" type="button" role="menuitem" data-action="delete-item" data-item-id="${escapeHTML(item.id)}" aria-label="Hapus ${escapeHTML(item.name)}"><i data-lucide="trash-2"></i><span>Hapus menu</span></button>
+                        </div>
+                    </details>
                 </div>
             </td>
         </tr>
@@ -798,8 +812,8 @@ function renderPublish() {
             'Distribusi',
             'Publish & Share',
             'Review perubahan, publish satu snapshot, lalu bagikan link yang sesuai.',
-            `<button class="button button-secondary" type="button" data-action="preview-mobile"><i data-lucide="eye"></i><span>Review draft</span></button>
-             <button class="button button-primary" type="button" data-action="publish-now" ${state.draft ? '' : 'disabled'}><i data-lucide="send"></i><span>${state.draft ? 'Publish sekarang' : 'Sudah terbaru'}</span></button>`,
+            `<button class="button button-secondary" type="button" data-action="preview-mobile"><i data-lucide="eye"></i><span>Tinjau draft</span></button>
+             <button class="button button-primary" type="button" data-action="publish-now" ${state.draft ? '' : 'disabled'}><i data-lucide="send"></i><span>${state.draft ? 'Terbitkan sekarang' : 'Sudah terbaru'}</span></button>`,
         )}
         <section class="publish-grid">
             <div>
@@ -931,8 +945,7 @@ function renderEditorialOverview() {
             'Dashboard',
             'Selamat datang, Andreas',
             'Kelola menu dan katalog preview Bachelor Coffee.',
-            `<button class="button button-secondary" type="button" data-action="preview-mobile"><i data-lucide="eye"></i><span>Lihat preview</span></button>
-             <button class="button button-primary" type="button" data-action="open-publish"><i data-lucide="send"></i><span>Terbitkan perubahan</span></button>`,
+            `<button class="button button-primary" type="button" data-action="new-item"><i data-lucide="plus"></i><span>Tambah menu</span></button>`,
         )}
         <section class="editorial-story-strip" aria-label="Status trial dan draft">
             <div class="story-copy">
@@ -960,7 +973,7 @@ function renderEditorialOverview() {
                 <article class="panel attention-panel">
                     <header class="panel-header"><div><h2>Perlu perhatian</h2><p>Prioritas sebelum customer melihat menu</p></div><span class="badge badge-pink">3 tugas</span></header>
                     <div class="attention-list">
-                        ${attentionRow('file-pen-line', '3 perubahan draft belum diterbitkan', 'Versi live tetap aman', 'Tinjau', 'open-publish', 'pink')}
+                        ${attentionRow('file-pen-line', '3 perubahan draft belum diterbitkan', 'Versi live tetap aman', 'Siap ditinjau', '', 'pink')}
                         ${attentionRow('circle-off', `${soldOut} item sedang sold out`, 'Periksa ketersediaan', 'Kelola', 'menus', 'yellow', true)}
                         ${attentionRow('image', '4 foto perlu alt text', 'Lengkapi aksesibilitas media', 'Lengkapi', 'menus', 'blue', true)}
                     </div>
@@ -974,7 +987,6 @@ function renderEditorialOverview() {
                 <article class="publish-rail-card">
                     <span class="publish-rail-icon"><i data-lucide="calendar-check"></i></span>
                     <div><small>Terakhir terbit</small><strong>${escapeHTML(state.lastPublished)}</strong><p>Versi ${state.publishedVersion} tetap aktif.</p></div>
-                    <button class="button button-primary" type="button" data-action="open-publish"><span>Terbitkan perubahan</span><i data-lucide="send"></i></button>
                 </article>
             </aside>
         </section>
@@ -1046,7 +1058,9 @@ function attentionRow(icon, title, description, actionLabel, action, tone, route
         <div class="attention-row">
             <span class="attention-icon is-${tone}"><i data-lucide="${icon}"></i></span>
             <span><strong>${escapeHTML(title)}</strong><small>${escapeHTML(description)}</small></span>
-            <button class="button button-secondary" type="button" ${route ? `data-route="${action}"` : `data-action="${action}"`}>${escapeHTML(actionLabel)}</button>
+            ${action
+                ? `<button class="button button-secondary" type="button" ${route ? `data-route="${action}"` : `data-action="${action}"`}>${escapeHTML(actionLabel)}</button>`
+                : `<span class="attention-state">${escapeHTML(actionLabel)}</span>`}
         </div>
     `;
 }
@@ -1146,7 +1160,7 @@ function renderEditorialPublish() {
     }
     if (publishRunState === 'failed') {
         return `
-            ${pageHead('Publikasi', 'Publish belum berhasil', 'Versi live lama tidak berubah.')}
+            ${pageHead('Publikasi', 'Penerbitan belum berhasil', 'Versi live lama tidak berubah.')}
             <section class="publish-process-state is-error" role="alert">
                 <img src="assets/illustrations/safe-error.webp" alt="" width="640" height="640">
                 <span class="eyebrow">Safe failure</span>
@@ -1165,7 +1179,7 @@ function renderEditorialPublish() {
     const soldOut = state.items.length - available;
 
     return `
-        ${pageHead('Publikasi', 'Preview & Publish', 'Periksa perubahan sebelum menerbitkan satu snapshot baru.')}
+        ${pageHead('Publikasi', 'Preview & Terbitkan', 'Periksa perubahan sebelum menerbitkan satu snapshot baru.')}
         <section class="editorial-publish-grid">
             <div class="publish-readiness">
                 <div class="publish-meta-line"><span><i data-lucide="briefcase-business"></i>Bachelor Coffee</span><span>Draft versi <b>v${state.publishedVersion + 1}</b></span><span>Terakhir diterbitkan ${escapeHTML(state.lastPublished)}</span></div>
@@ -2080,7 +2094,7 @@ function publishNow({ forceFailure = false } = {}) {
         publishFailureMessage = '';
         persistState({ markDraft: false });
         render();
-        toast('Menu berhasil dipublish', `Versi ${state.publishedVersion} sekarang aktif.`);
+        toast('Menu berhasil diterbitkan', `Versi ${state.publishedVersion} sekarang aktif.`);
     }, 900);
 }
 
@@ -2089,7 +2103,33 @@ function closeSidebar() {
     document.querySelector('[data-sidebar-backdrop]').hidden = true;
 }
 
+function setPreviewLauncher(open) {
+    const trigger = previewLauncher?.querySelector('[data-action="toggle-preview-launcher"]');
+    const menu = previewLauncher?.querySelector('[role="menu"]');
+    if (!trigger || !menu) return;
+    trigger.setAttribute('aria-expanded', String(open));
+    menu.hidden = !open;
+    previewLauncher.classList.toggle('is-open', open);
+    if (open) menu.querySelector('[role="menuitem"]')?.focus();
+}
+
+function closePreviewLauncher() {
+    setPreviewLauncher(false);
+}
+
+function closeRowActionMenus(except = null) {
+    document.querySelectorAll('.row-action-menu[open]').forEach((menu) => {
+        if (menu !== except) menu.removeAttribute('open');
+    });
+}
+
 document.addEventListener('click', (event) => {
+    const launcherTarget = event.target.closest('[data-preview-launcher]');
+    if (!launcherTarget) closePreviewLauncher();
+
+    const rowActionMenu = event.target.closest('.row-action-menu');
+    closeRowActionMenus(rowActionMenu);
+
     const routeButton = event.target.closest('[data-route]');
     if (routeButton) {
         routeTo(routeButton.dataset.route);
@@ -2100,6 +2140,10 @@ document.addEventListener('click', (event) => {
     if (!actionButton) return;
     const { action } = actionButton.dataset;
 
+    if (action === 'toggle-preview-launcher') {
+        const isOpen = actionButton.getAttribute('aria-expanded') === 'true';
+        setPreviewLauncher(!isOpen);
+    }
     if (action === 'new-item') openItemEditor();
     if (action === 'edit-item') openItemEditor(actionButton.dataset.itemId);
     if (action === 'dismiss-item-editor') dismissItemEditor();
@@ -2149,10 +2193,19 @@ document.addEventListener('click', (event) => {
     if (action === 'edit-addon') addonDialog(actionButton.dataset.addonId);
     if (action === 'close-simple-dialog') closeSimpleDialog();
     if (action === 'close-detail') closeDetail();
-    if (action === 'preview-mobile') showPreview('mobile');
-    if (action === 'preview-tablet') showPreview('tablet');
+    if (action === 'preview-mobile') {
+        closePreviewLauncher();
+        showPreview('mobile');
+    }
+    if (action === 'preview-tablet') {
+        closePreviewLauncher();
+        showPreview('tablet');
+    }
     if (action === 'close-preview') closePreview();
-    if (action === 'open-publish') routeTo('publish');
+    if (action === 'open-publish') {
+        closePreviewLauncher();
+        routeTo('publish');
+    }
     if (action === 'publish-now') publishNow();
     if (action === 'simulate-publish-failure') publishNow({ forceFailure: true });
     if (action === 'cancel-publish-failure') {
@@ -2232,7 +2285,7 @@ document.addEventListener('click', (event) => {
             state.items = state.items.filter((entry) => entry.id !== item.id);
             persistState();
             render();
-            toast('Menu dihapus', 'Versi live belum berubah sampai dipublish.');
+            toast('Menu dihapus', 'Versi live belum berubah sampai diterbitkan.');
         }
     }
 
@@ -2455,6 +2508,37 @@ itemEditor.addEventListener('close', () => document.body.classList.remove('modal
 simpleDialog.addEventListener('close', () => document.body.classList.remove('modal-open'));
 detailDialog.addEventListener('close', () => document.body.classList.remove('modal-open'));
 
+document.addEventListener('keydown', (event) => {
+    const previewMenu = previewLauncher?.querySelector('[role="menu"]');
+    const previewItems = previewMenu ? [...previewMenu.querySelectorAll('[role="menuitem"]')] : [];
+    const previewItemIndex = previewItems.indexOf(document.activeElement);
+    if (!previewMenu?.hidden && previewItemIndex >= 0 && ['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) {
+        const nextIndex = {
+            ArrowDown: (previewItemIndex + 1) % previewItems.length,
+            ArrowUp: (previewItemIndex - 1 + previewItems.length) % previewItems.length,
+            Home: 0,
+            End: previewItems.length - 1,
+        }[event.key];
+        previewItems[nextIndex].focus();
+        event.preventDefault();
+        return;
+    }
+    if (event.key !== 'Escape') return;
+    const previewTrigger = previewLauncher?.querySelector('[data-action="toggle-preview-launcher"]');
+    if (previewTrigger?.getAttribute('aria-expanded') === 'true') {
+        closePreviewLauncher();
+        previewTrigger.focus();
+        event.preventDefault();
+        return;
+    }
+    const openRowMenu = document.querySelector('.row-action-menu[open]');
+    if (openRowMenu) {
+        openRowMenu.removeAttribute('open');
+        openRowMenu.querySelector('summary')?.focus();
+        event.preventDefault();
+    }
+});
+
 window.addEventListener('hashchange', () => {
     const hash = window.location.hash.replace('#', '');
     if (hash === 'preview-mobile') {
@@ -2466,6 +2550,7 @@ window.addEventListener('hashchange', () => {
     } else {
         currentRoute = getRoute();
         render();
+        window.scrollTo(0, 0);
     }
 });
 window.addEventListener('resize', refreshEmbeddedPreviewScales);

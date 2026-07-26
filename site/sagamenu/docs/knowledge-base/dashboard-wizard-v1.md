@@ -24,6 +24,25 @@ Save hanya menyimpan draft. Customer baru melihat perubahan setelah catalog dipu
 - `Simpan perubahan` dipakai untuk memperbarui menu yang sudah ada.
 - Menyimpan draft tidak menerbitkan perubahan ke customer.
 
+## Dashboard Action Hierarchy
+
+- Topbar mempunyai satu launcher `Preview menu`.
+- Launcher tersebut menjadi entry global untuk `Bio Menu` dan `Store Display`.
+- Topbar mempunyai satu CTA publikasi: `Tinjau & terbitkan` ketika ada draft dan `Publikasi` ketika versi publik sudah terbaru.
+- Header halaman Ringkasan dan Menu tidak mengulang CTA preview atau publikasi.
+- Halaman `Preview & Terbitkan` tetap mempunyai CTA final `Terbitkan perubahan` setelah pemeriksaan selesai.
+- Preview yang berada di dalam Ringkasan, Tampilan, dan halaman publikasi adalah kontrol kontekstual untuk surface yang sedang ditinjau, bukan entry global tambahan.
+
+## Menu Row Actions
+
+- Perubahan ketersediaan dan `Edit` tetap tersedia sebagai aksi satu klik.
+- `Duplikat menu` dan `Hapus menu` berada di dalam `Aksi lainnya`.
+- Aksi hapus harus tetap diberi treatment destructive dan konfirmasi.
+- Hanya satu overflow menu yang boleh terbuka pada satu waktu.
+- Klik di luar atau Escape menutup overflow dan mengembalikan fokus.
+- Dua baris terakhir membuka overflow ke atas agar tidak terpotong.
+- Semua icon-only actions wajib memiliki accessible name pada desktop dan mobile.
+
 ## Media Rules
 
 - URL foto bukan workflow yang didukung.
@@ -66,7 +85,8 @@ Save hanya menyimpan draft. Customer baru melihat perubahan setelah catalog dipu
 - Jika preview menampilkan foto fallback setelah upload, jangan lanjut publish; ulangi upload dan eskalasi sebagai kegagalan media.
 - Jika draft edit tidak dipulihkan dengan nilai terakhir, jangan menganggap toast autosave sebagai bukti bahwa perubahan aman.
 - Jelaskan bahwa save tidak sama dengan publish.
-- Gunakan Preview sebelum Publish.
+- Gunakan Preview sebelum menerbitkan.
+- Gunakan istilah `terbitkan` pada UI Indonesia; `publish` hanya boleh muncul sebagai istilah teknis internal.
 - Jika publish gagal, snapshot live sebelumnya harus tetap tersedia.
 
 ## Release Boundary

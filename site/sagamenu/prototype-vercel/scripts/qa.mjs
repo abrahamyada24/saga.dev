@@ -8,6 +8,10 @@ await mkdir(output, { recursive: true });
 const browser = await chromium.launch({ headless: true });
 const desktop = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
 const settle = (page, duration = 380) => page.waitForTimeout(duration);
+const openGlobalPreview = async (page, name) => {
+    await page.getByRole('button', { name: 'Preview menu' }).click();
+    await page.getByRole('menuitem', { name: new RegExp(name) }).click();
+};
 const errors = [];
 desktop.on('console', (message) => {
     if (message.type() === 'error') errors.push(`console: ${message.text()}`);
@@ -59,7 +63,9 @@ await desktop.getByRole('button', { name: 'Buat menu sebagai draft' }).click();
 await desktop.waitForURL(/#menus$/);
 await desktop.locator('[data-item-row]').filter({ hasText: 'Cold Brew Pandan' }).waitFor();
 const rowsAfterCreate = await desktop.locator('[data-item-row]').count();
-await desktop.getByRole('button', { name: 'Duplikat Cold Brew Pandan' }).click();
+const createdRow = desktop.locator('[data-item-row]').filter({ hasText: 'Cold Brew Pandan' });
+await createdRow.getByLabel('Aksi lainnya Cold Brew Pandan').click();
+await createdRow.getByRole('menuitem', { name: 'Duplikat Cold Brew Pandan' }).click();
 await desktop.locator('[data-item-row]').filter({ hasText: 'Cold Brew Pandan Copy' }).waitFor();
 const duplicateWorked = await desktop.getByText('Cold Brew Pandan Copy', { exact: true }).first().isVisible();
 await settle(desktop);
@@ -90,10 +96,10 @@ const appearanceOverflow = await desktop.evaluate(
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
 );
 
-await desktop.getByRole('button', { name: 'Preview & Publish' }).click();
-await desktop.getByRole('heading', { name: 'Preview & Publish' }).waitFor();
+await desktop.getByRole('button', { name: 'Preview & Terbitkan' }).click();
+await desktop.getByRole('heading', { name: 'Preview & Terbitkan' }).waitFor();
 await desktop.getByRole('switch', { name: 'Mode maintenance' }).click();
-await desktop.getByRole('button', { name: 'Bio Menu' }).first().click();
+await openGlobalPreview(desktop, 'Bio Menu');
 await desktop.getByRole('heading', { name: 'Menu sedang maintenance' }).waitFor();
 const maintenanceVisible = await desktop.getByRole('heading', { name: 'Menu sedang maintenance' }).isVisible();
 await desktop.locator('.maintenance-card > img').evaluate((image) => image.decode());
@@ -102,10 +108,10 @@ const maintenanceAssetLoaded = await desktop.locator('.maintenance-card > img').
 );
 await desktop.screenshot({ path: `${output}/maintenance-editorial.png`, fullPage: true });
 await desktop.getByRole('button', { name: 'Kembali ke dashboard' }).click();
-await desktop.getByRole('button', { name: 'Preview & Publish' }).click();
+await desktop.getByRole('button', { name: 'Preview & Terbitkan' }).click();
 await desktop.getByRole('switch', { name: 'Mode maintenance' }).click();
 
-await desktop.getByRole('button', { name: 'Bio Menu' }).first().click();
+await openGlobalPreview(desktop, 'Bio Menu');
 await desktop.getByRole('button', { name: /Lihat detail Es Kopi Susu Aren/ }).click();
 const detailHeading = desktop.getByRole('dialog').getByRole('heading', { name: 'Es Kopi Susu Aren' });
 await detailHeading.waitFor();
@@ -123,7 +129,7 @@ const loadedImages = await desktop.locator('.tablet-menu-card img').evaluateAll(
     images.filter((image) => image.complete && image.naturalWidth > 0).length,
 );
 await desktop.getByRole('button', { name: 'Kembali ke dashboard' }).click();
-await desktop.getByRole('button', { name: 'Preview & Publish' }).click();
+await desktop.getByRole('button', { name: 'Preview & Terbitkan' }).click();
 await desktop.getByRole('button', { name: 'Uji safe failure' }).click();
 await desktop.getByRole('heading', { name: 'Draft tidak dapat diterbitkan' }).waitFor();
 const safeFailureVisible = await desktop.getByText(new RegExp(`Versi ${3} tetap aktif`)).isVisible();
