@@ -1,5 +1,23 @@
 # Changelog
 
+## Unreleased - Dashboard wizard complete prototype wave (local only)
+
+### Added
+
+- Visual Media Library with upload, search, filters, alt text, focal point, gallery, usage, and safe remove.
+- Variant groups, price deltas, add-on ordering, allergens, dietary labels, ingredients, caffeine, spice, and serving notes.
+- Category, add-on, and media side sheets with usage-impact summaries.
+- Guided catalog setup and surface-confirmed publication with safe failure and retry.
+- Brand Kit with logo, four-color tokens, contrast validation, custom-font license confirmation, radius, and image treatment.
+- Independent Bio Menu and Store Display preset systems with migration fallback.
+- Complete-wave Playwright coverage and prototype review runbook.
+
+### Safety
+
+- Static prototype data remains browser-local and contains no customer or live operational data.
+- Production object storage, malware scanning, tenant isolation, and persistent publish remain separate Laravel gates.
+- No push, merge, DNS, credential, payment, or customer communication was performed.
+
 ## Unreleased - Commercial policy lock (local only)
 
 ### Added

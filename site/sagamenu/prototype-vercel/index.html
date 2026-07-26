@@ -44,6 +44,9 @@
                 <button class="nav-item" type="button" data-route="addons">
                     <i data-lucide="list-plus"></i><span>Add-on & Pilihan</span>
                 </button>
+                <button class="nav-item" type="button" data-route="media">
+                    <i data-lucide="images"></i><span>Media Library</span>
+                </button>
                 <button class="nav-item" type="button" data-route="appearance">
                     <i data-lucide="palette"></i><span>Tampilan</span>
                 </button>
@@ -169,6 +172,8 @@
                 <div class="item-wizard-content">
                     <input type="hidden" name="itemId">
                     <input type="hidden" name="image">
+                    <input type="hidden" name="gallery">
+                    <input type="hidden" name="variants">
 
                     <section class="wizard-panel" id="menu-editor-section-1" data-wizard-panel="1">
                         <header><span class="eyebrow" data-panel-eyebrow>Langkah 1 dari 4</span><h3 data-panel-title>Mulai dari informasi yang customer cari.</h3><p data-panel-copy>Nama, kategori, harga, dan deskripsi akan langsung terlihat pada preview.</p></header>
@@ -225,15 +230,39 @@
                     <section class="wizard-panel" id="menu-editor-section-2" data-wizard-panel="2" hidden>
                         <header><span class="eyebrow" data-panel-eyebrow>Langkah 2 dari 4</span><h3 data-panel-title>Tambahkan foto tanpa menempel URL.</h3><p data-panel-copy>Upload dari perangkat atau pilih foto yang sudah ada di Media Library.</p></header>
                         <div class="media-upload-zone" data-media-upload-zone>
-                            <input type="file" name="imageUpload" accept="image/jpeg,image/png,image/webp" data-image-upload>
+                            <input type="file" name="imageUpload" accept="image/jpeg,image/png,image/webp" data-image-upload aria-label="Unggah foto utama">
                             <span><i data-lucide="image-plus"></i></span>
                             <div><strong>Tarik foto ke sini atau pilih dari perangkat</strong><p>JPG, PNG, atau WebP. Maksimal 5 MB.</p></div>
                             <button class="button button-secondary" type="button" data-action="trigger-image-upload">Pilih foto</button>
                         </div>
                         <div class="upload-progress" data-upload-progress hidden><span></span><b>Memproses foto...</b></div>
+                        <div class="media-upload-error" role="alert" data-upload-error hidden>
+                            <i data-lucide="circle-alert"></i>
+                            <span><strong>Foto belum dapat diproses</strong><small data-upload-error-copy>Pilih file lain dan coba kembali.</small></span>
+                            <button class="button button-secondary" type="button" data-action="retry-image-upload">Coba lagi</button>
+                        </div>
                         <section class="media-library-picker">
                             <header><div><h4>Media Library</h4><p>Pilih salah satu foto yang sudah tersedia.</p></div><button type="button" class="button button-ghost" data-action="clear-editor-image">Hapus foto</button></header>
                             <div data-editor-media-library></div>
+                        </section>
+                        <div class="media-metadata-grid">
+                            <label class="field field-span-2">
+                                <span>Alt text foto utama</span>
+                                <input name="imageAlt" maxlength="160" placeholder="Contoh: Iced Aren Latte dengan foam di gelas bening">
+                                <small>Jelaskan objek utama untuk aksesibilitas.</small>
+                            </label>
+                            <label class="field">
+                                <span>Focal point horizontal <b data-focal-x-value>50%</b></span>
+                                <input type="range" name="focalX" min="0" max="100" value="50">
+                            </label>
+                            <label class="field">
+                                <span>Focal point vertikal <b data-focal-y-value>50%</b></span>
+                                <input type="range" name="focalY" min="0" max="100" value="50">
+                            </label>
+                        </div>
+                        <section class="editor-gallery">
+                            <header><div><h4>Gallery menu</h4><p>Tambahkan sampai empat foto pendukung.</p></div><label class="button button-secondary"><i data-lucide="images"></i><span>Tambah foto</span><input type="file" accept="image/jpeg,image/png,image/webp" multiple data-gallery-upload aria-label="Unggah foto gallery"></label></header>
+                            <div class="editor-gallery-grid" data-editor-gallery></div>
                         </section>
                         <div class="media-guidance">
                             <span><i data-lucide="scan-face"></i></span>
@@ -243,6 +272,10 @@
 
                     <section class="wizard-panel" id="menu-editor-section-3" data-wizard-panel="3" hidden>
                         <header><span class="eyebrow" data-panel-eyebrow>Langkah 3 dari 4</span><h3 data-panel-title>Lengkapi pilihan yang membantu customer memahami menu.</h3><p data-panel-copy>Bagian ini opsional. Kosongkan jika menu tidak memiliki varian atau add-on.</p></header>
+                        <section class="variant-builder">
+                            <header><div><h4>Varian menu</h4><p>Contoh: Suhu, Ukuran, atau Level pedas.</p></div><button class="button button-secondary" type="button" data-action="new-variant-group"><i data-lucide="plus"></i><span>Tambah varian</span></button></header>
+                            <div data-variant-groups></div>
+                        </section>
                         <fieldset class="field checkbox-fieldset">
                             <legend>Add-on yang ditampilkan</legend>
                             <div class="dynamic-checkbox-list" data-addon-attachment-options></div>
@@ -252,6 +285,17 @@
                             <legend>Informasi tambahan</legend>
                             <label><input type="checkbox" name="containsMilk"> Mengandung susu</label>
                         </fieldset>
+                        <details class="advanced-detail-editor">
+                            <summary><span><i data-lucide="notebook-tabs"></i><strong>Bahan, alergi, dan catatan penyajian</strong></span><i data-lucide="chevron-down"></i></summary>
+                            <div class="advanced-detail-fields">
+                                <label class="field field-span-2"><span>Bahan utama</span><textarea name="ingredients" rows="3" maxlength="240" placeholder="Espresso, susu segar, gula aren..."></textarea></label>
+                                <fieldset class="field checkbox-fieldset"><legend>Alergen</legend><label><input type="checkbox" name="allergens" value="Susu"> Susu</label><label><input type="checkbox" name="allergens" value="Kacang"> Kacang</label><label><input type="checkbox" name="allergens" value="Gluten"> Gluten</label><label><input type="checkbox" name="allergens" value="Telur"> Telur</label></fieldset>
+                                <fieldset class="field checkbox-fieldset"><legend>Dietary</legend><label><input type="checkbox" name="dietary" value="Vegetarian"> Vegetarian</label><label><input type="checkbox" name="dietary" value="Vegan"> Vegan</label><label><input type="checkbox" name="dietary" value="Halal"> Halal</label><label><input type="checkbox" name="dietary" value="Gluten free"> Gluten free</label></fieldset>
+                                <label class="field"><span>Kafein</span><select name="caffeine"><option value="">Tidak disebutkan</option><option>Tanpa kafein</option><option>Rendah</option><option>Sedang</option><option>Tinggi</option></select></label>
+                                <label class="field"><span>Level pedas</span><select name="spiceLevel"><option value="none">Tidak pedas</option><option value="mild">Mild</option><option value="medium">Medium</option><option value="hot">Hot</option></select></label>
+                                <label class="field field-span-2"><span>Catatan penyajian</span><input name="servingNote" maxlength="160" placeholder="Paling nikmat disajikan dingin."></label>
+                            </div>
+                        </details>
                         <div class="advanced-info-note"><i data-lucide="info"></i><span>Add-on ditampilkan sebagai informasi pilihan. SagaMenu tidak membuat cart atau checkout.</span></div>
                     </section>
 

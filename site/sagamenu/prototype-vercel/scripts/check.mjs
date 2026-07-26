@@ -20,6 +20,7 @@ const requiredJs = [
     'renderMenus',
     'renderCategories',
     'renderAddons',
+    'renderMediaLibrary',
     'renderAppearance',
     'renderPublish',
     'renderAnalytics',
@@ -63,7 +64,7 @@ console.log(JSON.stringify({
     htmlBytes: files.html.length,
     cssBytes: files.css.length,
     jsBytes: files.js.length,
-    routes: ['overview', 'menus', 'categories', 'addons', 'appearance', 'publish', 'analytics'],
+    routes: ['overview', 'menus', 'categories', 'addons', 'media', 'appearance', 'publish', 'analytics'],
     previews: ['mobile', 'tablet', 'maintenance'],
     actionsChecked: declaredActions.size,
 }, null, 2));

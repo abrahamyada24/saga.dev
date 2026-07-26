@@ -86,7 +86,7 @@ const categoryDeleteProtected = await desktop.getByText('Kategori masih digunaka
 
 await desktop.getByRole('button', { name: 'Tampilan' }).click();
 await desktop.getByRole('heading', { name: 'Tampilan & branding' }).waitFor();
-await desktop.getByRole('button', { name: 'Daftar', exact: true }).click();
+await desktop.getByRole('button', { name: /Compact Cards/ }).click();
 const listLayoutWorked = await desktop.locator('.live-preview-workspace .public-menu.is-layout-list').isVisible();
 await desktop.locator('.live-preview-workspace [data-action="switch-embedded-preview"][data-mode="mobile"]').click();
 const embeddedMobileWorked = await desktop.locator('.live-preview-workspace[data-mode="mobile"]').isVisible();

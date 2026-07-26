@@ -7,7 +7,7 @@ Dashboard wizard membantu operator membuat dan mengedit e-menu preview-only. Sag
 ## Menu Workflow
 
 1. Informasi dasar: catalog, kategori, nama, harga, deskripsi, ketersediaan, dan featured.
-2. Foto & media: upload JPG/PNG/WebP maksimum 5 MB atau pilih Media Library; gallery maksimum tujuh gambar.
+2. Foto & media: upload JPG/PNG/WebP maksimum 5 MB atau pilih Media Library; gallery prototype maksimum empat gambar.
 3. Pilihan & detail: variant, add-on, badge, allergen, dietary, ingredient, promo, dan surface visibility.
 4. Review: validasi draft dan information-only external link.
 
@@ -71,6 +71,11 @@ Save hanya menyimpan draft. Customer baru melihat perubahan setelah catalog dipu
 - URL foto bukan workflow yang didukung.
 - Upload baru divalidasi sebagai JPG, PNG, atau WebP.
 - Prototype mengompresi upload menjadi WebP dan hanya menerima data image JPEG/PNG/WebP atau URL HTTP/HTTPS sebagai sumber preview.
+- Foto utama mempunyai alt text serta focal point horizontal dan vertikal.
+- Gallery prototype menerima maksimum empat foto, dengan replace/remove tanpa mengulang seluruh editor.
+- Media Library menampilkan dimensi, jumlah pemakaian, status alt text, pencarian, filter, dan safe remove.
+- Asset yang masih dipakai menu tidak dapat dihapus dari Media Library.
+- Kegagalan proses foto menampilkan aksi retry dan tidak boleh mengganti foto lama dengan fallback kosong.
 - Pesan `Foto selesai diproses dan tersimpan di draft` hanya boleh muncul setelah hasil kompresi benar-benar tersimpan.
 - Asset harus berasal dari organization yang sama dengan menu.
 - Production wajib mengaktifkan malware scanner required mode.
@@ -90,15 +95,41 @@ Save hanya menyimpan draft. Customer baru melihat perubahan setelah catalog dipu
 - Minimum dan maksimum pilihan dapat dicatat.
 - Add-on inactive tidak masuk ke public snapshot.
 - Harga adalah tambahan informasi, bukan transaksi.
+- Menu dapat mempunyai variant group wajib atau opsional dengan price delta.
+- Variant group dan add-on yang terhubung dapat diurutkan ulang.
+- Detail publik dapat menampilkan bahan, alergen, dietary, caffeine, level pedas, dan catatan penyajian.
+- Field advanced yang kosong tidak ditampilkan pada detail publik.
+
+## Supporting Editor Rules
+
+- Category, add-on, dan media metadata menggunakan side sheet, bukan generic database modal.
+- Side sheet selalu menampilkan dampak penggunaan sebelum save atau delete.
+- Category dan add-on yang masih dipakai tidak dapat terhapus diam-diam.
+- Editor harus tetap dapat digunakan pada viewport 390 px tanpa horizontal overflow.
+
+## Catalog Setup and Publish
+
+- Setup terpandu mempunyai empat bagian: informasi bisnis, surface aktif, warna dasar, serta starter category.
+- Setup hanya mengubah draft dan tidak menerbitkan menu.
+- Publish mewajibkan konfirmasi minimal satu surface: Bio Menu atau Store Display.
+- Publish dengan custom font mewajibkan konfirmasi lisensi font.
+- Safe failure mempertahankan versi live sebelumnya dan menyediakan retry.
+- Maintenance tetap merupakan presentasi publik generik; status akun atau billing tidak boleh dibocorkan.
 
 ## Appearance Rules
 
 - Default font adalah Plus Jakarta Sans.
-- Klien boleh menggunakan custom WOFF/WOFF2 melalui Media Library dan Custom Fonts.
+- Klien boleh menggunakan custom WOFF/WOFF2 melalui Brand Kit.
+- Custom font memerlukan konfirmasi lisensi sebelum Brand Kit dapat disimpan atau diterbitkan.
 - Invalid custom font harus kembali ke fallback.
-- Bio Menu: editorial list atau photo grid.
-- Store Display: editorial grid atau photo grid.
+- Bio Menu: Editorial List, Photo Grid, atau Compact Cards.
+- Store Display: Editorial Grid, Menu Board, atau Gallery Wall.
+- Preset Bio dan Store disimpan secara independen.
+- Preset lama atau tidak dikenal dimigrasikan fail closed ke Editorial List dan Editorial Grid.
 - Brand colors tetap shared antar-surface.
+- Brand Kit mencakup logo, primary, accent, paper, ink, heading font, body font, radius, dan image treatment.
+- Kontras warna teks terhadap paper diperiksa terhadap WCAG AA.
+- Simpan Brand Kit tidak menerbitkan perubahan secara otomatis.
 
 ## Support Checklist
 
@@ -114,4 +145,4 @@ Save hanya menyimpan draft. Customer baru melihat perubahan setelah catalog dipu
 
 ## Release Boundary
 
-Prototype Vercel menggunakan demo `localStorage`. Laravel lokal sudah diuji, tetapi belum staging-ready atau production-ready. Saga Platform feature flag harus tetap off sampai central sandbox rehearsal dan release gates lulus.
+Prototype Vercel menggunakan demo `localStorage`. Upload, media processing, publish, dan migration di prototype adalah simulasi browser, bukan bukti object storage atau database production. Laravel lokal sudah diuji, tetapi belum staging-ready atau production-ready. Saga Platform feature flag harus tetap off sampai central sandbox rehearsal dan release gates lulus.

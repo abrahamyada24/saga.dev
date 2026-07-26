@@ -3,7 +3,7 @@ const LEGACY_STORAGE_KEY = 'sagamenu-prototype-editorial-kv-v1';
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1000&q=82';
 
 const DEFAULT_STATE = {
-    schemaVersion: 2,
+    schemaVersion: 3,
     business: {
         name: 'Bachelor Coffee',
         location: 'Madiun',
@@ -13,17 +13,38 @@ const DEFAULT_STATE = {
     },
     appearance: {
         preset: 'editorial',
+        bioPreset: 'editorial-list',
+        storePreset: 'editorial-grid',
         primary: '#236354',
         accent: '#cbf45a',
         paper: '#f3f5f1',
+        ink: '#20231f',
+        headingFont: 'jakarta',
+        bodyFont: 'jakarta',
+        radius: 'soft',
+        imageTreatment: 'natural',
+        logo: '',
         customFontName: '',
+        customFontLicenseConfirmed: false,
         itemLayout: 'photo',
     },
     preview: {
         mode: 'tablet',
         zoom: 1,
     },
+    publishSurfaces: ['mobile', 'tablet'],
+    onboardingComplete: true,
+    appearanceSaved: null,
     analyticsPeriod: '30',
+    mediaAssets: [
+        {
+            id: 'library-counter',
+            image: 'https://images.unsplash.com/photo-1445116572660-236099ec97a0?auto=format&fit=crop&w=1000&q=82',
+            alt: 'Suasana coffee bar Bachelor Coffee',
+            width: 1200,
+            height: 800,
+        },
+    ],
     categories: [
         { id: 'signature', name: 'Signature', description: 'Pilihan khas Bachelor Coffee.', visible: true },
         { id: 'coffee', name: 'Coffee', description: 'Espresso-based dan manual brew.', visible: true },
@@ -237,6 +258,7 @@ let itemEditorPreviewMode = 'mobile';
 let itemEditorDirty = false;
 let itemEditorSaveTimer = null;
 let itemEditorValidationAttempted = false;
+let failedImageFile = null;
 
 const main = document.querySelector('[data-dashboard] #main-content');
 const previewShell = document.querySelector('[data-preview-shell]');
@@ -251,13 +273,25 @@ const EDITOR_DRAFT_KEY = 'sagamenu-prototype-item-editor-draft-v1';
 const EDITOR_EDIT_DRAFT_PREFIX = 'sagamenu-prototype-item-editor-edit-v1:';
 
 function cloneDefaultState() {
-    return JSON.parse(JSON.stringify(DEFAULT_STATE));
+    const cloned = JSON.parse(JSON.stringify(DEFAULT_STATE));
+    cloned.appearanceSaved = appearanceSnapshot(cloned.appearance);
+    return cloned;
+}
+
+function appearanceSnapshot(appearance) {
+    const keys = [
+        'preset', 'bioPreset', 'storePreset', 'primary', 'accent', 'paper', 'ink',
+        'headingFont', 'bodyFont', 'radius', 'imageTreatment', 'logo',
+        'customFontName', 'customFontLicenseConfirmed', 'itemLayout',
+    ];
+    return Object.fromEntries(keys.map((key) => [key, appearance[key]]));
 }
 
 function buildSnapshot(source) {
     return JSON.parse(JSON.stringify({
         business: source.business,
         appearance: source.appearance,
+        publishSurfaces: source.publishSurfaces,
         categories: source.categories,
         addonGroups: source.addonGroups,
         items: source.items,
@@ -280,7 +314,17 @@ function loadState() {
             appearance: { ...defaults.appearance, ...(stored.appearance || {}) },
             preview: { ...defaults.preview, ...(stored.preview || {}) },
         };
-        merged.schemaVersion = 2;
+        merged.schemaVersion = 3;
+        if (!['editorial-list', 'photo-grid', 'compact-cards'].includes(merged.appearance.bioPreset)) {
+            merged.appearance.bioPreset = 'editorial-list';
+        }
+        if (!['editorial-grid', 'menu-board', 'gallery-wall'].includes(merged.appearance.storePreset)) {
+            merged.appearance.storePreset = 'editorial-grid';
+        }
+        merged.publishSurfaces = Array.isArray(merged.publishSurfaces) && merged.publishSurfaces.length
+            ? merged.publishSurfaces.filter((surface) => ['mobile', 'tablet'].includes(surface))
+            : ['mobile', 'tablet'];
+        merged.appearanceSaved = stored.appearanceSaved || appearanceSnapshot(merged.appearance);
         merged.addonGroups = merged.addonGroups.map((group) => ({
             type: 'multiple',
             min: 0,
@@ -289,6 +333,17 @@ function loadState() {
         }));
         merged.items = merged.items.map((item) => ({
             ...item,
+            imageAlt: item.imageAlt || `${item.name} dari ${merged.business.name}`,
+            focalX: Number.isFinite(Number(item.focalX)) ? Number(item.focalX) : 50,
+            focalY: Number.isFinite(Number(item.focalY)) ? Number(item.focalY) : 50,
+            gallery: Array.isArray(item.gallery) ? item.gallery : [],
+            variants: Array.isArray(item.variants) ? item.variants : [],
+            allergens: Array.isArray(item.allergens) ? item.allergens : (item.containsMilk ? ['Susu'] : []),
+            dietary: Array.isArray(item.dietary) ? item.dietary : [],
+            ingredients: item.ingredients || '',
+            caffeine: item.caffeine || '',
+            spiceLevel: item.spiceLevel || 'none',
+            servingNote: item.servingNote || '',
             addonGroupIds: item.addonGroupIds || [
                 ...(item.milkOptions ? ['milk'] : []),
                 ...(item.extraOptions ? ['extras'] : []),
@@ -309,7 +364,7 @@ function persistState({ markDraft = true, showSaveState = true } = {}) {
     if (markDraft) {
         state.draft = true;
     }
-    state.schemaVersion = 2;
+    state.schemaVersion = 3;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     updateGlobalState();
     if (!showSaveState) return;
@@ -331,7 +386,7 @@ function persistUiState() {
 
 function getRoute() {
     const value = window.location.hash.replace('#', '');
-    return ['overview', 'menus', 'categories', 'addons', 'appearance', 'publish', 'analytics'].includes(value)
+    return ['overview', 'menus', 'categories', 'addons', 'media', 'appearance', 'publish', 'analytics'].includes(value)
         ? value
         : 'overview';
 }
@@ -456,6 +511,7 @@ function render() {
         menus: renderMenus,
         categories: renderCategories,
         addons: renderAddons,
+        media: renderMediaLibrary,
         appearance: renderEditorialAppearance,
         publish: renderEditorialPublish,
         analytics: renderAnalytics,
@@ -738,6 +794,88 @@ function renderAddons() {
     `;
 }
 
+function collectMediaAssets() {
+    const assets = (state.mediaAssets || []).map((asset) => ({
+        ...asset,
+        kind: 'library',
+        usage: [],
+    }));
+    const byImage = new Map(assets.map((asset) => [asset.image, asset]));
+    state.items.forEach((item) => {
+        const sources = [
+            { image: item.image, alt: item.imageAlt, kind: 'primary' },
+            ...(item.gallery || []).map((entry) => ({ image: entry.image || entry, alt: entry.alt || '', kind: 'gallery' })),
+        ].filter((entry) => entry.image);
+        sources.forEach((source) => {
+            let asset = byImage.get(source.image);
+            if (!asset) {
+                asset = {
+                    id: `item-${item.id}-${source.kind}`,
+                    image: source.image,
+                    alt: source.alt || '',
+                    width: 1400,
+                    height: 1050,
+                    kind: source.kind,
+                    usage: [],
+                };
+                assets.push(asset);
+                byImage.set(source.image, asset);
+            }
+            asset.usage.push({ itemId: item.id, name: item.name, kind: source.kind });
+        });
+    });
+    return assets;
+}
+
+function renderMediaLibrary() {
+    const assets = collectMediaAssets();
+    const missingAlt = assets.filter((asset) => !asset.alt.trim()).length;
+    return `
+        ${pageHead(
+            'Asset katalog',
+            'Media Library',
+            'Kelola foto yang dapat digunakan pada Bio Menu dan Store Display.',
+            `<label class="button button-primary media-upload-button"><i data-lucide="upload"></i><span>Unggah asset</span><input type="file" accept="image/jpeg,image/png,image/webp" data-library-upload aria-label="Unggah asset Media Library"></label>`,
+        )}
+        <section class="media-library-summary">
+            ${metricCard('images', 'Total asset', String(assets.length), 'file', 'tersedia')}
+            ${metricCard('link-2', 'Sedang dipakai', String(assets.filter((asset) => asset.usage.length).length), 'asset', 'terhubung ke menu')}
+            ${metricCard('scan-text', 'Alt text', String(assets.length - missingAlt), 'lengkap', missingAlt ? `${missingAlt} perlu dilengkapi` : 'semua lengkap')}
+        </section>
+        <section class="media-library-toolbar" aria-label="Filter Media Library">
+            <label class="search-field"><i data-lucide="search"></i><input type="search" placeholder="Cari nama file, alt text, atau menu..." data-media-search></label>
+            <select aria-label="Status penggunaan media" data-media-filter>
+                <option value="">Semua asset</option>
+                <option value="used">Sedang dipakai</option>
+                <option value="unused">Belum dipakai</option>
+                <option value="missing-alt">Alt text belum lengkap</option>
+            </select>
+        </section>
+        <section class="media-library-grid" data-media-grid>
+            ${assets.map((asset) => `
+                <article class="media-asset-card" data-media-card data-search="${escapeHTML(`${asset.alt} ${asset.usage.map((entry) => entry.name).join(' ')}`.toLocaleLowerCase('id'))}" data-used="${asset.usage.length > 0}" data-missing-alt="${!asset.alt.trim()}">
+                    <div class="media-asset-image"><img src="${safeImage(asset.image)}" alt="${escapeHTML(asset.alt)}"><span>${asset.width} x ${asset.height}</span></div>
+                    <div class="media-asset-copy">
+                        <span class="eyebrow">${asset.usage.length ? `${asset.usage.length} pemakaian` : 'Belum dipakai'}</span>
+                        <strong>${escapeHTML(asset.alt || 'Alt text belum diisi')}</strong>
+                        <small>${asset.usage.length ? escapeHTML(asset.usage.map((entry) => entry.name).join(', ')) : 'Aman dihapus dari library'}</small>
+                    </div>
+                    <div class="media-asset-actions">
+                        <button class="button button-secondary" type="button" data-action="edit-media-alt" data-media-id="${escapeHTML(asset.id)}"><i data-lucide="scan-text"></i><span>Edit alt</span></button>
+                        <button class="icon-button" type="button" data-action="remove-media" data-media-id="${escapeHTML(asset.id)}" aria-label="Hapus asset ${escapeHTML(asset.alt || asset.id)}"><i data-lucide="trash-2"></i></button>
+                    </div>
+                </article>
+            `).join('')}
+        </section>
+        <div class="table-empty-state media-empty-state" data-media-empty hidden>
+            <img src="assets/illustrations/empty-catalog.webp" alt="">
+            <strong>Tidak ada asset yang cocok</strong>
+            <span>Ubah pencarian atau filter penggunaan.</span>
+        </div>
+        <div class="media-security-note"><i data-lucide="shield-check"></i><span><strong>Prototype menggunakan browser storage.</strong><small>Production wajib memvalidasi tenant, MIME, signature, ukuran, dan malware sebelum asset tersedia.</small></span></div>
+    `;
+}
+
 function renderAppearance() {
     return `
         ${pageHead(
@@ -773,7 +911,7 @@ function renderAppearance() {
                         <i data-lucide="upload-cloud"></i>
                         <strong>${state.appearance.customFontName ? escapeHTML(state.appearance.customFontName) : 'Upload .woff, .woff2, atau .ttf'}</strong>
                         <span>Maksimum 2 MB untuk prototype</span>
-                        <input type="file" accept=".woff,.woff2,.ttf,font/woff,font/woff2,font/ttf" data-font-upload>
+                        <input type="file" accept=".woff,.woff2,.ttf,font/woff,font/woff2,font/ttf" data-font-upload aria-label="Unggah font brand">
                     </label>
                 </section>
             </article>
@@ -798,7 +936,7 @@ function colorField(key, label, value) {
     return `
         <label class="color-field">
             <span>${escapeHTML(label)}</span>
-            <span class="color-control"><input type="color" value="${escapeHTML(value)}" data-color-key="${key}"><span>${escapeHTML(value.toUpperCase())}</span></span>
+            <span class="color-control"><input type="color" name="${escapeHTML(key)}" value="${escapeHTML(value)}" data-color-key="${key}"><span>${escapeHTML(value.toUpperCase())}</span></span>
         </label>
     `;
 }
@@ -1071,22 +1209,24 @@ function healthStat(icon, value, label, tone) {
 }
 
 function renderEditorialAppearance() {
+    const contrast = colorContrast(state.appearance.ink, state.appearance.paper);
+    const hasChanges = JSON.stringify(appearanceSnapshot(state.appearance)) !== JSON.stringify(state.appearanceSaved);
     return `
         ${pageHead(
             'Pengaturan',
             'Tampilan & branding',
             'Perubahan baru tampil publik setelah diterbitkan.',
-            `<button class="button button-secondary" type="button" data-action="reset-demo"><i data-lucide="rotate-ccw"></i><span>Reset</span></button>
-             <button class="button button-primary" type="button" data-action="save-appearance"><i data-lucide="save"></i><span>Simpan tampilan</span></button>`,
+            `<button class="button button-secondary" type="button" data-action="reset-appearance-changes" ${hasChanges ? '' : 'disabled'}><i data-lucide="undo-2"></i><span>Batalkan perubahan</span></button>
+             <button class="button button-primary" type="button" data-action="save-appearance" ${hasChanges ? '' : 'disabled'}><i data-lucide="save"></i><span>Simpan tampilan</span></button>`,
         )}
         <section class="appearance-workspace">
             <article class="appearance-controls">
                 <section class="setting-section">
-                    <h3>Preset</h3>
-                    <div class="preset-grid editorial-presets">
-                        ${presetButton('editorial', 'Editorial KV', 'Hangat dan operasional', '#236354', '#f3f5f1')}
-                        ${presetButton('warm', 'Warm Minimal', 'Lembut dan familiar', '#a4492d', '#f7f3ed')}
-                        ${presetButton('clean', 'Clean Premium', 'Terang dan presisi', '#1f5e52', '#f3f6f4')}
+                    <div class="setting-section-heading"><div><span class="eyebrow">Brand Kit</span><h3>Identitas global</h3><p>Logo, warna, dan font berlaku untuk kedua surface.</p></div><button class="button button-secondary" type="button" data-action="open-catalog-setup"><i data-lucide="wand-sparkles"></i><span>Setup terpandu</span></button></div>
+                    <div class="brand-logo-row">
+                        <span class="brand-logo-preview">${state.appearance.logo ? `<img src="${safeImage(state.appearance.logo)}" alt="">` : 'BC'}</span>
+                        <label class="button button-secondary"><i data-lucide="image-plus"></i><span>${state.appearance.logo ? 'Ganti logo' : 'Unggah logo'}</span><input type="file" accept="image/jpeg,image/png,image/webp" data-logo-upload aria-label="Unggah logo brand"></label>
+                        ${state.appearance.logo ? '<button class="text-action" type="button" data-action="remove-brand-logo">Hapus logo</button>' : ''}
                     </div>
                 </section>
                 <section class="setting-section">
@@ -1095,13 +1235,16 @@ function renderEditorialAppearance() {
                         ${colorField('primary', 'Warna utama', state.appearance.primary)}
                         ${colorField('accent', 'Warna aksen', state.appearance.accent)}
                         ${colorField('paper', 'Latar belakang', state.appearance.paper)}
+                        ${colorField('ink', 'Warna teks', state.appearance.ink)}
                     </div>
-                    <div class="contrast-result is-safe"><i data-lucide="circle-check"></i><span>Kontras aman untuk teks utama.</span></div>
+                    <div class="contrast-result ${contrast >= 4.5 ? 'is-safe' : 'is-warning'}"><i data-lucide="${contrast >= 4.5 ? 'circle-check' : 'triangle-alert'}"></i><span>Rasio kontras ${contrast.toFixed(2)}:1 ${contrast >= 4.5 ? 'memenuhi WCAG AA.' : 'belum memenuhi WCAG AA untuk teks normal.'}</span></div>
                 </section>
                 <section class="setting-section">
                     <h3>Tipografi</h3>
-                    <label class="field"><span>Heading font</span><select><option>Plus Jakarta Sans Bold</option><option>Brand font</option></select></label>
-                    <label class="field"><span>Body font</span><select><option>Plus Jakarta Sans Regular</option></select></label>
+                    <div class="form-grid">
+                        <label class="field"><span>Heading font</span><select data-appearance-key="headingFont"><option value="jakarta" ${state.appearance.headingFont === 'jakarta' ? 'selected' : ''}>Plus Jakarta Sans</option><option value="brand" ${state.appearance.headingFont === 'brand' ? 'selected' : ''} ${state.appearance.customFontName ? '' : 'disabled'}>Brand font</option></select></label>
+                        <label class="field"><span>Body font</span><select data-appearance-key="bodyFont"><option value="jakarta" ${state.appearance.bodyFont === 'jakarta' ? 'selected' : ''}>Plus Jakarta Sans</option><option value="brand" ${state.appearance.bodyFont === 'brand' ? 'selected' : ''} ${state.appearance.customFontName ? '' : 'disabled'}>Brand font</option></select></label>
+                    </div>
                 </section>
                 <section class="setting-section">
                     <h3>Font brand</h3>
@@ -1109,15 +1252,32 @@ function renderEditorialAppearance() {
                         <i data-lucide="upload-cloud"></i>
                         <strong>${state.appearance.customFontName ? escapeHTML(state.appearance.customFontName) : 'Unggah WOFF/WOFF2'}</strong>
                         <span>Fallback: Plus Jakarta Sans</span>
-                        <input type="file" accept=".woff,.woff2,font/woff,font/woff2" data-font-upload>
+                        <input type="file" accept=".woff,.woff2,font/woff,font/woff2" data-font-upload aria-label="Unggah font brand">
                     </label>
+                    <label class="check-line compact-check"><input type="checkbox" data-font-license ${state.appearance.customFontLicenseConfirmed ? 'checked' : ''}><span><strong>Saya memiliki izin penggunaan font</strong><small>Konfirmasi lisensi diperlukan sebelum font dapat diterbitkan.</small></span></label>
                     ${state.appearance.customFontName ? '<button class="text-action remove-font-action" type="button" data-action="remove-custom-font">Hapus font dan gunakan fallback</button>' : ''}
                 </section>
                 <section class="setting-section">
-                    <h3>Tampilan item</h3>
-                    <div class="dashboard-preview-tabs">
-                        <button class="${state.appearance.itemLayout === 'list' ? 'is-active' : ''}" type="button" data-action="select-item-layout" data-layout="list">Daftar</button>
-                        <button class="${state.appearance.itemLayout === 'photo' ? 'is-active' : ''}" type="button" data-action="select-item-layout" data-layout="photo">Foto besar</button>
+                    <h3>Bentuk & foto</h3>
+                    <div class="form-grid">
+                        <label class="field"><span>Radius komponen</span><select data-appearance-key="radius"><option value="sharp" ${state.appearance.radius === 'sharp' ? 'selected' : ''}>Tegas</option><option value="soft" ${state.appearance.radius === 'soft' ? 'selected' : ''}>Soft</option><option value="rounded" ${state.appearance.radius === 'rounded' ? 'selected' : ''}>Rounded</option></select></label>
+                        <label class="field"><span>Treatment foto</span><select data-appearance-key="imageTreatment"><option value="natural" ${state.appearance.imageTreatment === 'natural' ? 'selected' : ''}>Natural</option><option value="soft" ${state.appearance.imageTreatment === 'soft' ? 'selected' : ''}>Soft contrast</option><option value="mono" ${state.appearance.imageTreatment === 'mono' ? 'selected' : ''}>Monochrome</option></select></label>
+                    </div>
+                </section>
+                <section class="setting-section surface-preset-section">
+                    <div><span class="eyebrow">Bio Menu</span><h3>Preset mobile</h3><p>Pilih layout khusus link di bio.</p></div>
+                    <div class="surface-preset-grid">
+                        ${surfacePresetButton('mobile', 'editorial-list', 'Editorial List', 'Narasi kuat, scan cepat', 'list')}
+                        ${surfacePresetButton('mobile', 'photo-grid', 'Photo Grid', 'Foto besar dua kolom', 'photo')}
+                        ${surfacePresetButton('mobile', 'compact-cards', 'Compact Cards', 'Padat untuk katalog panjang', 'compact')}
+                    </div>
+                </section>
+                <section class="setting-section surface-preset-section">
+                    <div><span class="eyebrow">Store Display</span><h3>Preset tablet</h3><p>Kategori tetap berada di atas menu.</p></div>
+                    <div class="surface-preset-grid">
+                        ${surfacePresetButton('tablet', 'editorial-grid', 'Editorial Grid', 'Grid operasional tiga kolom', 'photo')}
+                        ${surfacePresetButton('tablet', 'menu-board', 'Menu Board', 'Harga dan nama lebih dominan', 'list')}
+                        ${surfacePresetButton('tablet', 'gallery-wall', 'Gallery Wall', 'Foto besar untuk venue visual', 'gallery')}
                     </div>
                 </section>
                 <div class="appearance-note"><i data-lucide="info"></i><span>Perubahan tersimpan sebagai draft sampai Anda menerbitkannya.</span></div>
@@ -1125,6 +1285,33 @@ function renderEditorialAppearance() {
             ${renderLivePreviewWorkspace('appearance')}
         </section>
     `;
+}
+
+function surfacePresetButton(surface, id, name, description, preview) {
+    const active = surface === 'mobile'
+        ? state.appearance.bioPreset === id
+        : state.appearance.storePreset === id;
+    return `
+        <button class="surface-preset-card ${active ? 'is-active' : ''}" type="button" data-action="select-surface-preset" data-surface="${surface}" data-preset="${id}">
+            <span class="surface-preset-thumbnail is-${preview}"><i></i><i></i><i></i></span>
+            <span><strong>${escapeHTML(name)}</strong><small>${escapeHTML(description)}</small></span>
+            <i data-lucide="${active ? 'circle-check' : 'circle'}"></i>
+        </button>
+    `;
+}
+
+function hexLuminance(hex) {
+    const values = hex.replace('#', '').match(/.{2}/g)?.map((value) => {
+        const channel = parseInt(value, 16) / 255;
+        return channel <= .03928 ? channel / 12.92 : ((channel + .055) / 1.055) ** 2.4;
+    }) || [0, 0, 0];
+    return .2126 * values[0] + .7152 * values[1] + .0722 * values[2];
+}
+
+function colorContrast(foreground, background) {
+    const first = hexLuminance(foreground);
+    const second = hexLuminance(background);
+    return (Math.max(first, second) + .05) / (Math.min(first, second) + .05);
 }
 
 function renderAppearanceFrame(mode) {
@@ -1215,7 +1402,12 @@ function renderEditorialPublish() {
                     <h3>Cakupan rilis</h3>
                     <div><span>Item</span><strong>${state.items.length}</strong></div>
                     <div><span>Kategori</span><strong>${visibleCategories().length}</strong></div>
-                    <div><span>Media</span><strong>18</strong></div>
+                    <div><span>Media</span><strong>${collectMediaAssets().length}</strong></div>
+                    <fieldset class="publish-surface-confirmation">
+                        <legend>Surface yang akan diperbarui</legend>
+                        <label><input type="checkbox" value="mobile" data-publish-surface ${state.publishSurfaces.includes('mobile') ? 'checked' : ''}><i data-lucide="smartphone"></i><span><strong>Bio Menu</strong><small>${escapeHTML(state.appearance.bioPreset)}</small></span></label>
+                        <label><input type="checkbox" value="tablet" data-publish-surface ${state.publishSurfaces.includes('tablet') ? 'checked' : ''}><i data-lucide="tablet"></i><span><strong>Store Display</strong><small>${escapeHTML(state.appearance.storePreset)}</small></span></label>
+                    </fieldset>
                     <div class="maintenance-control editorial-maintenance-control">
                         <span>
                             <strong>Mode maintenance</strong>
@@ -1294,7 +1486,7 @@ function renderPublicMenu(mode, compact = false) {
         return `
             <div class="public-menu maintenance-page ${layoutClass}" style="${appearanceStyle()}">
                 <div class="maintenance-card">
-                    <span class="public-brand-mark">SC</span>
+                    ${publicBrandMark()}
                     <img src="assets/illustrations/maintenance.webp" alt="" width="640" height="640">
                     <h2>Menu sedang maintenance</h2>
                     <p>Kami sedang menyiapkan kembali tampilan menu. Silakan coba beberapa saat lagi.</p>
@@ -1312,15 +1504,35 @@ function renderPublicMenu(mode, compact = false) {
 }
 
 function appearanceStyle() {
-    return `--menu-primary:${escapeHTML(state.appearance.primary)};--menu-accent:${escapeHTML(state.appearance.accent)};--menu-paper:${escapeHTML(state.appearance.paper)};${state.appearance.customFontName ? `--custom-font:"SagaUploadedFont", "Plus Jakarta Sans", sans-serif;` : ''}`;
+    const radius = { sharp: '2px', soft: '8px', rounded: '16px' }[state.appearance.radius] || '8px';
+    const brandFont = state.appearance.customFontName ? '"SagaUploadedFont", "Plus Jakarta Sans", sans-serif' : '"Plus Jakarta Sans", sans-serif';
+    return `--menu-primary:${escapeHTML(state.appearance.primary)};--menu-accent:${escapeHTML(state.appearance.accent)};--menu-paper:${escapeHTML(state.appearance.paper)};--menu-ink:${escapeHTML(state.appearance.ink)};--menu-radius:${radius};--heading-font:${state.appearance.headingFont === 'brand' ? brandFont : '"Plus Jakarta Sans", sans-serif'};--body-font:${state.appearance.bodyFont === 'brand' ? brandFont : '"Plus Jakarta Sans", sans-serif'};`;
+}
+
+function surfaceLayout(mode) {
+    const preset = mode === 'mobile' ? state.appearance.bioPreset : state.appearance.storePreset;
+    return {
+        'editorial-list': 'list',
+        'photo-grid': 'photo',
+        'compact-cards': 'list',
+        'editorial-grid': 'photo',
+        'menu-board': 'list',
+        'gallery-wall': 'photo',
+    }[preset] || state.appearance.itemLayout || 'photo';
+}
+
+function publicBrandMark() {
+    return state.appearance.logo
+        ? `<span class="public-brand-mark has-logo"><img src="${safeImage(state.appearance.logo)}" alt="Logo ${escapeHTML(state.business.name)}"></span>`
+        : '<span class="public-brand-mark">BC</span>';
 }
 
 function renderMobileMenu(categories, compact) {
     return `
-        <div class="public-menu is-layout-${escapeHTML(state.appearance.itemLayout)}" style="${appearanceStyle()}" data-public-menu>
+        <div class="public-menu is-layout-${surfaceLayout('mobile')} preset-${escapeHTML(state.appearance.bioPreset)} image-${escapeHTML(state.appearance.imageTreatment)}" style="${appearanceStyle()}" data-public-menu>
             <header class="public-mobile-header">
                 <div class="public-mobile-brand-row">
-                    <span class="public-brand-mark">BC</span>
+                    ${publicBrandMark()}
                     <span class="public-open">Buka sekarang</span>
                 </div>
                 <span class="public-surface-label">Bio Menu</span>
@@ -1352,10 +1564,10 @@ function renderMobileMenu(categories, compact) {
 
 function renderTabletMenu(categories) {
     return `
-        <div class="public-menu is-layout-${escapeHTML(state.appearance.itemLayout)}" style="${appearanceStyle()}" data-public-menu>
+        <div class="public-menu is-layout-${surfaceLayout('tablet')} preset-${escapeHTML(state.appearance.storePreset)} image-${escapeHTML(state.appearance.imageTreatment)}" style="${appearanceStyle()}" data-public-menu>
             <header class="tablet-public-header">
                 <div class="tablet-brand">
-                    <span class="public-brand-mark">BC</span>
+                    ${publicBrandMark()}
                     <div><span class="public-surface-label">Store Display</span><h1>${escapeHTML(state.business.name)}</h1><p>${escapeHTML(state.business.tagline)}</p></div>
                 </div>
                 <div class="tablet-meta">
@@ -1381,7 +1593,7 @@ function renderPromoBanner() {
     return `
         <button class="promo-banner" type="button" data-public-item="${escapeHTML(promo.id)}">
             <span class="promo-copy"><span>Pilihan minggu ini</span><strong>${escapeHTML(promo.name)}</strong><p>${escapeHTML(promo.description)}</p></span>
-            <img src="${safeImage(promo.image)}" alt="">
+            <img src="${safeImage(promo.image)}" alt="${escapeHTML(promo.imageAlt || promo.name)}" style="object-position:${Number(promo.focalX ?? 50)}% ${Number(promo.focalY ?? 50)}%">
         </button>
     `;
 }
@@ -1403,7 +1615,7 @@ function renderPublicCard(item, mode) {
     return `
         <article class="${cardClass} ${item.availability === 'sold_out' ? 'sold-out' : ''}" data-public-card data-name="${escapeHTML(`${item.name} ${item.description}`.toLocaleLowerCase('id'))}">
             <button type="button" data-public-item="${escapeHTML(item.id)}" aria-label="Lihat detail ${escapeHTML(item.name)}">
-                <img src="${safeImage(item.image)}" alt="">
+                <img src="${safeImage(item.image)}" alt="${escapeHTML(item.imageAlt || item.name)}" style="object-position:${Number(item.focalX ?? 50)}% ${Number(item.focalY ?? 50)}%">
                 <span class="public-card-copy">
                     <span class="public-card-top"><h3>${escapeHTML(item.name)}</h3><strong>${formatPrice(item.price)}</strong></span>
                     <p>${escapeHTML(item.description)}</p>
@@ -1456,9 +1668,26 @@ function openItemEditor(itemId = '') {
     itemForm.elements.price.value = source.price || 28000;
     itemForm.elements.description.value = source.description || '';
     itemForm.elements.image.value = source.image || '';
+    itemForm.elements.imageAlt.value = source.imageAlt || '';
+    itemForm.elements.focalX.value = source.focalX ?? 50;
+    itemForm.elements.focalY.value = source.focalY ?? 50;
+    itemForm.elements.gallery.value = JSON.stringify(source.gallery || []);
+    itemForm.elements.variants.value = JSON.stringify(source.variants || []);
     itemForm.elements.badge.value = source.badge || '';
     itemForm.elements.availability.value = source.availability || 'available';
     itemForm.elements.containsMilk.checked = Boolean(source.containsMilk);
+    itemForm.elements.ingredients.value = source.ingredients || '';
+    itemForm.elements.caffeine.value = source.caffeine || '';
+    itemForm.elements.spiceLevel.value = source.spiceLevel || 'none';
+    itemForm.elements.servingNote.value = source.servingNote || '';
+    itemForm.querySelectorAll('input[name="allergens"]').forEach((input) => {
+        input.checked = (source.allergens || []).includes(input.value);
+    });
+    itemForm.querySelectorAll('input[name="dietary"]').forEach((input) => {
+        input.checked = (source.dietary || []).includes(input.value);
+    });
+    failedImageFile = null;
+    itemForm.querySelector('[data-upload-error]').hidden = true;
     configureItemEditorMode(item);
     const categorySelect = itemForm.querySelector('[data-category-select]');
     categorySelect.innerHTML = state.categories.map((category) => `<option value="${escapeHTML(category.id)}">${escapeHTML(category.name)}</option>`).join('');
@@ -1469,6 +1698,8 @@ function openItemEditor(itemId = '') {
     ];
     renderEditorAddonOptions(selectedGroups);
     renderEditorMediaLibrary();
+    renderEditorGallery();
+    renderEditorVariants();
     itemEditorDirty = false;
     itemEditorPreviewMode = 'mobile';
     itemEditorValidationAttempted = false;
@@ -1554,16 +1785,27 @@ function renderEditorAddonOptions(selectedGroups = []) {
     const checkedGroups = selectedGroups.length
         ? selectedGroups
         : [...itemForm.querySelectorAll('input[name="addonGroupIds"]:checked')].map((input) => input.value);
-    itemForm.querySelector('[data-addon-attachment-options]').innerHTML = state.addonGroups.map((group) => `
-        <label>
-            <input type="checkbox" name="addonGroupIds" value="${escapeHTML(group.id)}" ${checkedGroups.includes(group.id) ? 'checked' : ''}>
-            <span><strong>${escapeHTML(group.name)}</strong><small>${escapeHTML(group.description)}</small></span>
-        </label>
+    const orderedGroups = [
+        ...checkedGroups.map((id) => state.addonGroups.find((group) => group.id === id)).filter(Boolean),
+        ...state.addonGroups.filter((group) => !checkedGroups.includes(group.id)),
+    ];
+    itemForm.querySelector('[data-addon-attachment-options]').innerHTML = orderedGroups.map((group, index) => `
+        <div class="addon-attachment-row" data-addon-attachment="${escapeHTML(group.id)}">
+            <label>
+                <input type="checkbox" name="addonGroupIds" value="${escapeHTML(group.id)}" ${checkedGroups.includes(group.id) ? 'checked' : ''}>
+                <span><strong>${escapeHTML(group.name)}</strong><small>${escapeHTML(group.description)}</small></span>
+            </label>
+            <div ${checkedGroups.includes(group.id) ? '' : 'hidden'}>
+                <button class="icon-button" type="button" data-action="move-attached-addon-up" data-addon-id="${escapeHTML(group.id)}" aria-label="Naikkan ${escapeHTML(group.name)}" ${index === 0 ? 'disabled' : ''}><i data-lucide="arrow-up"></i></button>
+                <button class="icon-button" type="button" data-action="move-attached-addon-down" data-addon-id="${escapeHTML(group.id)}" aria-label="Turunkan ${escapeHTML(group.name)}" ${index === checkedGroups.length - 1 ? 'disabled' : ''}><i data-lucide="arrow-down"></i></button>
+            </div>
+        </div>
     `).join('');
+    refreshIcons();
 }
 
 function renderEditorMediaLibrary() {
-    const images = [...new Set(state.items.map((item) => safeImage(item.image)).filter(Boolean))].slice(0, 8);
+    const images = [...new Set(collectMediaAssets().map((asset) => safeImage(asset.image)).filter(Boolean))].slice(0, 8);
     const selected = itemForm.elements.image.value;
     itemForm.querySelector('[data-editor-media-library]').innerHTML = images.map((image, index) => `
         <button type="button" data-action="choose-editor-media" data-image="${escapeHTML(image)}" class="${selected === image ? 'is-selected' : ''}" aria-label="Pilih foto media ${index + 1}">
@@ -1571,6 +1813,98 @@ function renderEditorMediaLibrary() {
             <span><i data-lucide="check"></i></span>
         </button>
     `).join('');
+}
+
+function readEditorCollection(name) {
+    try {
+        const value = JSON.parse(itemForm.elements[name].value || '[]');
+        return Array.isArray(value) ? value : [];
+    } catch {
+        return [];
+    }
+}
+
+function writeEditorCollection(name, value) {
+    itemForm.elements[name].value = JSON.stringify(value);
+}
+
+function renderEditorGallery() {
+    const gallery = readEditorCollection('gallery');
+    const container = itemForm.querySelector('[data-editor-gallery]');
+    container.innerHTML = gallery.length
+        ? gallery.map((entry, index) => {
+            const normalized = typeof entry === 'string' ? { image: entry, alt: '' } : entry;
+            return `
+                <article>
+                    <img src="${safeImage(normalized.image)}" alt="${escapeHTML(normalized.alt || '')}">
+                    <span>Foto ${index + 1}</span>
+                    <button class="icon-button" type="button" data-action="remove-gallery-image" data-gallery-index="${index}" aria-label="Hapus foto gallery ${index + 1}"><i data-lucide="x"></i></button>
+                </article>
+            `;
+        }).join('')
+        : '<div class="editor-gallery-empty"><i data-lucide="images"></i><span>Belum ada foto pendukung</span></div>';
+    refreshIcons();
+}
+
+function renderEditorVariants() {
+    const variants = readEditorCollection('variants');
+    const container = itemForm.querySelector('[data-variant-groups]');
+    container.innerHTML = variants.length
+        ? variants.map((group, index) => `
+            <article class="variant-group-card">
+                <div>
+                    <span class="variant-order">${index + 1}</span>
+                    <span><strong>${escapeHTML(group.name)}</strong><small>${group.values.length} pilihan · ${group.required ? 'Wajib' : 'Opsional'}</small></span>
+                </div>
+                <div class="variant-value-chips">${group.values.map((value) => `<span>${escapeHTML(value.name)}${value.price ? ` +${formatPrice(value.price)}` : ''}</span>`).join('')}</div>
+                <div class="variant-actions">
+                    <button class="icon-button" type="button" data-action="move-variant-up" data-variant-index="${index}" aria-label="Naikkan ${escapeHTML(group.name)}" ${index === 0 ? 'disabled' : ''}><i data-lucide="arrow-up"></i></button>
+                    <button class="icon-button" type="button" data-action="move-variant-down" data-variant-index="${index}" aria-label="Turunkan ${escapeHTML(group.name)}" ${index === variants.length - 1 ? 'disabled' : ''}><i data-lucide="arrow-down"></i></button>
+                    <button class="icon-button" type="button" data-action="edit-variant-group" data-variant-index="${index}" aria-label="Edit ${escapeHTML(group.name)}"><i data-lucide="pencil"></i></button>
+                    <button class="icon-button" type="button" data-action="remove-variant-group" data-variant-index="${index}" aria-label="Hapus ${escapeHTML(group.name)}"><i data-lucide="trash-2"></i></button>
+                </div>
+            </article>
+        `).join('')
+        : '<div class="variant-empty"><i data-lucide="split"></i><span><strong>Tanpa varian</strong><small>Menu sederhana tidak perlu mengisi bagian ini.</small></span></div>';
+    refreshIcons();
+}
+
+function variantDialog(variantIndex = -1) {
+    const variants = readEditorCollection('variants');
+    const group = variants[variantIndex];
+    const lines = group?.values.map((value) => `${value.name}|${value.price}`).join('\n') || '';
+    openSimpleDialog({
+        eyebrow: 'Varian menu',
+        title: group ? 'Edit varian' : 'Tambah varian',
+        fields: `
+            <label class="field"><span>Nama varian</span><input name="name" required maxlength="50" value="${escapeHTML(group?.name || '')}" placeholder="Contoh: Ukuran"></label>
+            <label class="check-line"><input type="checkbox" name="required" ${group?.required ? 'checked' : ''}><span><strong>Wajib dipilih</strong><small>Customer harus memilih satu informasi varian.</small></span></label>
+            <label class="field"><span>Pilihan varian</span><textarea name="values" required rows="6" placeholder="Regular|0&#10;Large|8000">${escapeHTML(lines)}</textarea><small>Format satu per baris: Nama|Tambahan harga</small></label>
+        `,
+        submitLabel: group ? 'Simpan varian' : 'Tambah varian',
+        submit: (formData) => {
+            const values = String(formData.get('values') || '')
+                .split('\n')
+                .map((line) => line.trim())
+                .filter(Boolean)
+                .map((line) => {
+                    const [name, price] = line.split('|');
+                    return { name: name.trim(), price: Math.max(0, Number(price || 0)) };
+                });
+            const next = {
+                id: group?.id || `variant-${Date.now().toString(36)}`,
+                name: String(formData.get('name') || '').trim(),
+                required: formData.get('required') === 'on',
+                values,
+            };
+            if (group) variants[variantIndex] = next;
+            else variants.push(next);
+            writeEditorCollection('variants', variants);
+            renderEditorVariants();
+            refreshItemEditorPreview();
+            queueEditorDraftSave();
+        },
+    });
 }
 
 function setItemEditorStep(step, shouldValidate = true) {
@@ -1626,6 +1960,9 @@ function refreshItemEditorPreview() {
     const previewImage = itemForm.querySelector('[data-editor-preview-image]');
     previewImage.src = image;
     previewImage.alt = name;
+    previewImage.style.objectPosition = `${itemForm.elements.focalX.value}% ${itemForm.elements.focalY.value}%`;
+    itemForm.querySelector('[data-focal-x-value]').textContent = `${itemForm.elements.focalX.value}%`;
+    itemForm.querySelector('[data-focal-y-value]').textContent = `${itemForm.elements.focalY.value}%`;
     itemForm.querySelector('[data-editor-preview-card]').classList.toggle('is-store', itemEditorPreviewMode === 'tablet');
     itemForm.querySelector('[data-editor-preview-mode]').textContent = itemEditorPreviewMode === 'tablet' ? 'Store Display' : 'Bio Menu';
 }
@@ -1636,6 +1973,7 @@ function refreshEditorReview() {
         .map((input) => state.addonGroups.find((group) => group.id === input.value)?.name)
         .filter(Boolean);
     const choiceLabels = [
+        ...readEditorCollection('variants').map((group) => group.name),
         ...selectedGroupNames,
         ...(itemForm.elements.containsMilk.checked ? ['Mengandung susu'] : []),
     ];
@@ -1644,7 +1982,7 @@ function refreshEditorReview() {
         name: [itemForm.elements.name.value.trim(), itemForm.elements.name.value.trim() || 'Belum diisi'],
         category: [itemForm.elements.categoryId.value, itemForm.elements.categoryId.selectedOptions[0]?.textContent || 'Belum dipilih'],
         price: [priceValue !== '' && Number(priceValue) >= 0, priceValue === '' ? 'Belum diisi' : formatPrice(Number(priceValue))],
-        image: [itemForm.elements.image.value, itemForm.elements.image.value ? 'Foto siap digunakan' : 'Opsional untuk layout daftar'],
+        image: [itemForm.elements.image.value, itemForm.elements.image.value ? `Foto utama + ${readEditorCollection('gallery').length} gallery` : 'Opsional untuk layout daftar'],
         description: [description, description || 'Belum ada deskripsi'],
         availability: [true, itemForm.elements.availability.selectedOptions[0]?.textContent || 'Tersedia'],
         badge: [true, itemForm.elements.badge.value || 'Tanpa badge'],
@@ -1731,10 +2069,21 @@ function captureEditorDraft() {
         price: Math.max(0, Number(data.get('price') || 0)),
         description: String(data.get('description') || ''),
         image: String(data.get('image') || ''),
+        imageAlt: String(data.get('imageAlt') || ''),
+        focalX: Number(data.get('focalX') || 50),
+        focalY: Number(data.get('focalY') || 50),
+        gallery: readEditorCollection('gallery'),
+        variants: readEditorCollection('variants'),
         badge: String(data.get('badge') || ''),
         availability: String(data.get('availability') || 'available'),
         addonGroupIds: data.getAll('addonGroupIds').map(String),
         containsMilk: data.get('containsMilk') === 'on',
+        allergens: data.getAll('allergens').map(String),
+        dietary: data.getAll('dietary').map(String),
+        ingredients: String(data.get('ingredients') || ''),
+        caffeine: String(data.get('caffeine') || ''),
+        spiceLevel: String(data.get('spiceLevel') || 'none'),
+        servingNote: String(data.get('servingNote') || ''),
     };
 }
 
@@ -1822,7 +2171,8 @@ function dismissItemEditor() {
     }
 }
 
-function openSimpleDialog({ eyebrow, title, fields, submit, submitLabel = 'Simpan' }) {
+function openSimpleDialog({ eyebrow, title, fields, submit, submitLabel = 'Simpan', presentation = 'modal' }) {
+    simpleDialog.classList.toggle('is-side-sheet', presentation === 'sheet');
     simpleDialog.querySelector('[data-simple-eyebrow]').textContent = eyebrow;
     simpleDialog.querySelector('[data-simple-title]').textContent = title;
     simpleDialog.querySelector('[data-simple-fields]').innerHTML = fields;
@@ -1871,14 +2221,111 @@ function openProfileDialog() {
     });
 }
 
+function openCatalogSetup() {
+    openSimpleDialog({
+        eyebrow: 'Setup katalog',
+        title: state.onboardingComplete ? 'Tinjau setup bisnis' : 'Mulai katalog pertama',
+        presentation: 'sheet',
+        submitLabel: 'Simpan setup',
+        fields: `
+            <ol class="setup-step-list">
+                <li><span>1</span><div><strong>Informasi bisnis</strong><small>Identitas yang dilihat customer.</small></div></li>
+                <li><span>2</span><div><strong>Surface aktif</strong><small>Pilih Bio Menu, Store Display, atau keduanya.</small></div></li>
+                <li><span>3</span><div><strong>Brand dasar</strong><small>Warna dapat disempurnakan di Brand Kit.</small></div></li>
+                <li><span>4</span><div><strong>Starter content</strong><small>Tambahkan kategori awal jika dibutuhkan.</small></div></li>
+            </ol>
+            <div class="setup-form-section">
+                <span class="eyebrow">Langkah 1</span>
+                <label class="field"><span>Nama bisnis</span><input name="businessName" required maxlength="80" value="${escapeHTML(state.business.name)}"></label>
+                <label class="field"><span>Tagline</span><input name="tagline" maxlength="120" value="${escapeHTML(state.business.tagline)}"></label>
+            </div>
+            <div class="setup-form-section">
+                <span class="eyebrow">Langkah 2</span>
+                <div class="surface-choice-grid">
+                    <label><input type="checkbox" name="surfaces" value="mobile" ${state.publishSurfaces.includes('mobile') ? 'checked' : ''}><i data-lucide="smartphone"></i><span><strong>Bio Menu</strong><small>Link untuk Instagram atau TikTok.</small></span></label>
+                    <label><input type="checkbox" name="surfaces" value="tablet" ${state.publishSurfaces.includes('tablet') ? 'checked' : ''}><i data-lucide="tablet"></i><span><strong>Store Display</strong><small>Tablet customer di venue.</small></span></label>
+                </div>
+            </div>
+            <div class="setup-form-section">
+                <span class="eyebrow">Langkah 3</span>
+                <div class="form-grid">
+                    ${colorField('setupPrimary', 'Warna utama', state.appearance.primary)}
+                    ${colorField('setupAccent', 'Warna aksen', state.appearance.accent)}
+                </div>
+            </div>
+            <div class="setup-form-section">
+                <span class="eyebrow">Langkah 4</span>
+                <label class="field"><span>Kategori starter (opsional)</span><input name="starterCategory" maxlength="50" placeholder="Contoh: Seasonal"></label>
+                <div class="draft-safety-note"><i data-lucide="shield-check"></i><span><strong>Setup disimpan sebagai draft.</strong><small>Customer baru melihatnya setelah Anda menerbitkan.</small></span></div>
+            </div>
+        `,
+        submit: (formData) => {
+            state.business.name = String(formData.get('businessName') || '').trim();
+            state.business.tagline = String(formData.get('tagline') || '').trim();
+            state.publishSurfaces = formData.getAll('surfaces').map(String).filter((surface) => ['mobile', 'tablet'].includes(surface));
+            if (!state.publishSurfaces.length) state.publishSurfaces = ['mobile'];
+            state.appearance.primary = String(formData.get('setupPrimary') || state.appearance.primary);
+            state.appearance.accent = String(formData.get('setupAccent') || state.appearance.accent);
+            const starterCategory = String(formData.get('starterCategory') || '').trim();
+            if (starterCategory && !state.categories.some((category) => category.name.toLocaleLowerCase('id') === starterCategory.toLocaleLowerCase('id'))) {
+                state.categories.push({
+                    id: `${slugify(starterCategory)}-${Date.now().toString(36).slice(-4)}`,
+                    name: starterCategory,
+                    description: 'Kategori starter dari setup katalog.',
+                    visible: true,
+                });
+            }
+            state.onboardingComplete = true;
+            state.draft = true;
+            persistState();
+            render();
+            toast('Setup katalog disimpan', 'Lanjutkan mengisi menu lalu tinjau sebelum terbit.');
+        },
+    });
+}
+
 function closeSimpleDialog() {
     simpleDialog.close();
+    simpleDialog.classList.remove('is-side-sheet');
     document.body.classList.remove('modal-open');
     simpleDialogHandler = null;
 }
 
+function mediaAltDialog(mediaId) {
+    const asset = collectMediaAssets().find((entry) => entry.id === mediaId);
+    if (!asset) return;
+    openSimpleDialog({
+        eyebrow: 'Media Library',
+        title: 'Edit alt text',
+        fields: `
+            <div class="media-alt-preview"><img src="${safeImage(asset.image)}" alt=""></div>
+            <label class="field"><span>Alt text</span><textarea name="alt" required rows="3" maxlength="160" placeholder="Jelaskan objek utama foto secara ringkas">${escapeHTML(asset.alt)}</textarea><small>Hindari kata "gambar" atau "foto". Jelaskan apa yang terlihat.</small></label>
+            <div class="impact-summary"><i data-lucide="link-2"></i><span><strong>${asset.usage.length} pemakaian akan diperbarui</strong><small>${escapeHTML(asset.usage.map((entry) => entry.name).join(', ') || 'Asset belum dipakai menu')}</small></span></div>
+        `,
+        submitLabel: 'Simpan alt text',
+        presentation: 'sheet',
+        submit: (formData) => {
+            const alt = String(formData.get('alt') || '').trim();
+            const libraryAsset = (state.mediaAssets || []).find((entry) => entry.id === mediaId);
+            if (libraryAsset) libraryAsset.alt = alt;
+            state.items.forEach((item) => {
+                if (item.image === asset.image) item.imageAlt = alt;
+                item.gallery = (item.gallery || []).map((entry) => {
+                    const normalized = typeof entry === 'string' ? { image: entry, alt: '' } : entry;
+                    return normalized.image === asset.image ? { ...normalized, alt } : normalized;
+                });
+            });
+            state.draft = true;
+            persistState();
+            render();
+            toast('Alt text diperbarui', 'Semua pemakaian asset memakai deskripsi terbaru.');
+        },
+    });
+}
+
 function categoryDialog(categoryId = '', onSaved = null) {
     const category = state.categories.find((entry) => entry.id === categoryId);
+    const usage = state.items.filter((item) => item.categoryId === categoryId);
     openSimpleDialog({
         eyebrow: 'Kategori',
         title: category ? 'Edit kategori' : 'Tambah kategori',
@@ -1886,7 +2333,10 @@ function categoryDialog(categoryId = '', onSaved = null) {
             <input type="hidden" name="entityId" value="${escapeHTML(category?.id || '')}">
             <label class="field"><span>Nama kategori</span><input name="name" required maxlength="50" value="${escapeHTML(category?.name || '')}" placeholder="Contoh: Seasonal"></label>
             <label class="field" style="margin-top:14px"><span>Deskripsi</span><textarea name="description" rows="3" maxlength="120" placeholder="Deskripsi singkat kategori">${escapeHTML(category?.description || '')}</textarea></label>
+            <label class="check-line"><input type="checkbox" name="visible" ${category?.visible !== false ? 'checked' : ''}><span><strong>Tampilkan pada menu publik</strong><small>Kategori tersembunyi tetap tersimpan sebagai draft.</small></span></label>
+            ${category ? `<div class="impact-summary"><i data-lucide="utensils"></i><span><strong>Dipakai oleh ${usage.length} menu</strong><small>${escapeHTML(usage.slice(0, 4).map((item) => item.name).join(', ') || 'Belum digunakan')}</small></span></div>` : ''}
         `,
+        presentation: 'sheet',
         submit: (formData) => {
             const id = formData.get('entityId');
             let savedCategory;
@@ -1894,13 +2344,14 @@ function categoryDialog(categoryId = '', onSaved = null) {
                 const existing = state.categories.find((entry) => entry.id === id);
                 existing.name = String(formData.get('name'));
                 existing.description = String(formData.get('description'));
+                existing.visible = formData.get('visible') === 'on';
                 savedCategory = existing;
             } else {
                 savedCategory = {
                     id: `${slugify(formData.get('name'))}-${Date.now().toString(36).slice(-4)}`,
                     name: String(formData.get('name')),
                     description: String(formData.get('description')),
-                    visible: true,
+                    visible: formData.get('visible') === 'on',
                 };
                 state.categories.push(savedCategory);
             }
@@ -1914,6 +2365,9 @@ function categoryDialog(categoryId = '', onSaved = null) {
 
 function addonDialog(addonId = '', onSaved = null) {
     const group = state.addonGroups.find((entry) => entry.id === addonId);
+    const usage = state.items.filter((item) => item.addonGroupIds?.includes(addonId)
+        || (addonId === 'milk' && item.milkOptions)
+        || (addonId === 'extras' && item.extraOptions));
     const lines = group?.values.map((value) => `${value.name}|${value.price}`).join('\n') || '';
     openSimpleDialog({
         eyebrow: 'Add-on',
@@ -1927,7 +2381,9 @@ function addonDialog(addonId = '', onSaved = null) {
                 <label class="field"><span>Maksimum pilihan</span><input name="max" type="number" min="1" max="20" value="${escapeHTML(group?.max || group?.values.length || 1)}"></label>
             </div>
             <label class="field" style="margin-top:14px"><span>Pilihan, satu per baris</span><textarea name="values" required rows="6" placeholder="Regular|0&#10;Large|8000">${escapeHTML(lines)}</textarea><small>Format: Nama|Harga</small></label>
+            ${group ? `<div class="impact-summary"><i data-lucide="link-2"></i><span><strong>Dipakai oleh ${usage.length} menu</strong><small>${escapeHTML(usage.slice(0, 4).map((item) => item.name).join(', ') || 'Belum digunakan')}</small></span></div>` : ''}
         `,
+        presentation: 'sheet',
         submit: (formData) => {
             const values = String(formData.get('values'))
                 .split('\n')
@@ -1978,21 +2434,43 @@ function openDetail(itemId) {
     const groups = groupIds.map((id) => state.addonGroups.find((group) => group.id === id)).filter(Boolean);
     detailDialog.querySelector('[data-detail-content]').innerHTML = `
         <div class="detail-layout">
-            <img class="detail-image" src="${safeImage(item.image)}" alt="${escapeHTML(item.name)}">
+            <img class="detail-image" src="${safeImage(item.image)}" alt="${escapeHTML(item.imageAlt || item.name)}" style="object-position:${Number(item.focalX ?? 50)}% ${Number(item.focalY ?? 50)}%">
             <div class="detail-copy">
                 <button class="icon-button detail-close" type="button" data-action="close-detail" aria-label="Tutup detail"><i data-lucide="x"></i></button>
                 ${item.badge ? `<span class="badge badge-orange">${escapeHTML(item.badge)}</span>` : ''}
                 <h2>${escapeHTML(item.name)}</h2>
                 <span class="detail-price">${formatPrice(item.price)}</span>
                 <p class="detail-description">${escapeHTML(item.description)} Dibuat untuk menampilkan detail rasa dan informasi penting sebelum customer datang ke outlet.</p>
-                <section class="detail-section"><h3>Penyajian</h3><div class="detail-option"><span>Hot</span><span>${formatPrice(item.price)}</span></div><div class="detail-option"><span>Iced</span><span>${formatPrice(item.price)}</span></div></section>
+                ${(item.gallery || []).length ? `<div class="detail-gallery">${item.gallery.map((entry) => {
+                    const normalized = typeof entry === 'string' ? { image: entry, alt: '' } : entry;
+                    return `<img src="${safeImage(normalized.image)}" alt="${escapeHTML(normalized.alt || '')}">`;
+                }).join('')}</div>` : ''}
+                ${(item.variants || []).length
+                    ? item.variants.map((variant) => `
+                        <section class="detail-section">
+                            <h3>${escapeHTML(variant.name)} <small>${variant.required ? 'Wajib' : 'Opsional'}</small></h3>
+                            ${variant.values.map((value) => `<div class="detail-option"><span>${escapeHTML(value.name)}</span><span>${value.price ? `+${formatPrice(value.price)}` : 'Termasuk'}</span></div>`).join('')}
+                        </section>
+                    `).join('')
+                    : `<section class="detail-section"><h3>Penyajian</h3><div class="detail-option"><span>Harga dasar</span><span>${formatPrice(item.price)}</span></div></section>`}
                 ${groups.filter(Boolean).map((group) => `
                     <section class="detail-section">
                         <h3>${escapeHTML(group.name)}</h3>
                         ${group.values.map((value) => `<div class="detail-option"><span>${escapeHTML(value.name)}</span><span>${value.price ? `+${formatPrice(value.price)}` : 'Termasuk'}</span></div>`).join('')}
                     </section>
                 `).join('')}
-                <section class="detail-section"><p class="detail-note"><i data-lucide="info"></i><span>${item.containsMilk ? 'Mengandung susu. ' : ''}Add-on ditampilkan sebagai informasi dan tidak menambahkan item ke keranjang.</span></p></section>
+                ${(item.ingredients || item.servingNote || item.allergens?.length || item.dietary?.length) ? `
+                    <section class="detail-section detail-facts">
+                        <h3>Detail menu</h3>
+                        ${item.ingredients ? `<p><strong>Bahan:</strong> ${escapeHTML(item.ingredients)}</p>` : ''}
+                        ${item.allergens?.length ? `<p><strong>Alergen:</strong> ${escapeHTML(item.allergens.join(', '))}</p>` : ''}
+                        ${item.dietary?.length ? `<p><strong>Dietary:</strong> ${escapeHTML(item.dietary.join(', '))}</p>` : ''}
+                        ${item.caffeine ? `<p><strong>Kafein:</strong> ${escapeHTML(item.caffeine)}</p>` : ''}
+                        ${item.spiceLevel && item.spiceLevel !== 'none' ? `<p><strong>Pedas:</strong> ${escapeHTML(item.spiceLevel)}</p>` : ''}
+                        ${item.servingNote ? `<p><strong>Penyajian:</strong> ${escapeHTML(item.servingNote)}</p>` : ''}
+                    </section>
+                ` : ''}
+                <section class="detail-section"><p class="detail-note"><i data-lucide="info"></i><span>${item.containsMilk ? 'Mengandung susu. ' : ''}Pilihan ditampilkan sebagai informasi dan tidak menambahkan item ke keranjang.</span></p></section>
             </div>
         </div>
     `;
@@ -2018,19 +2496,45 @@ function bindViewEvents() {
         control?.addEventListener('input', filterMenuTable);
     });
 
+    const mediaSearch = document.querySelector('[data-media-search]');
+    const mediaFilter = document.querySelector('[data-media-filter]');
+    [mediaSearch, mediaFilter].forEach((control) => {
+        control?.addEventListener('input', filterMediaLibrary);
+        control?.addEventListener('change', filterMediaLibrary);
+    });
+    document.querySelector('[data-library-upload]')?.addEventListener('change', handleLibraryUpload);
+
     document.querySelectorAll('[data-color-key]').forEach((input) => {
         input.addEventListener('input', () => {
             state.appearance[input.dataset.colorKey] = input.value;
             input.nextElementSibling.textContent = input.value.toUpperCase();
             persistState();
-            const preview = document.querySelector('.mini-preview .public-menu');
-            if (preview) {
-                preview.setAttribute('style', appearanceStyle());
-            }
+            document.querySelectorAll('[data-public-menu]').forEach((preview) => preview.setAttribute('style', appearanceStyle()));
+            document.querySelector('[data-action="save-appearance"]')?.removeAttribute('disabled');
+            document.querySelector('[data-action="reset-appearance-changes"]')?.removeAttribute('disabled');
         });
     });
 
+    document.querySelectorAll('[data-appearance-key]').forEach((control) => {
+        control.addEventListener('change', () => {
+            state.appearance[control.dataset.appearanceKey] = control.value;
+            persistState();
+            render();
+        });
+    });
+    document.querySelector('[data-font-license]')?.addEventListener('change', (event) => {
+        state.appearance.customFontLicenseConfirmed = event.target.checked;
+        persistState();
+        render();
+    });
     document.querySelector('[data-font-upload]')?.addEventListener('change', handleFontUpload);
+    document.querySelector('[data-logo-upload]')?.addEventListener('change', handleLogoUpload);
+    document.querySelectorAll('[data-publish-surface]').forEach((input) => {
+        input.addEventListener('change', () => {
+            state.publishSurfaces = [...document.querySelectorAll('[data-publish-surface]:checked')].map((entry) => entry.value);
+            persistState();
+        });
+    });
     document.querySelector('[data-analytics-period]')?.addEventListener('change', (event) => {
         state.analyticsPeriod = ['7', '30', '90'].includes(event.target.value) ? event.target.value : '30';
         persistUiState();
@@ -2040,6 +2544,47 @@ function bindViewEvents() {
         bindPublicEvents(workspace);
     });
     window.requestAnimationFrame(refreshEmbeddedPreviewScales);
+}
+
+function filterMediaLibrary() {
+    const term = (document.querySelector('[data-media-search]')?.value || '').trim().toLocaleLowerCase('id');
+    const filter = document.querySelector('[data-media-filter]')?.value || '';
+    let visible = 0;
+    document.querySelectorAll('[data-media-card]').forEach((card) => {
+        const matchesTerm = !term || card.dataset.search.includes(term);
+        const matchesFilter = !filter
+            || (filter === 'used' && card.dataset.used === 'true')
+            || (filter === 'unused' && card.dataset.used === 'false')
+            || (filter === 'missing-alt' && card.dataset.missingAlt === 'true');
+        card.hidden = !(matchesTerm && matchesFilter);
+        if (!card.hidden) visible += 1;
+    });
+    const empty = document.querySelector('[data-media-empty]');
+    if (empty) empty.hidden = visible > 0;
+}
+
+async function handleLibraryUpload(event) {
+    const [file] = event.target.files || [];
+    if (!file) return;
+    toast('Memproses asset', 'Foto sedang dikompresi menjadi WebP.');
+    try {
+        const image = await imageFileToDataUrl(file);
+        state.mediaAssets = state.mediaAssets || [];
+        state.mediaAssets.unshift({
+            id: `library-${Date.now().toString(36)}`,
+            image,
+            alt: file.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' '),
+            width: 1400,
+            height: 1050,
+        });
+        state.draft = true;
+        persistState();
+        render();
+        toast('Asset siap digunakan', `${file.name} masuk ke Media Library.`);
+    } catch (error) {
+        event.target.value = '';
+        toast('Asset gagal diproses', error.message || 'Pilih file lain dan coba kembali.');
+    }
 }
 
 function filterMenuTable() {
@@ -2128,6 +2673,21 @@ function handleFontUpload(event) {
     reader.readAsDataURL(file);
 }
 
+async function handleLogoUpload(event) {
+    const [file] = event.target.files || [];
+    if (!file) return;
+    try {
+        state.appearance.logo = await imageFileToDataUrl(file);
+        state.draft = true;
+        persistState();
+        render();
+        toast('Logo diperbarui', 'Logo baru masuk ke draft Brand Kit.');
+    } catch (error) {
+        event.target.value = '';
+        toast('Logo tidak dapat digunakan', error.message || 'Gunakan JPG, PNG, atau WebP.');
+    }
+}
+
 async function copyLink(mode) {
     const url = `${window.location.origin}${window.location.pathname}#preview-${mode}`;
     try {
@@ -2140,6 +2700,14 @@ async function copyLink(mode) {
 
 function publishNow({ forceFailure = false } = {}) {
     if (!state.draft || publishRunState === 'publishing') return;
+    if (!state.publishSurfaces.length) {
+        toast('Pilih surface publikasi', 'Aktifkan Bio Menu atau Store Display sebelum menerbitkan.');
+        return;
+    }
+    if (state.appearance.customFontName && !state.appearance.customFontLicenseConfirmed) {
+        toast('Font belum siap diterbitkan', 'Konfirmasi lisensi font dari halaman Tampilan.');
+        return;
+    }
     publishRunState = 'publishing';
     render();
     window.setTimeout(() => {
@@ -2223,8 +2791,11 @@ document.addEventListener('click', (event) => {
     if (action === 'item-step-back') setItemEditorStep(itemEditorStep - 1, false);
     if (action === 'edit-section') focusEditSection(actionButton.dataset.section);
     if (action === 'trigger-image-upload') itemForm.elements.imageUpload.click();
+    if (action === 'retry-image-upload') processPrimaryImage(failedImageFile);
     if (action === 'choose-editor-media') {
         itemForm.elements.image.value = actionButton.dataset.image;
+        const asset = collectMediaAssets().find((entry) => safeImage(entry.image) === actionButton.dataset.image);
+        if (asset?.alt && !itemForm.elements.imageAlt.value.trim()) itemForm.elements.imageAlt.value = asset.alt;
         renderEditorMediaLibrary();
         refreshItemEditorPreview();
         queueEditorDraftSave();
@@ -2235,6 +2806,43 @@ document.addEventListener('click', (event) => {
         renderEditorMediaLibrary();
         refreshItemEditorPreview();
         queueEditorDraftSave();
+    }
+    if (action === 'remove-gallery-image') {
+        const gallery = readEditorCollection('gallery');
+        gallery.splice(Number(actionButton.dataset.galleryIndex), 1);
+        writeEditorCollection('gallery', gallery);
+        renderEditorGallery();
+        queueEditorDraftSave();
+    }
+    if (action === 'new-variant-group') variantDialog();
+    if (action === 'edit-variant-group') variantDialog(Number(actionButton.dataset.variantIndex));
+    if (action === 'remove-variant-group') {
+        const variants = readEditorCollection('variants');
+        variants.splice(Number(actionButton.dataset.variantIndex), 1);
+        writeEditorCollection('variants', variants);
+        renderEditorVariants();
+        queueEditorDraftSave();
+    }
+    if (action === 'move-variant-up' || action === 'move-variant-down') {
+        const variants = readEditorCollection('variants');
+        const from = Number(actionButton.dataset.variantIndex);
+        const to = action === 'move-variant-up' ? from - 1 : from + 1;
+        if (to >= 0 && to < variants.length) {
+            [variants[from], variants[to]] = [variants[to], variants[from]];
+            writeEditorCollection('variants', variants);
+            renderEditorVariants();
+            queueEditorDraftSave();
+        }
+    }
+    if (action === 'move-attached-addon-up' || action === 'move-attached-addon-down') {
+        const checked = [...itemForm.querySelectorAll('input[name="addonGroupIds"]:checked')].map((input) => input.value);
+        const from = checked.indexOf(actionButton.dataset.addonId);
+        const to = action === 'move-attached-addon-up' ? from - 1 : from + 1;
+        if (from >= 0 && to >= 0 && to < checked.length) {
+            [checked[from], checked[to]] = [checked[to], checked[from]];
+            renderEditorAddonOptions(checked);
+            queueEditorDraftSave();
+        }
     }
     if (action === 'editor-preview-mode') {
         itemEditorPreviewMode = actionButton.dataset.mode === 'tablet' ? 'tablet' : 'mobile';
@@ -2262,6 +2870,21 @@ document.addEventListener('click', (event) => {
     if (action === 'edit-category') categoryDialog(actionButton.dataset.categoryId);
     if (action === 'new-addon') addonDialog();
     if (action === 'edit-addon') addonDialog(actionButton.dataset.addonId);
+    if (action === 'edit-media-alt') mediaAltDialog(actionButton.dataset.mediaId);
+    if (action === 'remove-media') {
+        const asset = collectMediaAssets().find((entry) => entry.id === actionButton.dataset.mediaId);
+        if (!asset) return;
+        if (asset.usage.length) {
+            toast('Asset masih digunakan', `Lepaskan dari ${asset.usage.length} pemakaian sebelum menghapus.`);
+            return;
+        }
+        if (window.confirm(`Hapus asset "${asset.alt || asset.id}" dari Media Library?`)) {
+            state.mediaAssets = (state.mediaAssets || []).filter((entry) => entry.id !== asset.id);
+            persistState();
+            render();
+            toast('Asset dihapus', 'Asset yang tidak terpakai sudah dibersihkan.');
+        }
+    }
     if (action === 'close-simple-dialog') closeSimpleDialog();
     if (action === 'close-detail') closeDetail();
     if (action === 'preview-mobile') {
@@ -2312,13 +2935,46 @@ document.addEventListener('click', (event) => {
     }
 
     if (action === 'save-appearance') {
+        if (state.appearance.customFontName && !state.appearance.customFontLicenseConfirmed) {
+            toast('Konfirmasi lisensi font', 'Centang izin penggunaan font sebelum menyimpan Brand Kit.');
+            return;
+        }
+        state.appearanceSaved = appearanceSnapshot(state.appearance);
+        state.draft = true;
         persistState();
         render();
         toast('Tampilan disimpan', 'Perubahan tetap sebagai draft sampai diterbitkan.');
     }
 
+    if (action === 'reset-appearance-changes') {
+        state.appearance = { ...state.appearance, ...state.appearanceSaved };
+        persistState();
+        render();
+        toast('Perubahan dibatalkan', 'Brand Kit kembali ke versi terakhir yang disimpan.');
+    }
+
+    if (action === 'select-surface-preset') {
+        const key = actionButton.dataset.surface === 'mobile' ? 'bioPreset' : 'storePreset';
+        state.appearance[key] = actionButton.dataset.preset;
+        persistState();
+        render();
+        toast('Preset preview diterapkan', 'Simpan tampilan untuk mengunci pilihan ini.');
+    }
+
+    if (action === 'remove-brand-logo') {
+        state.appearance.logo = '';
+        persistState();
+        render();
+        toast('Logo dihapus', 'Monogram bisnis digunakan sebagai fallback.');
+    }
+
+    if (action === 'open-catalog-setup') openCatalogSetup();
+
     if (action === 'remove-custom-font') {
         state.appearance.customFontName = '';
+        state.appearance.customFontLicenseConfirmed = false;
+        state.appearance.headingFont = 'jakarta';
+        state.appearance.bodyFont = 'jakarta';
         persistState();
         render();
         toast('Font dihapus', 'Preview kembali menggunakan Plus Jakarta Sans.');
@@ -2468,6 +3124,10 @@ itemForm.addEventListener('change', (event) => {
     if (itemEditorValidationAttempted && event.target.matches('input, select, textarea')) {
         validateEditorBasics({ focus: false });
     }
+    if (event.target.matches('input[name="addonGroupIds"]')) {
+        const checked = [...itemForm.querySelectorAll('input[name="addonGroupIds"]:checked')].map((input) => input.value);
+        renderEditorAddonOptions(checked);
+    }
 });
 
 itemEditor.addEventListener('cancel', (event) => {
@@ -2475,16 +3135,21 @@ itemEditor.addEventListener('cancel', (event) => {
     dismissItemEditor();
 });
 
-itemForm.elements.imageUpload.addEventListener('change', async (event) => {
-    const [file] = event.target.files;
+async function processPrimaryImage(file) {
     if (!file) return;
     const progress = itemForm.querySelector('[data-upload-progress]');
+    const errorState = itemForm.querySelector('[data-upload-error]');
+    errorState.hidden = true;
     progress.hidden = false;
     progress.querySelector('span').style.width = '35%';
     try {
         const image = await imageFileToDataUrl(file);
         progress.querySelector('span').style.width = '100%';
         itemForm.elements.image.value = image;
+        if (!itemForm.elements.imageAlt.value.trim()) {
+            itemForm.elements.imageAlt.value = file.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ');
+        }
+        failedImageFile = null;
         renderEditorMediaLibrary();
         refreshItemEditorPreview();
         itemEditorDirty = true;
@@ -2497,9 +3162,38 @@ itemForm.elements.imageUpload.addEventListener('change', async (event) => {
         }, 500);
     } catch (error) {
         progress.hidden = true;
-        event.target.value = '';
-        toast('Foto tidak dapat digunakan', error.message || 'Coba gunakan file lain.');
+        failedImageFile = file;
+        itemForm.elements.imageUpload.value = '';
+        errorState.hidden = false;
+        errorState.querySelector('[data-upload-error-copy]').textContent = error.message || 'Coba gunakan file lain.';
+        refreshIcons();
     }
+}
+
+itemForm.elements.imageUpload.addEventListener('change', async (event) => {
+    const [file] = event.target.files;
+    await processPrimaryImage(file);
+});
+
+itemForm.querySelector('[data-gallery-upload]').addEventListener('change', async (event) => {
+    const files = [...event.target.files].slice(0, Math.max(0, 4 - readEditorCollection('gallery').length));
+    if (!files.length) return;
+    const gallery = readEditorCollection('gallery');
+    for (const file of files) {
+        try {
+            const image = await imageFileToDataUrl(file);
+            gallery.push({
+                image,
+                alt: file.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' '),
+            });
+        } catch (error) {
+            toast('Satu foto gallery dilewati', error.message || file.name);
+        }
+    }
+    writeEditorCollection('gallery', gallery.slice(0, 4));
+    renderEditorGallery();
+    queueEditorDraftSave();
+    event.target.value = '';
 });
 
 const editorDropZone = itemForm.querySelector('[data-media-upload-zone]');
@@ -2540,10 +3234,21 @@ itemForm.addEventListener('submit', (event) => {
         price: Math.max(0, Number(data.get('price'))),
         description: String(data.get('description')).trim(),
         image: normalizeImage(String(data.get('image'))),
+        imageAlt: String(data.get('imageAlt') || '').trim(),
+        focalX: Number(data.get('focalX') || 50),
+        focalY: Number(data.get('focalY') || 50),
+        gallery: readEditorCollection('gallery'),
+        variants: readEditorCollection('variants'),
         badge: String(data.get('badge')),
         availability: String(data.get('availability')),
         addonGroupIds: data.getAll('addonGroupIds').map(String),
         containsMilk: data.get('containsMilk') === 'on',
+        allergens: data.getAll('allergens').map(String),
+        dietary: data.getAll('dietary').map(String),
+        ingredients: String(data.get('ingredients') || '').trim(),
+        caffeine: String(data.get('caffeine') || ''),
+        spiceLevel: String(data.get('spiceLevel') || 'none'),
+        servingNote: String(data.get('servingNote') || '').trim(),
     };
     if (existing) {
         Object.assign(existing, item);

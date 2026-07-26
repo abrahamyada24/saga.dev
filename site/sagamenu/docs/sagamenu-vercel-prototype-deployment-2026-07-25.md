@@ -1,6 +1,6 @@
 # SagaMenu Vercel Prototype Deployment
 
-Date: 26 July 2026
+Date: 27 July 2026
 Status: `DEPLOYED_PROTOTYPE_READY`
 Product boundary: static interactive review artifact, not the Laravel SaaS runtime
 
@@ -9,8 +9,8 @@ Product boundary: static interactive review artifact, not the Laravel SaaS runti
 - Stable review URL: `https://sagamenu-prototype-review.vercel.app`
 - Vercel project: `sagamenu-prototype-review`
 - Project ID: `prj_fnhuPOgIhoonBXI4FUzVw3BqY7sY`
-- Latest deployment ID: `dpl_J2cn4uTbcehut3HeN3hPvpXqGqmd`
-- Latest immutable deployment URL: `https://sagamenu-prototype-review-44h2oy3hb-andreas-projects16.vercel.app`
+- Latest deployment ID: `dpl_7SFHz6XWrk5WjFWQRuzyJqKbLZjM`
+- Latest immutable deployment URL: `https://sagamenu-prototype-review-gn3a6lsg8-andreas-projects16.vercel.app`
 - Vercel target: `production`
 - Vercel state: `READY`
 - Source branch: `codex/sagamenu-wave2-sprint22`
@@ -110,20 +110,36 @@ The production prototype was updated on 2026-07-26 with:
 
 Focused Sprint 2 E2E, Sprint 0 regression, Sprint 1 regression, and the full prototype E2E passed locally and against the stable Vercel review URL with zero console and page errors. Full evidence is recorded in `docs/sagamenu-sprint-2-create-edit-separation-report-2026-07-26.md`.
 
+## Sprints 3-8 Complete Wizard Wave
+
+The production review prototype was updated on 27 July 2026 with:
+
+- Visual Media Library with upload, alt text, focal point, gallery, usage, search/filter, and safe remove.
+- Variant groups, price deltas, add-on ordering, food facts, and public-detail parity.
+- Category, add-on, and media side sheets with usage impact and delete protection.
+- Four-part catalog setup and surface-confirmed publish with safe failure and retry.
+- Brand Kit with logo, colors, contrast, WOFF/WOFF2 validation, license gate, radius, and image treatment.
+- Independent Bio and Store presets with migration fallback.
+
+Sprint 0, Sprint 1, Sprint 2, the complete-wave E2E, and full prototype E2E all passed against the stable Vercel review URL. There were no console errors, page errors, horizontal overflow, or unnamed buttons. Full evidence and the manual review sequence are recorded in:
+
+- `docs/sagamenu-sprints-3-8-complete-wave-report-2026-07-27.md`
+- `docs/sagamenu-prototype-review-step-by-step-2026-07-27.md`
+
 ## Review Checklist
 
-1. Open the stable review URL.
-2. Review Ringkasan and sidebar structure.
-3. Add or edit a menu from Menu.
-4. Toggle one menu to Sold out.
-5. Add or hide a category.
-6. Review add-on information.
-7. Change preset and colors from Tampilan.
-8. Open Bio Menu and Store Display previews.
-9. Open a menu detail and inspect variants/add-ons.
-10. Enable Maintenance mode from Publish & Share.
-11. Disable Maintenance mode and publish the draft.
-12. Reset the browser demo when finished.
+1. Open the stable review URL and click `Reset demo`.
+2. Review Ringkasan, Media Library, and sidebar structure.
+3. Create a basic menu through the four-step wizard.
+4. Edit a menu through the focused single-page workspace.
+5. Add a gallery image, variant, add-on, and food details.
+6. Review safe delete in Media Library, Category, and Add-on.
+7. Complete the guided catalog setup.
+8. Change Brand Kit and separate Bio/Store presets.
+9. Open Bio Menu and Store Display previews.
+10. Open a menu detail and inspect variants/add-ons.
+11. Test publish surface blocking, safe failure, and retry.
+12. Review at 390 px and reset the browser demo when finished.
 
 ## Boundary
 
