@@ -6519,3 +6519,448 @@ svg {
 .public-menu[data-public-menu] .public-business-note span {
     border-radius: var(--menu-radius, 8px);
 }
+
+/* Sprints 9-12: pilot evidence, visual focal point, video menu, and Brand Kit hierarchy */
+.focal-point-editor {
+    position: relative;
+    min-height: 210px;
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--surface-soft);
+    cursor: crosshair;
+}
+
+.focal-point-editor img {
+    width: 100%;
+    height: 210px;
+    object-fit: cover;
+}
+
+.focal-point-editor > small {
+    position: absolute;
+    right: 10px;
+    bottom: 10px;
+    padding: 6px 8px;
+    border-radius: 5px;
+    background: rgb(20 27 23 / 78%);
+    color: #fff;
+    font-size: 9px;
+}
+
+.focal-point-marker {
+    position: absolute;
+    width: 28px;
+    height: 28px;
+    border: 3px solid #fff;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 2px 12px rgb(10 20 16 / 40%);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+}
+
+.focal-point-marker::after {
+    position: absolute;
+    inset: 7px;
+    border: 2px solid var(--ink);
+    border-radius: inherit;
+    content: "";
+}
+
+.editor-video {
+    margin-top: 20px;
+    padding: 20px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--surface);
+}
+
+.editor-video > header,
+.editor-video-preview > div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+}
+
+.editor-video h4 {
+    margin: 0;
+    font-size: 14px;
+}
+
+.editor-video p {
+    margin: 3px 0 0;
+    color: var(--muted);
+    font-size: 11px;
+}
+
+.editor-video-empty {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 92px;
+    margin-top: 14px;
+    padding: 16px;
+    border: 1px dashed var(--line-strong);
+    border-radius: 7px;
+    background: var(--surface-soft);
+}
+
+.editor-video-empty[hidden],
+.editor-video-preview[hidden] {
+    display: none;
+}
+
+.editor-video-empty > svg {
+    width: 28px;
+    height: 28px;
+    color: var(--primary);
+}
+
+.editor-video-empty > span,
+.editor-video-preview > div > span {
+    display: grid;
+    gap: 3px;
+}
+
+.editor-video-empty small,
+.editor-video-preview small {
+    color: var(--muted);
+    font-size: 10px;
+}
+
+.editor-video-preview {
+    margin-top: 14px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+}
+
+.editor-video-preview video {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background: #111;
+    object-fit: cover;
+}
+
+.editor-video-preview > div {
+    min-height: 56px;
+    padding: 9px 12px;
+}
+
+.editor-complexity-summary {
+    display: grid;
+    grid-template-columns: 36px minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+    margin: 12px 0;
+    padding: 12px;
+    border: 1px solid #cbdcf5;
+    border-radius: 7px;
+    background: var(--blue-soft);
+}
+
+.editor-complexity-summary > svg {
+    width: 20px;
+    height: 20px;
+    color: var(--primary);
+}
+
+.editor-complexity-summary > span {
+    display: grid;
+    gap: 2px;
+}
+
+.editor-complexity-summary small {
+    color: var(--muted);
+    font-size: 10px;
+}
+
+.appearance-tabbar {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 4px;
+    margin-inline: -18px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--line);
+    background: var(--surface);
+}
+
+.appearance-tabbar button {
+    display: grid;
+    min-width: 0;
+    min-height: 48px;
+    place-items: center;
+    gap: 3px;
+    padding: 5px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--muted);
+    font-size: 9px;
+    font-weight: 700;
+}
+
+.appearance-tabbar button svg {
+    width: 16px;
+    height: 16px;
+}
+
+.appearance-tabbar button.is-active {
+    background: var(--primary-soft);
+    color: var(--primary);
+}
+
+.setting-section.is-tab-hidden {
+    display: none;
+}
+
+.media-video-play {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 42px;
+    height: 42px;
+    padding: 11px;
+    border-radius: 50%;
+    background: rgb(255 255 255 / 88%);
+    color: var(--ink);
+    box-shadow: 0 5px 18px rgb(0 0 0 / 24%);
+    transform: translate(-50%, -50%);
+}
+
+.public-card-media,
+.promo-media {
+    position: relative;
+    display: block;
+    min-width: 0;
+    height: 100%;
+    overflow: hidden;
+}
+
+.promo-media > img {
+    display: block;
+}
+
+.promo-media > svg {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 28px;
+    height: 28px;
+    padding: 7px;
+    border-radius: 50%;
+    background: rgb(255 255 255 / 88%);
+    color: var(--ink);
+    transform: translate(-50%, -50%);
+}
+
+.public-video-badge {
+    position: absolute;
+    right: 7px;
+    bottom: 7px;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 4px 6px;
+    border-radius: 5px;
+    background: rgb(20 26 23 / 82%);
+    color: #fff;
+    font-size: 7px;
+    font-weight: 800;
+}
+
+.public-video-badge svg {
+    width: 9px;
+    height: 9px;
+}
+
+.detail-video-wrap {
+    position: relative;
+    min-height: 530px;
+    background: #141814;
+}
+
+.detail-video {
+    width: 100%;
+    height: 100%;
+    min-height: 530px;
+    object-fit: contain;
+}
+
+.detail-video-wrap > span {
+    position: absolute;
+    right: 12px;
+    bottom: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 8px;
+    border-radius: 5px;
+    background: rgb(10 14 11 / 76%);
+    color: #fff;
+    font-size: 8px;
+}
+
+.detail-video-wrap > span svg {
+    width: 12px;
+    height: 12px;
+}
+
+.pilot-review {
+    width: min(calc(100% - 28px), 560px);
+    max-height: calc(100dvh - 40px);
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--surface);
+}
+
+.pilot-review::backdrop {
+    background: rgb(15 22 18 / 46%);
+}
+
+.pilot-review-frame {
+    display: grid;
+    max-height: calc(100dvh - 40px);
+    padding: 22px;
+    overflow-y: auto;
+}
+
+.pilot-review-frame > header,
+.pilot-review-frame > footer,
+.pilot-session-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.pilot-review-frame h2 {
+    margin: 4px 0;
+    font-size: 22px;
+}
+
+.pilot-review-frame header p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 10px;
+}
+
+.pilot-session-meta {
+    margin: 18px 0 12px;
+    padding: 11px 12px;
+    border-radius: 7px;
+    background: var(--surface-soft);
+}
+
+.pilot-session-meta span {
+    color: var(--muted);
+    font-size: 11px;
+}
+
+.pilot-session-meta strong {
+    font-size: 18px;
+}
+
+.pilot-task-list {
+    display: grid;
+    gap: 7px;
+    margin: 0 0 18px;
+    padding: 0;
+    list-style: none;
+}
+
+.pilot-task-list li {
+    display: grid;
+    grid-template-columns: 22px minmax(0, 1fr);
+    align-items: center;
+    gap: 9px;
+    padding: 10px;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+}
+
+.pilot-task-list li.is-complete {
+    border-color: #b9dcca;
+    background: var(--mint-soft);
+}
+
+.pilot-task-list li > svg {
+    width: 18px;
+    height: 18px;
+    color: var(--primary);
+}
+
+.pilot-task-list li > span {
+    display: grid;
+    gap: 2px;
+}
+
+.pilot-task-list small {
+    color: var(--muted);
+    font-size: 9px;
+}
+
+.pilot-review-frame > footer {
+    justify-content: flex-end;
+    margin-top: 16px;
+}
+
+@media (max-width: 700px) {
+    .prototype-strip {
+        gap: 8px;
+    }
+
+    .prototype-strip p {
+        display: none;
+    }
+
+    .focal-point-editor,
+    .focal-point-editor img {
+        min-height: 180px;
+        height: 180px;
+    }
+
+    .editor-video > header,
+    .pilot-review-frame > footer {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .editor-video > header .button,
+    .pilot-review-frame > footer .button {
+        width: 100%;
+    }
+
+    .appearance-tabbar {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .detail-video-wrap,
+    .detail-video {
+        min-height: 230px;
+    }
+
+    .pilot-review-frame {
+        padding: 18px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+    }
+}

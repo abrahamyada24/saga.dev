@@ -1,4 +1,4 @@
-import { chromium } from 'file:///C:/Users/Windows%2011/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright/index.mjs';
+import { chromium } from 'playwright';
 import { fileURLToPath } from 'node:url';
 
 const baseUrl = process.env.SAGA_MENU_PROTOTYPE_URL || 'http://127.0.0.1:4178';
@@ -53,7 +53,7 @@ await page.getByRole('button', { name: /^Menu & Katalog/ }).click();
 let itemRow = page.locator('[data-item-row]').filter({ hasText: 'Es Kopi Susu Aren' });
 await itemRow.getByRole('button', { name: 'Edit Es Kopi Susu Aren' }).click();
 let editor = page.locator('[data-item-editor]');
-await editor.getByRole('button', { name: 'Foto', exact: true }).click();
+await editor.getByRole('button', { name: 'Media', exact: true }).click();
 await editor.locator('input[name="imageAlt"]').fill('Es kopi susu aren dengan foam di gelas bening');
 await editor.locator('input[name="focalX"]').fill('62');
 await editor.locator('input[name="focalY"]').fill('44');
@@ -131,20 +131,23 @@ await sheet.locator('input[name="starterCategory"]').fill('Seasonal Lab');
 await sheet.getByRole('button', { name: 'Simpan setup' }).click();
 await page.getByText('Setup katalog disimpan').waitFor();
 
-await page.getByRole('button', { name: 'Photo Grid' }).click();
-await page.getByRole('button', { name: 'Menu Board' }).click();
 await page.locator('[data-logo-upload]').setInputFiles(fixturePath);
 await page.getByText('Logo diperbarui').waitFor();
+await page.getByRole('button', { name: 'Tipografi' }).click();
 await page.locator('[data-font-upload]').setInputFiles(fixturePath);
 const invalidFontRejected = await page.getByText('Format font tidak didukung').isVisible();
+await page.getByRole('button', { name: 'Bentuk' }).click();
 await page.locator('[data-appearance-key="radius"]').selectOption('rounded');
 await page.locator('[data-appearance-key="imageTreatment"]').selectOption('mono');
+await page.getByRole('button', { name: 'Preset' }).click();
+await page.getByRole('button', { name: 'Photo Grid' }).click();
+await page.getByRole('button', { name: 'Menu Board' }).click();
 await page.getByRole('button', { name: 'Simpan tampilan' }).click();
 await page.getByText('Tampilan disimpan').waitFor();
 const savedAppearance = {
     bioActive: await page.getByRole('button', { name: /Photo Grid/ }).evaluate((button) => button.classList.contains('is-active')),
     storeActive: await page.getByRole('button', { name: /Menu Board/ }).evaluate((button) => button.classList.contains('is-active')),
-    logoVisible: await page.locator('.brand-logo-preview img').isVisible(),
+    logoStored: await page.locator('.brand-logo-preview img').count() === 1,
 };
 
 await page.getByRole('button', { name: 'Compact Cards' }).click();
@@ -177,6 +180,7 @@ await page.evaluate(() => {
 });
 await page.reload({ waitUntil: 'networkidle' });
 await page.getByRole('button', { name: 'Tampilan' }).click();
+await page.getByRole('button', { name: 'Preset' }).click();
 const migrationFallback = {
     bio: await page.getByRole('button', { name: /Editorial List/ }).evaluate((button) => button.classList.contains('is-active')),
     store: await page.getByRole('button', { name: /Editorial Grid/ }).evaluate((button) => button.classList.contains('is-active')),
@@ -268,7 +272,7 @@ const passed = [
     invalidFontRejected,
     savedAppearance.bioActive,
     savedAppearance.storeActive,
-    savedAppearance.logoVisible,
+    savedAppearance.logoStored,
     cancelRestored,
     noSurfaceBlocked,
     liveVersionSafe,

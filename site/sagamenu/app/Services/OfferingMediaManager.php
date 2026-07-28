@@ -17,20 +17,27 @@ class OfferingMediaManager
         ?int $primaryAssetId,
         array $galleryAssetIds,
         User $actor,
+        ?string $videoUploadPath = null,
+        ?int $videoAssetId = null,
     ): void {
         if (filled($uploadPath)) {
-            $primaryAssetId = $this->createUploadedAsset($offering, $uploadPath, $actor)->id;
+            $primaryAssetId = $this->createUploadedAsset($offering, $uploadPath, $actor, 'image')->id;
         }
 
-        $primary = $this->validatedAsset($offering, $primaryAssetId);
+        if (filled($videoUploadPath)) {
+            $videoAssetId = $this->createUploadedAsset($offering, $videoUploadPath, $actor, 'video')->id;
+        }
+
+        $primary = $this->validatedAsset($offering, $primaryAssetId, 'image', 'primary_image_asset_id');
         $gallery = collect($galleryAssetIds)
             ->filter()
-            ->map(fn ($id) => $this->validatedAsset($offering, (int) $id))
+            ->map(fn ($id) => $this->validatedAsset($offering, (int) $id, 'image', 'gallery_media_asset_ids'))
             ->filter()
             ->reject(fn (MediaAsset $asset) => $asset->id === $primary?->id)
             ->unique('id')
             ->take(7)
             ->values();
+        $video = $this->validatedAsset($offering, $videoAssetId, 'video', 'video_asset_id');
 
         $offering->media()->delete();
 
@@ -55,17 +62,30 @@ class OfferingMediaManager
                 'is_active' => true,
             ]);
         });
+
+        if ($video) {
+            OfferingMedia::query()->create([
+                'organization_id' => $offering->organization_id,
+                'offering_id' => $offering->id,
+                'media_asset_id' => $video->id,
+                'role' => 'menu_video',
+                'sort_order' => 0,
+                'is_active' => true,
+            ]);
+        }
     }
 
-    private function createUploadedAsset(Offering $offering, string $path, User $actor): MediaAsset
+    private function createUploadedAsset(Offering $offering, string $path, User $actor, string $type): MediaAsset
     {
-        $validated = app(MediaUploadValidator::class)->validateStored('public', $path, 'image');
-        [$width, $height] = $this->imageDimensions('public', $path);
+        $validated = app(MediaUploadValidator::class)->validateStored('public', $path, $type);
+        [$width, $height] = $type === 'image'
+            ? $this->imageDimensions('public', $path)
+            : [null, null];
 
         return MediaAsset::query()->create([
             'organization_id' => $offering->organization_id,
             'uploaded_by_user_id' => $actor->id,
-            'type' => 'image',
+            'type' => $type,
             'disk' => 'public',
             'path' => $path,
             'original_name' => basename($path),
@@ -77,12 +97,18 @@ class OfferingMediaManager
             'alt_text' => $offering->name,
             'metadata' => [
                 'source' => 'offering_editor',
-                'focal_point' => ['x' => 0.5, 'y' => 0.5],
+                ...($type === 'image'
+                    ? ['focal_point' => ['x' => 0.5, 'y' => 0.5]]
+                    : [
+                        'processing_status' => config('sagamenu.media.video_processing_required', true)
+                            ? 'pending_processing'
+                            : 'ready',
+                    ]),
             ],
         ]);
     }
 
-    private function validatedAsset(Offering $offering, ?int $assetId): ?MediaAsset
+    private function validatedAsset(Offering $offering, ?int $assetId, string $type, string $field): ?MediaAsset
     {
         if (! $assetId) {
             return null;
@@ -90,9 +116,11 @@ class OfferingMediaManager
 
         $asset = MediaAsset::query()->find($assetId);
 
-        if (! $asset || $asset->organization_id !== $offering->organization_id || $asset->type !== 'image') {
+        if (! $asset || $asset->organization_id !== $offering->organization_id || $asset->type !== $type) {
             throw ValidationException::withMessages([
-                'primary_image_asset_id' => 'Foto tidak tersedia untuk organization ini.',
+                $field => $type === 'video'
+                    ? 'Video tidak tersedia untuk organization ini.'
+                    : 'Foto tidak tersedia untuk organization ini.',
             ]);
         }
 

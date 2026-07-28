@@ -1,4 +1,4 @@
-import { chromium } from 'file:///C:/Users/Windows%2011/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright/index.mjs';
+import { chromium } from 'playwright';
 import { mkdir } from 'node:fs/promises';
 
 const baseUrl = process.env.SAGA_MENU_PROTOTYPE_URL || 'http://127.0.0.1:4178';
@@ -52,7 +52,7 @@ const uploadInputIsFile = await desktop.locator('[data-image-upload]').getAttrib
 const urlInputRemoved = await desktop.locator('[data-item-form] input[type="url"]').count() === 0;
 await desktop.screenshot({ path: `${output}/menu-wizard-basic-1440.png`, fullPage: true });
 await desktop.getByRole('button', { name: /Lanjut: Foto & media/ }).click();
-await desktop.getByRole('heading', { name: 'Tambahkan foto tanpa menempel URL.' }).waitFor();
+await desktop.getByRole('heading', { name: 'Tambahkan foto dan video tanpa menempel URL.' }).waitFor();
 await desktop.locator('[data-editor-media-library] button').first().click();
 await desktop.getByRole('button', { name: /Lanjut: Pilihan & detail/ }).click();
 await desktop.getByRole('heading', { name: 'Lengkapi pilihan yang membantu customer memahami menu.' }).waitFor();
@@ -86,6 +86,7 @@ const categoryDeleteProtected = await desktop.getByText('Kategori masih digunaka
 
 await desktop.getByRole('button', { name: 'Tampilan' }).click();
 await desktop.getByRole('heading', { name: 'Tampilan & branding' }).waitFor();
+await desktop.getByRole('button', { name: 'Preset' }).click();
 await desktop.getByRole('button', { name: /Compact Cards/ }).click();
 const listLayoutWorked = await desktop.locator('.live-preview-workspace .public-menu.is-layout-list').isVisible();
 await desktop.locator('.live-preview-workspace [data-action="switch-embedded-preview"][data-mode="mobile"]').click();

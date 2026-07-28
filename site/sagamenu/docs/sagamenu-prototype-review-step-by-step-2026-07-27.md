@@ -130,3 +130,20 @@ For each issue, record:
 - Severity: blocks task, confusing, or visual polish.
 
 After the review, the next decision gate is whether to finalize the prototype visual system or move the approved workflows into persistent Laravel implementation.
+
+## Sprints 9-17 Review Addendum
+
+1. Open `https://sagamenu-prototype-review.vercel.app` and click `Reset demo`.
+2. Click `Mode uji`, then `Mulai sesi`, and close the dialog.
+3. Open `Menu & Katalog`, edit `Es Kopi Susu Aren`, then open the `Media` section.
+4. Click the product photo to change its focal point.
+5. Upload a short MP4/WebM video and verify preview, controls, replace, and remove states.
+6. Open `Pilihan & detail`, add or review a variant and add-on, then save.
+7. Use `Preview menu` to inspect Bio Menu and Store Display.
+8. Open the Es Kopi Susu Aren detail; verify the video does not autoplay and closes cleanly.
+9. Open `Tampilan`; inspect Identitas, Tipografi, Bentuk, and Preset, then save one change.
+10. Open `Tinjau & terbitkan`, publish, and verify success.
+11. Reopen `Mode uji`, add a note, mark one hesitation only if something was unclear, finish, and export the JSON.
+12. Send only the exported report and a short note about the hardest step; do not enter personal or customer data.
+
+This review accepts or rejects the frozen prototype workflow. It does not approve Laravel staging or production activation.

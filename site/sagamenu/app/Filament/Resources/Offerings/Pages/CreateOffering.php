@@ -23,6 +23,10 @@ class CreateOffering extends CreateRecord
 
     private array $galleryMediaAssetIds = [];
 
+    private ?string $videoUpload = null;
+
+    private ?int $videoAssetId = null;
+
     public function getTitle(): string
     {
         return 'Tambah menu';
@@ -39,7 +43,13 @@ class CreateOffering extends CreateRecord
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         $this->captureMediaState($data);
-        unset($data['primary_image_upload'], $data['primary_image_asset_id'], $data['gallery_media_asset_ids']);
+        unset(
+            $data['primary_image_upload'],
+            $data['primary_image_asset_id'],
+            $data['gallery_media_asset_ids'],
+            $data['video_upload'],
+            $data['video_asset_id'],
+        );
 
         $catalog = Catalog::query()->with('organization')->findOrFail($data['catalog_id']);
         abort_unless(
@@ -65,6 +75,8 @@ class CreateOffering extends CreateRecord
             $this->primaryImageAssetId,
             $this->galleryMediaAssetIds,
             auth()->user(),
+            $this->videoUpload,
+            $this->videoAssetId,
         );
     }
 
@@ -82,6 +94,12 @@ class CreateOffering extends CreateRecord
             ? (int) $data['primary_image_asset_id']
             : null;
         $this->galleryMediaAssetIds = array_map('intval', $data['gallery_media_asset_ids'] ?? []);
+        $this->videoUpload = filled($data['video_upload'] ?? null)
+            ? (string) $data['video_upload']
+            : null;
+        $this->videoAssetId = filled($data['video_asset_id'] ?? null)
+            ? (int) $data['video_asset_id']
+            : null;
     }
 
     private function uniqueSlug(int $catalogId, string $name): string

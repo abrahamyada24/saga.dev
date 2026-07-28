@@ -34,13 +34,23 @@ class MediaAssetResource extends Resource
     {
         return $schema->components([
             Section::make('Upload')->schema([
-                Select::make('type')->options(['image' => 'Image', 'font' => 'Custom font'])->default('image')->required()->live(),
+                Select::make('type')->options([
+                    'image' => 'Image',
+                    'video' => 'Video menu',
+                    'font' => 'Custom font',
+                ])->default('image')->required()->live(),
                 FileUpload::make('path')->label('File')->disk('public')
                     ->directory(fn () => 'organizations/'.(auth()->user()->currentOrganization()?->id ?? 'admin').'/media')
-                    ->acceptedFileTypes(fn ($get) => $get('type') === 'font'
-                        ? ['font/woff', 'font/woff2', 'application/font-woff', 'application/octet-stream']
-                        : ['image/jpeg', 'image/png', 'image/webp'])
-                    ->maxSize(fn ($get) => $get('type') === 'font' ? 1024 : 5120)
+                    ->acceptedFileTypes(fn ($get) => match ($get('type')) {
+                        'font' => ['font/woff', 'font/woff2', 'application/font-woff', 'application/octet-stream'],
+                        'video' => ['video/mp4', 'video/webm'],
+                        default => ['image/jpeg', 'image/png', 'image/webp'],
+                    })
+                    ->maxSize(fn ($get) => match ($get('type')) {
+                        'font' => 1024,
+                        'video' => (int) config('sagamenu.media.video_max_kb', 51200),
+                        default => (int) config('sagamenu.media.image_max_kb', 5120),
+                    })
                     ->visibility('public')
                     ->required(),
                 TextInput::make('alt_text')->label('Alternative text')->maxLength(180),
@@ -67,7 +77,11 @@ class MediaAssetResource extends Resource
                 TextColumn::make('alt_text')->limit(40),
                 TextColumn::make('created_at')->since(),
             ])
-            ->filters([SelectFilter::make('type')->options(['image' => 'Image', 'font' => 'Font'])])
+            ->filters([SelectFilter::make('type')->options([
+                'image' => 'Image',
+                'video' => 'Video',
+                'font' => 'Font',
+            ])])
             ->recordActions([EditAction::make()->slideOver()]);
     }
 

@@ -1,9 +1,17 @@
 const STORAGE_KEY = 'sagamenu-prototype-editorial-kv-v2';
 const LEGACY_STORAGE_KEY = 'sagamenu-prototype-editorial-kv-v1';
+const PILOT_STORAGE_KEY = 'sagamenu-prototype-pilot-v1';
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1000&q=82';
+const PILOT_TASKS = [
+    { id: 'media', label: 'Kelola satu asset media' },
+    { id: 'create', label: 'Buat satu menu baru' },
+    { id: 'edit', label: 'Edit menu dengan pilihan lengkap' },
+    { id: 'brand', label: 'Ubah Brand Kit atau preset' },
+    { id: 'publish', label: 'Tinjau dan terbitkan draft' },
+];
 
 const DEFAULT_STATE = {
-    schemaVersion: 3,
+    schemaVersion: 4,
     business: {
         name: 'Bachelor Coffee',
         location: 'Madiun',
@@ -39,6 +47,7 @@ const DEFAULT_STATE = {
     mediaAssets: [
         {
             id: 'library-counter',
+            type: 'image',
             image: 'https://images.unsplash.com/photo-1445116572660-236099ec97a0?auto=format&fit=crop&w=1000&q=82',
             alt: 'Suasana coffee bar Bachelor Coffee',
             width: 1200,
@@ -94,6 +103,9 @@ const DEFAULT_STATE = {
             milkOptions: true,
             extraOptions: true,
             containsMilk: true,
+            video: 'assets/video/es-kopi-susu-aren.webm',
+            videoName: 'Cerita Es Kopi Susu Aren',
+            videoDuration: 3,
         },
         {
             id: 'saga-cream-coffee',
@@ -259,6 +271,10 @@ let itemEditorDirty = false;
 let itemEditorSaveTimer = null;
 let itemEditorValidationAttempted = false;
 let failedImageFile = null;
+let failedVideoFile = null;
+let appearanceTab = 'identity';
+let pilotSession = loadPilotSession();
+let pilotTimer = null;
 
 const main = document.querySelector('[data-dashboard] #main-content');
 const previewShell = document.querySelector('[data-preview-shell]');
@@ -269,6 +285,7 @@ const simpleDialog = document.querySelector('[data-simple-dialog]');
 const simpleForm = document.querySelector('[data-simple-form]');
 const detailDialog = document.querySelector('[data-menu-detail]');
 const previewLauncher = document.querySelector('[data-preview-launcher]');
+const pilotDialog = document.querySelector('[data-pilot-dialog]');
 const EDITOR_DRAFT_KEY = 'sagamenu-prototype-item-editor-draft-v1';
 const EDITOR_EDIT_DRAFT_PREFIX = 'sagamenu-prototype-item-editor-edit-v1:';
 
@@ -276,6 +293,137 @@ function cloneDefaultState() {
     const cloned = JSON.parse(JSON.stringify(DEFAULT_STATE));
     cloned.appearanceSaved = appearanceSnapshot(cloned.appearance);
     return cloned;
+}
+
+function createPilotSession() {
+    return {
+        id: crypto.randomUUID(),
+        active: false,
+        startedAt: null,
+        endedAt: null,
+        events: [],
+        hesitations: 0,
+        notes: '',
+        completedTasks: [],
+    };
+}
+
+function loadPilotSession() {
+    try {
+        return { ...createPilotSession(), ...JSON.parse(localStorage.getItem(PILOT_STORAGE_KEY) || '{}') };
+    } catch {
+        return createPilotSession();
+    }
+}
+
+function persistPilotSession() {
+    localStorage.setItem(PILOT_STORAGE_KEY, JSON.stringify(pilotSession));
+}
+
+function pilotElapsedMilliseconds() {
+    if (!pilotSession.startedAt) return 0;
+    const end = pilotSession.active ? Date.now() : (pilotSession.endedAt || Date.now());
+    return Math.max(0, end - pilotSession.startedAt);
+}
+
+function recordPilotEvent(name, details = {}) {
+    if (!pilotSession.active) return;
+    pilotSession.events.push({
+        name,
+        elapsedMs: pilotElapsedMilliseconds(),
+        route: currentRoute,
+        viewport: { width: window.innerWidth, height: window.innerHeight },
+        details,
+    });
+    const completedTask = {
+        media_asset_saved: 'media',
+        menu_created: 'create',
+        appearance_saved: 'brand',
+        publish_completed: 'publish',
+    }[name] || (name === 'menu_edit_saved' && ((details.variants || 0) + (details.addons || 0) > 0) ? 'edit' : null);
+    if (completedTask && !pilotSession.completedTasks.includes(completedTask)) {
+        pilotSession.completedTasks.push(completedTask);
+    }
+    persistPilotSession();
+    if (pilotDialog?.open) renderPilotDialog();
+}
+
+function formatPilotDuration(milliseconds) {
+    const seconds = Math.floor(milliseconds / 1000);
+    return `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
+}
+
+function renderPilotDialog() {
+    if (!pilotDialog) return;
+    pilotDialog.querySelector('[data-pilot-state]').textContent = pilotSession.active
+        ? `Sesi aktif · ${pilotSession.completedTasks.length}/${PILOT_TASKS.length} tugas`
+        : (pilotSession.endedAt ? `Sesi selesai · ${pilotSession.completedTasks.length}/${PILOT_TASKS.length} tugas` : 'Belum dimulai');
+    pilotDialog.querySelector('[data-pilot-duration]').textContent = formatPilotDuration(pilotElapsedMilliseconds());
+    pilotDialog.querySelector('[data-pilot-toggle]').textContent = pilotSession.active ? 'Selesaikan sesi' : (pilotSession.startedAt ? 'Mulai sesi baru' : 'Mulai sesi');
+    pilotDialog.querySelector('[data-pilot-notes]').value = pilotSession.notes || '';
+    pilotDialog.querySelector('[data-pilot-tasks]').innerHTML = PILOT_TASKS.map((task) => {
+        const complete = pilotSession.completedTasks.includes(task.id);
+        return `<li class="${complete ? 'is-complete' : ''}"><i data-lucide="${complete ? 'circle-check' : 'circle'}"></i><span><strong>${escapeHTML(task.label)}</strong><small>${complete ? 'Selesai' : 'Belum terukur'}</small></span></li>`;
+    }).join('');
+    refreshIcons();
+}
+
+function openPilotReview() {
+    renderPilotDialog();
+    pilotDialog.showModal();
+    document.body.classList.add('modal-open');
+    window.clearInterval(pilotTimer);
+    pilotTimer = window.setInterval(() => {
+        if (pilotDialog.open && pilotSession.active) renderPilotDialog();
+    }, 1000);
+}
+
+function closePilotReview() {
+    pilotSession.notes = pilotDialog.querySelector('[data-pilot-notes]').value.trim();
+    persistPilotSession();
+    window.clearInterval(pilotTimer);
+    pilotDialog.close();
+    document.body.classList.remove('modal-open');
+}
+
+function togglePilotSession() {
+    if (pilotSession.active) {
+        pilotSession.active = false;
+        pilotSession.endedAt = Date.now();
+    } else {
+        pilotSession = createPilotSession();
+        pilotSession.active = true;
+        pilotSession.startedAt = Date.now();
+    }
+    persistPilotSession();
+    renderPilotDialog();
+}
+
+function exportPilotReport() {
+    pilotSession.notes = pilotDialog.querySelector('[data-pilot-notes]').value.trim();
+    persistPilotSession();
+    const report = {
+        schemaVersion: 1,
+        product: 'SagaMenu prototype',
+        sessionId: pilotSession.id,
+        startedAt: pilotSession.startedAt ? new Date(pilotSession.startedAt).toISOString() : null,
+        endedAt: pilotSession.endedAt ? new Date(pilotSession.endedAt).toISOString() : null,
+        durationMs: pilotElapsedMilliseconds(),
+        taskResults: PILOT_TASKS.map((task) => ({
+            id: task.id,
+            label: task.label,
+            completed: pilotSession.completedTasks.includes(task.id),
+        })),
+        hesitations: pilotSession.hesitations,
+        notes: pilotSession.notes,
+        events: pilotSession.events,
+    };
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' }));
+    link.download = `sagamenu-pilot-${pilotSession.id.slice(0, 8)}.json`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+    toast('Report pilot dibuat', 'File JSON tidak memuat nama, email, atau isi customer.');
 }
 
 function appearanceSnapshot(appearance) {
@@ -314,7 +462,7 @@ function loadState() {
             appearance: { ...defaults.appearance, ...(stored.appearance || {}) },
             preview: { ...defaults.preview, ...(stored.preview || {}) },
         };
-        merged.schemaVersion = 3;
+        merged.schemaVersion = 4;
         if (!['editorial-list', 'photo-grid', 'compact-cards'].includes(merged.appearance.bioPreset)) {
             merged.appearance.bioPreset = 'editorial-list';
         }
@@ -325,6 +473,10 @@ function loadState() {
             ? merged.publishSurfaces.filter((surface) => ['mobile', 'tablet'].includes(surface))
             : ['mobile', 'tablet'];
         merged.appearanceSaved = stored.appearanceSaved || appearanceSnapshot(merged.appearance);
+        merged.mediaAssets = (merged.mediaAssets || []).map((asset) => ({
+            type: asset.type === 'video' ? 'video' : 'image',
+            ...asset,
+        }));
         merged.addonGroups = merged.addonGroups.map((group) => ({
             type: 'multiple',
             min: 0,
@@ -333,6 +485,7 @@ function loadState() {
         }));
         merged.items = merged.items.map((item) => ({
             ...item,
+            badge: item.badge && item.badge !== 'null' ? item.badge : '',
             imageAlt: item.imageAlt || `${item.name} dari ${merged.business.name}`,
             focalX: Number.isFinite(Number(item.focalX)) ? Number(item.focalX) : 50,
             focalY: Number.isFinite(Number(item.focalY)) ? Number(item.focalY) : 50,
@@ -344,6 +497,9 @@ function loadState() {
             caffeine: item.caffeine || '',
             spiceLevel: item.spiceLevel || 'none',
             servingNote: item.servingNote || '',
+            video: item.video || '',
+            videoName: item.videoName || '',
+            videoDuration: Math.max(0, Number(item.videoDuration || 0)),
             addonGroupIds: item.addonGroupIds || [
                 ...(item.milkOptions ? ['milk'] : []),
                 ...(item.extraOptions ? ['extras'] : []),
@@ -364,7 +520,7 @@ function persistState({ markDraft = true, showSaveState = true } = {}) {
     if (markDraft) {
         state.draft = true;
     }
-    state.schemaVersion = 3;
+    state.schemaVersion = 4;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     updateGlobalState();
     if (!showSaveState) return;
@@ -425,6 +581,22 @@ function normalizeImage(value) {
 
 function safeImage(value) {
     return escapeHTML(normalizeImage(value));
+}
+
+function safeVideo(value) {
+    const normalizedValue = String(value || '').trim();
+    if (/^data:video\/(?:mp4|webm);base64,[a-z0-9+/=\s]+$/i.test(normalizedValue)) {
+        return escapeHTML(normalizedValue);
+    }
+    if (/^assets\/video\/[a-z0-9._/-]+\.(?:mp4|webm)$/i.test(normalizedValue)) {
+        return escapeHTML(normalizedValue);
+    }
+    try {
+        const url = new URL(normalizedValue);
+        return ['https:', 'http:'].includes(url.protocol) ? escapeHTML(url.toString()) : '';
+    } catch {
+        return '';
+    }
 }
 
 function slugify(value) {
@@ -796,30 +968,44 @@ function renderAddons() {
 
 function collectMediaAssets() {
     const assets = (state.mediaAssets || []).map((asset) => ({
+        type: asset.type === 'video' ? 'video' : 'image',
         ...asset,
         kind: 'library',
         usage: [],
     }));
-    const byImage = new Map(assets.map((asset) => [asset.image, asset]));
+    const assetKey = (asset) => asset.type === 'video' ? `video:${asset.video}` : `image:${asset.image}`;
+    const bySource = new Map(assets.map((asset) => [assetKey(asset), asset]));
     state.items.forEach((item) => {
         const sources = [
-            { image: item.image, alt: item.imageAlt, kind: 'primary' },
-            ...(item.gallery || []).map((entry) => ({ image: entry.image || entry, alt: entry.alt || '', kind: 'gallery' })),
-        ].filter((entry) => entry.image);
+            { type: 'image', image: item.image, alt: item.imageAlt, kind: 'primary' },
+            ...(item.gallery || []).map((entry) => ({ type: 'image', image: entry.image || entry, alt: entry.alt || '', kind: 'gallery' })),
+            ...(item.video ? [{
+                type: 'video',
+                video: item.video,
+                image: item.image,
+                alt: item.videoName || `Video ${item.name}`,
+                duration: item.videoDuration || 0,
+                kind: 'video',
+            }] : []),
+        ].filter((entry) => entry.type === 'video' ? entry.video : entry.image);
         sources.forEach((source) => {
-            let asset = byImage.get(source.image);
+            const key = assetKey(source);
+            let asset = bySource.get(key);
             if (!asset) {
                 asset = {
                     id: `item-${item.id}-${source.kind}`,
+                    type: source.type,
                     image: source.image,
+                    video: source.video || '',
                     alt: source.alt || '',
-                    width: 1400,
-                    height: 1050,
+                    width: source.type === 'video' ? 1280 : 1400,
+                    height: source.type === 'video' ? 720 : 1050,
+                    duration: source.duration || 0,
                     kind: source.kind,
                     usage: [],
                 };
                 assets.push(asset);
-                byImage.set(source.image, asset);
+                bySource.set(key, asset);
             }
             asset.usage.push({ itemId: item.id, name: item.name, kind: source.kind });
         });
@@ -834,8 +1020,8 @@ function renderMediaLibrary() {
         ${pageHead(
             'Asset katalog',
             'Media Library',
-            'Kelola foto yang dapat digunakan pada Bio Menu dan Store Display.',
-            `<label class="button button-primary media-upload-button"><i data-lucide="upload"></i><span>Unggah asset</span><input type="file" accept="image/jpeg,image/png,image/webp" data-library-upload aria-label="Unggah asset Media Library"></label>`,
+            'Kelola foto dan video untuk Bio Menu serta Store Display.',
+            `<label class="button button-primary media-upload-button"><i data-lucide="upload"></i><span>Unggah asset</span><input type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm" data-library-upload aria-label="Unggah asset Media Library"></label>`,
         )}
         <section class="media-library-summary">
             ${metricCard('images', 'Total asset', String(assets.length), 'file', 'tersedia')}
@@ -849,14 +1035,19 @@ function renderMediaLibrary() {
                 <option value="used">Sedang dipakai</option>
                 <option value="unused">Belum dipakai</option>
                 <option value="missing-alt">Alt text belum lengkap</option>
+                <option value="video">Video</option>
             </select>
         </section>
         <section class="media-library-grid" data-media-grid>
             ${assets.map((asset) => `
-                <article class="media-asset-card" data-media-card data-search="${escapeHTML(`${asset.alt} ${asset.usage.map((entry) => entry.name).join(' ')}`.toLocaleLowerCase('id'))}" data-used="${asset.usage.length > 0}" data-missing-alt="${!asset.alt.trim()}">
-                    <div class="media-asset-image"><img src="${safeImage(asset.image)}" alt="${escapeHTML(asset.alt)}"><span>${asset.width} x ${asset.height}</span></div>
+                <article class="media-asset-card" data-media-card data-search="${escapeHTML(`${asset.alt} ${asset.usage.map((entry) => entry.name).join(' ')}`.toLocaleLowerCase('id'))}" data-used="${asset.usage.length > 0}" data-missing-alt="${!asset.alt.trim()}" data-media-type="${asset.type}">
+                    <div class="media-asset-image">
+                        <img src="${safeImage(asset.image || FALLBACK_IMAGE)}" alt="${escapeHTML(asset.alt)}">
+                        ${asset.type === 'video' ? '<i class="media-video-play" data-lucide="play"></i>' : ''}
+                        <span>${asset.type === 'video' ? `${Math.max(1, Math.round(asset.duration || 1))} detik` : `${asset.width} x ${asset.height}`}</span>
+                    </div>
                     <div class="media-asset-copy">
-                        <span class="eyebrow">${asset.usage.length ? `${asset.usage.length} pemakaian` : 'Belum dipakai'}</span>
+                        <span class="eyebrow">${asset.type === 'video' ? 'Video' : 'Foto'} · ${asset.usage.length ? `${asset.usage.length} pemakaian` : 'Belum dipakai'}</span>
                         <strong>${escapeHTML(asset.alt || 'Alt text belum diisi')}</strong>
                         <small>${asset.usage.length ? escapeHTML(asset.usage.map((entry) => entry.name).join(', ')) : 'Aman dihapus dari library'}</small>
                     </div>
@@ -1221,7 +1412,13 @@ function renderEditorialAppearance() {
         )}
         <section class="appearance-workspace">
             <article class="appearance-controls">
-                <section class="setting-section">
+                <nav class="appearance-tabbar" aria-label="Bagian Brand Kit">
+                    ${appearanceTabButton('identity', 'Identitas', 'badge-check')}
+                    ${appearanceTabButton('type', 'Tipografi', 'type')}
+                    ${appearanceTabButton('shape', 'Bentuk', 'shapes')}
+                    ${appearanceTabButton('presets', 'Preset', 'layout-template')}
+                </nav>
+                <section class="setting-section ${appearanceTab === 'identity' ? '' : 'is-tab-hidden'}">
                     <div class="setting-section-heading"><div><span class="eyebrow">Brand Kit</span><h3>Identitas global</h3><p>Logo, warna, dan font berlaku untuk kedua surface.</p></div><button class="button button-secondary" type="button" data-action="open-catalog-setup"><i data-lucide="wand-sparkles"></i><span>Setup terpandu</span></button></div>
                     <div class="brand-logo-row">
                         <span class="brand-logo-preview">${state.appearance.logo ? `<img src="${safeImage(state.appearance.logo)}" alt="">` : 'BC'}</span>
@@ -1229,7 +1426,7 @@ function renderEditorialAppearance() {
                         ${state.appearance.logo ? '<button class="text-action" type="button" data-action="remove-brand-logo">Hapus logo</button>' : ''}
                     </div>
                 </section>
-                <section class="setting-section">
+                <section class="setting-section ${appearanceTab === 'identity' ? '' : 'is-tab-hidden'}">
                     <h3>Warna brand</h3>
                     <div class="color-grid">
                         ${colorField('primary', 'Warna utama', state.appearance.primary)}
@@ -1239,14 +1436,14 @@ function renderEditorialAppearance() {
                     </div>
                     <div class="contrast-result ${contrast >= 4.5 ? 'is-safe' : 'is-warning'}"><i data-lucide="${contrast >= 4.5 ? 'circle-check' : 'triangle-alert'}"></i><span>Rasio kontras ${contrast.toFixed(2)}:1 ${contrast >= 4.5 ? 'memenuhi WCAG AA.' : 'belum memenuhi WCAG AA untuk teks normal.'}</span></div>
                 </section>
-                <section class="setting-section">
+                <section class="setting-section ${appearanceTab === 'type' ? '' : 'is-tab-hidden'}">
                     <h3>Tipografi</h3>
                     <div class="form-grid">
                         <label class="field"><span>Heading font</span><select data-appearance-key="headingFont"><option value="jakarta" ${state.appearance.headingFont === 'jakarta' ? 'selected' : ''}>Plus Jakarta Sans</option><option value="brand" ${state.appearance.headingFont === 'brand' ? 'selected' : ''} ${state.appearance.customFontName ? '' : 'disabled'}>Brand font</option></select></label>
                         <label class="field"><span>Body font</span><select data-appearance-key="bodyFont"><option value="jakarta" ${state.appearance.bodyFont === 'jakarta' ? 'selected' : ''}>Plus Jakarta Sans</option><option value="brand" ${state.appearance.bodyFont === 'brand' ? 'selected' : ''} ${state.appearance.customFontName ? '' : 'disabled'}>Brand font</option></select></label>
                     </div>
                 </section>
-                <section class="setting-section">
+                <section class="setting-section ${appearanceTab === 'type' ? '' : 'is-tab-hidden'}">
                     <h3>Font brand</h3>
                     <label class="upload-box compact-upload">
                         <i data-lucide="upload-cloud"></i>
@@ -1257,14 +1454,14 @@ function renderEditorialAppearance() {
                     <label class="check-line compact-check"><input type="checkbox" data-font-license ${state.appearance.customFontLicenseConfirmed ? 'checked' : ''}><span><strong>Saya memiliki izin penggunaan font</strong><small>Konfirmasi lisensi diperlukan sebelum font dapat diterbitkan.</small></span></label>
                     ${state.appearance.customFontName ? '<button class="text-action remove-font-action" type="button" data-action="remove-custom-font">Hapus font dan gunakan fallback</button>' : ''}
                 </section>
-                <section class="setting-section">
+                <section class="setting-section ${appearanceTab === 'shape' ? '' : 'is-tab-hidden'}">
                     <h3>Bentuk & foto</h3>
                     <div class="form-grid">
                         <label class="field"><span>Radius komponen</span><select data-appearance-key="radius"><option value="sharp" ${state.appearance.radius === 'sharp' ? 'selected' : ''}>Tegas</option><option value="soft" ${state.appearance.radius === 'soft' ? 'selected' : ''}>Soft</option><option value="rounded" ${state.appearance.radius === 'rounded' ? 'selected' : ''}>Rounded</option></select></label>
                         <label class="field"><span>Treatment foto</span><select data-appearance-key="imageTreatment"><option value="natural" ${state.appearance.imageTreatment === 'natural' ? 'selected' : ''}>Natural</option><option value="soft" ${state.appearance.imageTreatment === 'soft' ? 'selected' : ''}>Soft contrast</option><option value="mono" ${state.appearance.imageTreatment === 'mono' ? 'selected' : ''}>Monochrome</option></select></label>
                     </div>
                 </section>
-                <section class="setting-section surface-preset-section">
+                <section class="setting-section surface-preset-section ${appearanceTab === 'presets' ? '' : 'is-tab-hidden'}">
                     <div><span class="eyebrow">Bio Menu</span><h3>Preset mobile</h3><p>Pilih layout khusus link di bio.</p></div>
                     <div class="surface-preset-grid">
                         ${surfacePresetButton('mobile', 'editorial-list', 'Editorial List', 'Narasi kuat, scan cepat', 'list')}
@@ -1272,7 +1469,7 @@ function renderEditorialAppearance() {
                         ${surfacePresetButton('mobile', 'compact-cards', 'Compact Cards', 'Padat untuk katalog panjang', 'compact')}
                     </div>
                 </section>
-                <section class="setting-section surface-preset-section">
+                <section class="setting-section surface-preset-section ${appearanceTab === 'presets' ? '' : 'is-tab-hidden'}">
                     <div><span class="eyebrow">Store Display</span><h3>Preset tablet</h3><p>Kategori tetap berada di atas menu.</p></div>
                     <div class="surface-preset-grid">
                         ${surfacePresetButton('tablet', 'editorial-grid', 'Editorial Grid', 'Grid operasional tiga kolom', 'photo')}
@@ -1285,6 +1482,10 @@ function renderEditorialAppearance() {
             ${renderLivePreviewWorkspace('appearance')}
         </section>
     `;
+}
+
+function appearanceTabButton(id, label, icon) {
+    return `<button class="${appearanceTab === id ? 'is-active' : ''}" type="button" data-action="appearance-tab" data-appearance-tab="${id}" aria-pressed="${appearanceTab === id}"><i data-lucide="${icon}"></i><span>${label}</span></button>`;
 }
 
 function surfacePresetButton(surface, id, name, description, preview) {
@@ -1593,7 +1794,7 @@ function renderPromoBanner() {
     return `
         <button class="promo-banner" type="button" data-public-item="${escapeHTML(promo.id)}">
             <span class="promo-copy"><span>Pilihan minggu ini</span><strong>${escapeHTML(promo.name)}</strong><p>${escapeHTML(promo.description)}</p></span>
-            <img src="${safeImage(promo.image)}" alt="${escapeHTML(promo.imageAlt || promo.name)}" style="object-position:${Number(promo.focalX ?? 50)}% ${Number(promo.focalY ?? 50)}%">
+            <span class="promo-media"><img src="${safeImage(promo.image)}" alt="${escapeHTML(promo.imageAlt || promo.name)}" style="object-position:${Number(promo.focalX ?? 50)}% ${Number(promo.focalY ?? 50)}%">${promo.video ? '<i data-lucide="play"></i>' : ''}</span>
         </button>
     `;
 }
@@ -1615,7 +1816,10 @@ function renderPublicCard(item, mode) {
     return `
         <article class="${cardClass} ${item.availability === 'sold_out' ? 'sold-out' : ''}" data-public-card data-name="${escapeHTML(`${item.name} ${item.description}`.toLocaleLowerCase('id'))}">
             <button type="button" data-public-item="${escapeHTML(item.id)}" aria-label="Lihat detail ${escapeHTML(item.name)}">
-                <img src="${safeImage(item.image)}" alt="${escapeHTML(item.imageAlt || item.name)}" style="object-position:${Number(item.focalX ?? 50)}% ${Number(item.focalY ?? 50)}%">
+                <span class="public-card-media">
+                    <img src="${safeImage(item.image)}" alt="${escapeHTML(item.imageAlt || item.name)}" style="object-position:${Number(item.focalX ?? 50)}% ${Number(item.focalY ?? 50)}%">
+                    ${item.video ? '<span class="public-video-badge"><i data-lucide="play"></i> Video</span>' : ''}
+                </span>
                 <span class="public-card-copy">
                     <span class="public-card-top"><h3>${escapeHTML(item.name)}</h3><strong>${formatPrice(item.price)}</strong></span>
                     <p>${escapeHTML(item.description)}</p>
@@ -1673,6 +1877,9 @@ function openItemEditor(itemId = '') {
     itemForm.elements.focalY.value = source.focalY ?? 50;
     itemForm.elements.gallery.value = JSON.stringify(source.gallery || []);
     itemForm.elements.variants.value = JSON.stringify(source.variants || []);
+    itemForm.elements.video.value = source.video || '';
+    itemForm.elements.videoName.value = source.videoName || '';
+    itemForm.elements.videoDuration.value = source.videoDuration || 0;
     itemForm.elements.badge.value = source.badge || '';
     itemForm.elements.availability.value = source.availability || 'available';
     itemForm.elements.containsMilk.checked = Boolean(source.containsMilk);
@@ -1687,7 +1894,9 @@ function openItemEditor(itemId = '') {
         input.checked = (source.dietary || []).includes(input.value);
     });
     failedImageFile = null;
+    failedVideoFile = null;
     itemForm.querySelector('[data-upload-error]').hidden = true;
+    itemForm.querySelector('[data-video-error]').hidden = true;
     configureItemEditorMode(item);
     const categorySelect = itemForm.querySelector('[data-category-select]');
     categorySelect.innerHTML = state.categories.map((category) => `<option value="${escapeHTML(category.id)}">${escapeHTML(category.name)}</option>`).join('');
@@ -1699,6 +1908,7 @@ function openItemEditor(itemId = '') {
     renderEditorAddonOptions(selectedGroups);
     renderEditorMediaLibrary();
     renderEditorGallery();
+    renderEditorVideo();
     renderEditorVariants();
     itemEditorDirty = false;
     itemEditorPreviewMode = 'mobile';
@@ -1714,6 +1924,7 @@ function openItemEditor(itemId = '') {
         recoveredDraft ? 'history' : 'cloud',
     );
     itemEditor.showModal();
+    recordPilotEvent(item ? 'menu_edit_opened' : 'menu_create_opened');
     document.body.classList.add('modal-open');
     window.setTimeout(() => {
         itemForm.querySelector('.item-wizard-content').scrollTop = 0;
@@ -1744,12 +1955,12 @@ function configureItemEditorMode(item) {
     const panelCopy = isEdit
         ? [
             ['Informasi utama', 'Perbarui informasi yang dilihat customer.', 'Nama, kategori, harga, dan status dapat diubah langsung.'],
-            ['Foto menu', 'Ganti atau pertahankan foto saat ini.', 'Upload foto baru atau pilih kembali dari Media Library.'],
+            ['Media menu', 'Ganti foto atau video saat ini.', 'Upload media baru atau pilih kembali foto dari Media Library.'],
             ['Pilihan customer', 'Atur add-on dan informasi tambahan.', 'Perubahan pada bagian ini bersifat opsional.'],
         ]
         : [
             ['Langkah 1 dari 4', 'Mulai dari informasi yang customer cari.', 'Nama, kategori, harga, dan deskripsi akan langsung terlihat pada preview.'],
-            ['Langkah 2 dari 4', 'Tambahkan foto tanpa menempel URL.', 'Upload dari perangkat atau pilih foto yang sudah ada di Media Library.'],
+            ['Langkah 2 dari 4', 'Tambahkan foto dan video tanpa menempel URL.', 'Upload dari perangkat atau pilih foto yang sudah ada di Media Library.'],
             ['Langkah 3 dari 4', 'Lengkapi pilihan yang membantu customer memahami menu.', 'Bagian ini opsional. Kosongkan jika menu tidak memiliki varian atau add-on.'],
         ];
 
@@ -1801,11 +2012,12 @@ function renderEditorAddonOptions(selectedGroups = []) {
             </div>
         </div>
     `).join('');
+    refreshEditorComplexitySummary();
     refreshIcons();
 }
 
 function renderEditorMediaLibrary() {
-    const images = [...new Set(collectMediaAssets().map((asset) => safeImage(asset.image)).filter(Boolean))].slice(0, 8);
+    const images = [...new Set(collectMediaAssets().filter((asset) => asset.type === 'image').map((asset) => safeImage(asset.image)).filter(Boolean))].slice(0, 8);
     const selected = itemForm.elements.image.value;
     itemForm.querySelector('[data-editor-media-library]').innerHTML = images.map((image, index) => `
         <button type="button" data-action="choose-editor-media" data-image="${escapeHTML(image)}" class="${selected === image ? 'is-selected' : ''}" aria-label="Pilih foto media ${index + 1}">
@@ -1846,6 +2058,44 @@ function renderEditorGallery() {
     refreshIcons();
 }
 
+function renderEditorVideo() {
+    const source = safeVideo(itemForm.elements.video.value);
+    const preview = itemForm.querySelector('[data-editor-video-preview]');
+    const empty = itemForm.querySelector('[data-editor-video-empty]');
+    const player = itemForm.querySelector('[data-editor-video-player]');
+    const hasVideo = Boolean(source);
+    preview.hidden = !hasVideo;
+    empty.hidden = hasVideo;
+    itemForm.querySelector('[data-video-upload-label]').textContent = hasVideo ? 'Ganti video' : 'Tambah video';
+    if (hasVideo) {
+        player.src = source;
+        player.poster = normalizeImage(itemForm.elements.image.value);
+        itemForm.querySelector('[data-editor-video-name]').textContent = itemForm.elements.videoName.value || 'Video menu';
+        const duration = Math.max(0, Number(itemForm.elements.videoDuration.value || 0));
+        itemForm.querySelector('[data-editor-video-duration]').textContent = duration
+            ? `${Math.round(duration)} detik · Siap dipreview`
+            : 'Siap dipreview';
+    } else {
+        player.removeAttribute('src');
+        player.load();
+    }
+    refreshIcons();
+}
+
+function refreshEditorComplexitySummary() {
+    const container = itemForm.querySelector('[data-editor-complexity-summary]');
+    if (!container) return;
+    const variants = readEditorCollection('variants');
+    const addonIds = [...itemForm.querySelectorAll('input[name="addonGroupIds"]:checked')].map((input) => input.value);
+    const optionCount = variants.reduce((total, group) => total + group.values.length, 0)
+        + addonIds.reduce((total, id) => total + (state.addonGroups.find((group) => group.id === id)?.values.length || 0), 0);
+    const groupCount = variants.length + addonIds.length;
+    container.querySelector('strong').textContent = groupCount ? `${groupCount} grup pilihan` : 'Menu sederhana';
+    container.querySelector('small').textContent = groupCount
+        ? `${optionCount} opsi akan tampil sebagai informasi pada detail menu.`
+        : 'Belum ada varian atau add-on.';
+}
+
 function renderEditorVariants() {
     const variants = readEditorCollection('variants');
     const container = itemForm.querySelector('[data-variant-groups]');
@@ -1866,6 +2116,7 @@ function renderEditorVariants() {
             </article>
         `).join('')
         : '<div class="variant-empty"><i data-lucide="split"></i><span><strong>Tanpa varian</strong><small>Menu sederhana tidak perlu mengisi bagian ini.</small></span></div>';
+    refreshEditorComplexitySummary();
     refreshIcons();
 }
 
@@ -1963,6 +2214,12 @@ function refreshItemEditorPreview() {
     previewImage.style.objectPosition = `${itemForm.elements.focalX.value}% ${itemForm.elements.focalY.value}%`;
     itemForm.querySelector('[data-focal-x-value]').textContent = `${itemForm.elements.focalX.value}%`;
     itemForm.querySelector('[data-focal-y-value]').textContent = `${itemForm.elements.focalY.value}%`;
+    const focalImage = itemForm.querySelector('[data-focal-editor-image]');
+    const focalMarker = itemForm.querySelector('[data-focal-marker]');
+    focalImage.src = image;
+    focalImage.alt = '';
+    focalMarker.style.left = `${itemForm.elements.focalX.value}%`;
+    focalMarker.style.top = `${itemForm.elements.focalY.value}%`;
     itemForm.querySelector('[data-editor-preview-card]').classList.toggle('is-store', itemEditorPreviewMode === 'tablet');
     itemForm.querySelector('[data-editor-preview-mode]').textContent = itemEditorPreviewMode === 'tablet' ? 'Store Display' : 'Bio Menu';
 }
@@ -1982,7 +2239,12 @@ function refreshEditorReview() {
         name: [itemForm.elements.name.value.trim(), itemForm.elements.name.value.trim() || 'Belum diisi'],
         category: [itemForm.elements.categoryId.value, itemForm.elements.categoryId.selectedOptions[0]?.textContent || 'Belum dipilih'],
         price: [priceValue !== '' && Number(priceValue) >= 0, priceValue === '' ? 'Belum diisi' : formatPrice(Number(priceValue))],
-        image: [itemForm.elements.image.value, itemForm.elements.image.value ? `Foto utama + ${readEditorCollection('gallery').length} gallery` : 'Opsional untuk layout daftar'],
+        image: [
+            itemForm.elements.image.value,
+            itemForm.elements.image.value
+                ? `Foto utama + ${readEditorCollection('gallery').length} gallery${itemForm.elements.video.value ? ' + video' : ''}`
+                : 'Opsional untuk layout daftar',
+        ],
         description: [description, description || 'Belum ada deskripsi'],
         availability: [true, itemForm.elements.availability.selectedOptions[0]?.textContent || 'Tersedia'],
         badge: [true, itemForm.elements.badge.value || 'Tanpa badge'],
@@ -2074,6 +2336,9 @@ function captureEditorDraft() {
         focalY: Number(data.get('focalY') || 50),
         gallery: readEditorCollection('gallery'),
         variants: readEditorCollection('variants'),
+        video: String(data.get('video') || ''),
+        videoName: String(data.get('videoName') || ''),
+        videoDuration: Math.max(0, Number(data.get('videoDuration') || 0)),
         badge: String(data.get('badge') || ''),
         availability: String(data.get('availability') || 'available'),
         addonGroupIds: data.getAll('addonGroupIds').map(String),
@@ -2141,6 +2406,38 @@ async function imageFileToDataUrl(file) {
     canvas.height = Math.max(1, Math.round(image.height * scale));
     canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
     return canvas.toDataURL('image/webp', 0.82);
+}
+
+async function videoFileToDataUrl(file) {
+    if (!['video/mp4', 'video/webm'].includes(file.type) || file.size > 2 * 1024 * 1024) {
+        throw new Error('Gunakan MP4 atau WebM maksimal 2 MB untuk prototype.');
+    }
+    const data = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+    const duration = await new Promise((resolve, reject) => {
+        const video = document.createElement('video');
+        const timeout = window.setTimeout(() => reject(new Error('Metadata video tidak dapat dibaca.')), 6000);
+        video.preload = 'metadata';
+        video.onloadedmetadata = () => {
+            window.clearTimeout(timeout);
+            resolve(Number.isFinite(video.duration) ? video.duration : 0);
+            video.removeAttribute('src');
+            video.load();
+        };
+        video.onerror = () => {
+            window.clearTimeout(timeout);
+            reject(new Error('Video rusak atau codec belum didukung browser.'));
+        };
+        video.src = data;
+    });
+    if (duration > 60) {
+        throw new Error('Gunakan video maksimal 60 detik.');
+    }
+    return { data, duration };
 }
 
 function closeItemEditor({ saveDraft = false } = {}) {
@@ -2278,6 +2575,10 @@ function openCatalogSetup() {
             state.onboardingComplete = true;
             state.draft = true;
             persistState();
+            recordPilotEvent('catalog_setup_saved', {
+                surfaces: state.publishSurfaces,
+                starterCategoryAdded: Boolean(starterCategory),
+            });
             render();
             toast('Setup katalog disimpan', 'Lanjutkan mengisi menu lalu tinjau sebelum terbit.');
         },
@@ -2310,6 +2611,7 @@ function mediaAltDialog(mediaId) {
             if (libraryAsset) libraryAsset.alt = alt;
             state.items.forEach((item) => {
                 if (item.image === asset.image) item.imageAlt = alt;
+                if (asset.type === 'video' && item.video === asset.video) item.videoName = alt;
                 item.gallery = (item.gallery || []).map((entry) => {
                     const normalized = typeof entry === 'string' ? { image: entry, alt: '' } : entry;
                     return normalized.image === asset.image ? { ...normalized, alt } : normalized;
@@ -2432,9 +2734,12 @@ function openDetail(itemId) {
         ...(item.extraOptions ? ['extras'] : []),
     ];
     const groups = groupIds.map((id) => state.addonGroups.find((group) => group.id === id)).filter(Boolean);
+    const primaryMedia = item.video
+        ? `<div class="detail-video-wrap"><video class="detail-video" controls muted playsinline preload="metadata" poster="${safeImage(item.image)}" aria-label="${escapeHTML(item.videoName || `Video ${item.name}`)}"><source src="${safeVideo(item.video)}" type="${item.video.startsWith('data:video/mp4') ? 'video/mp4' : 'video/webm'}">Browser tidak mendukung video menu.</video><span><i data-lucide="volume-x"></i>Video tidak diputar otomatis dengan suara</span></div>`
+        : `<img class="detail-image" src="${safeImage(item.image)}" alt="${escapeHTML(item.imageAlt || item.name)}" style="object-position:${Number(item.focalX ?? 50)}% ${Number(item.focalY ?? 50)}%">`;
     detailDialog.querySelector('[data-detail-content]').innerHTML = `
         <div class="detail-layout">
-            <img class="detail-image" src="${safeImage(item.image)}" alt="${escapeHTML(item.imageAlt || item.name)}" style="object-position:${Number(item.focalX ?? 50)}% ${Number(item.focalY ?? 50)}%">
+            ${primaryMedia}
             <div class="detail-copy">
                 <button class="icon-button detail-close" type="button" data-action="close-detail" aria-label="Tutup detail"><i data-lucide="x"></i></button>
                 ${item.badge ? `<span class="badge badge-orange">${escapeHTML(item.badge)}</span>` : ''}
@@ -2480,6 +2785,7 @@ function openDetail(itemId) {
 }
 
 function closeDetail() {
+    detailDialog.querySelector('video')?.pause();
     detailDialog.close();
     document.body.classList.remove('modal-open');
 }
@@ -2555,7 +2861,8 @@ function filterMediaLibrary() {
         const matchesFilter = !filter
             || (filter === 'used' && card.dataset.used === 'true')
             || (filter === 'unused' && card.dataset.used === 'false')
-            || (filter === 'missing-alt' && card.dataset.missingAlt === 'true');
+            || (filter === 'missing-alt' && card.dataset.missingAlt === 'true')
+            || (filter === 'video' && card.dataset.mediaType === 'video');
         card.hidden = !(matchesTerm && matchesFilter);
         if (!card.hidden) visible += 1;
     });
@@ -2566,19 +2873,24 @@ function filterMediaLibrary() {
 async function handleLibraryUpload(event) {
     const [file] = event.target.files || [];
     if (!file) return;
-    toast('Memproses asset', 'Foto sedang dikompresi menjadi WebP.');
+    const isVideo = ['video/mp4', 'video/webm'].includes(file.type);
+    toast('Memproses asset', isVideo ? 'Video sedang diperiksa untuk preview.' : 'Foto sedang dikompresi menjadi WebP.');
     try {
-        const image = await imageFileToDataUrl(file);
+        const source = isVideo ? await videoFileToDataUrl(file) : await imageFileToDataUrl(file);
         state.mediaAssets = state.mediaAssets || [];
         state.mediaAssets.unshift({
             id: `library-${Date.now().toString(36)}`,
-            image,
+            type: isVideo ? 'video' : 'image',
+            image: isVideo ? FALLBACK_IMAGE : source.data || source,
+            video: isVideo ? source.data : '',
             alt: file.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' '),
-            width: 1400,
-            height: 1050,
+            width: isVideo ? 1280 : 1400,
+            height: isVideo ? 720 : 1050,
+            duration: isVideo ? source.duration : 0,
         });
         state.draft = true;
         persistState();
+        recordPilotEvent('media_asset_saved', { type: isVideo ? 'video' : 'image' });
         render();
         toast('Asset siap digunakan', `${file.name} masuk ke Media Library.`);
     } catch (error) {
@@ -2731,6 +3043,7 @@ function publishNow({ forceFailure = false } = {}) {
         publishRunState = 'idle';
         publishFailureMessage = '';
         persistState({ markDraft: false });
+        recordPilotEvent('publish_completed', { version: state.publishedVersion });
         render();
         toast('Menu berhasil diterbitkan', `Versi ${state.publishedVersion} sekarang aktif.`);
     }, 900);
@@ -2792,11 +3105,21 @@ document.addEventListener('click', (event) => {
     if (action === 'edit-section') focusEditSection(actionButton.dataset.section);
     if (action === 'trigger-image-upload') itemForm.elements.imageUpload.click();
     if (action === 'retry-image-upload') processPrimaryImage(failedImageFile);
+    if (action === 'retry-video-upload') processMenuVideo(failedVideoFile);
+    if (action === 'remove-editor-video') {
+        itemForm.elements.video.value = '';
+        itemForm.elements.videoName.value = '';
+        itemForm.elements.videoDuration.value = '0';
+        itemForm.querySelector('[data-video-upload]').value = '';
+        renderEditorVideo();
+        queueEditorDraftSave();
+    }
     if (action === 'choose-editor-media') {
         itemForm.elements.image.value = actionButton.dataset.image;
         const asset = collectMediaAssets().find((entry) => safeImage(entry.image) === actionButton.dataset.image);
         if (asset?.alt && !itemForm.elements.imageAlt.value.trim()) itemForm.elements.imageAlt.value = asset.alt;
         renderEditorMediaLibrary();
+        renderEditorVideo();
         refreshItemEditorPreview();
         queueEditorDraftSave();
     }
@@ -2804,6 +3127,7 @@ document.addEventListener('click', (event) => {
         itemForm.elements.image.value = '';
         itemForm.elements.imageUpload.value = '';
         renderEditorMediaLibrary();
+        renderEditorVideo();
         refreshItemEditorPreview();
         queueEditorDraftSave();
     }
@@ -2911,6 +3235,19 @@ document.addEventListener('click', (event) => {
     if (action === 'copy-tablet-link') copyLink('tablet');
     if (action === 'open-business-switcher') openBusinessSwitcher();
     if (action === 'open-profile') openProfileDialog();
+    if (action === 'open-pilot-review') openPilotReview();
+    if (action === 'close-pilot-review') closePilotReview();
+    if (action === 'toggle-pilot-session') togglePilotSession();
+    if (action === 'mark-pilot-hesitation') {
+        if (!pilotSession.active) {
+            toast('Mulai sesi terlebih dahulu', 'Mode uji perlu aktif sebelum menandai keraguan.');
+        } else {
+            pilotSession.hesitations += 1;
+            recordPilotEvent('hesitation_marked');
+            renderPilotDialog();
+        }
+    }
+    if (action === 'export-pilot-report') exportPilotReport();
 
     if (action === 'switch-embedded-preview') {
         state.preview.mode = actionButton.dataset.mode === 'mobile' ? 'mobile' : 'tablet';
@@ -2934,6 +3271,13 @@ document.addEventListener('click', (event) => {
         toast('Layout preview diperbarui', state.appearance.itemLayout === 'list' ? 'Mode daftar aktif.' : 'Mode foto besar aktif.');
     }
 
+    if (action === 'appearance-tab') {
+        appearanceTab = ['identity', 'type', 'shape', 'presets'].includes(actionButton.dataset.appearanceTab)
+            ? actionButton.dataset.appearanceTab
+            : 'identity';
+        render();
+    }
+
     if (action === 'save-appearance') {
         if (state.appearance.customFontName && !state.appearance.customFontLicenseConfirmed) {
             toast('Konfirmasi lisensi font', 'Centang izin penggunaan font sebelum menyimpan Brand Kit.');
@@ -2942,6 +3286,10 @@ document.addEventListener('click', (event) => {
         state.appearanceSaved = appearanceSnapshot(state.appearance);
         state.draft = true;
         persistState();
+        recordPilotEvent('appearance_saved', {
+            bioPreset: state.appearance.bioPreset,
+            storePreset: state.appearance.storePreset,
+        });
         render();
         toast('Tampilan disimpan', 'Perubahan tetap sebagai draft sampai diterbitkan.');
     }
@@ -2990,6 +3338,8 @@ document.addEventListener('click', (event) => {
         state.publishedSnapshot = buildSnapshot(state);
         localStorage.removeItem(STORAGE_KEY);
         localStorage.removeItem(LEGACY_STORAGE_KEY);
+        localStorage.removeItem(PILOT_STORAGE_KEY);
+        pilotSession = createPilotSession();
         clearAllEditorDrafts();
         publishRunState = 'idle';
         publishFailureMessage = '';
@@ -3135,6 +3485,40 @@ itemEditor.addEventListener('cancel', (event) => {
     dismissItemEditor();
 });
 
+async function processMenuVideo(file) {
+    if (!file) return;
+    const progress = itemForm.querySelector('[data-video-progress]');
+    const errorState = itemForm.querySelector('[data-video-error]');
+    errorState.hidden = true;
+    progress.hidden = false;
+    progress.querySelector('span').style.width = '35%';
+    try {
+        const result = await videoFileToDataUrl(file);
+        progress.querySelector('span').style.width = '100%';
+        itemForm.elements.video.value = result.data;
+        itemForm.elements.videoName.value = file.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ');
+        itemForm.elements.videoDuration.value = String(result.duration);
+        failedVideoFile = null;
+        renderEditorVideo();
+        itemEditorDirty = true;
+        if (persistEditorDraft()) {
+            updateEditorSaveState('Video selesai diproses dan tersimpan di draft', 'cloud-check');
+        }
+        recordPilotEvent('media_asset_saved', { type: 'video', action: 'menu_upload' });
+        window.setTimeout(() => {
+            progress.hidden = true;
+            progress.querySelector('span').style.width = '0';
+        }, 500);
+    } catch (error) {
+        progress.hidden = true;
+        failedVideoFile = file;
+        itemForm.querySelector('[data-video-upload]').value = '';
+        errorState.hidden = false;
+        errorState.querySelector('[data-video-error-copy]').textContent = error.message || 'Coba gunakan file lain.';
+        refreshIcons();
+    }
+}
+
 async function processPrimaryImage(file) {
     if (!file) return;
     const progress = itemForm.querySelector('[data-upload-progress]');
@@ -3151,6 +3535,7 @@ async function processPrimaryImage(file) {
         }
         failedImageFile = null;
         renderEditorMediaLibrary();
+        renderEditorVideo();
         refreshItemEditorPreview();
         itemEditorDirty = true;
         if (persistEditorDraft()) {
@@ -3173,6 +3558,22 @@ async function processPrimaryImage(file) {
 itemForm.elements.imageUpload.addEventListener('change', async (event) => {
     const [file] = event.target.files;
     await processPrimaryImage(file);
+});
+
+itemForm.querySelector('[data-video-upload]').addEventListener('change', async (event) => {
+    const [file] = event.target.files;
+    await processMenuVideo(file);
+    event.target.value = '';
+});
+
+itemForm.querySelector('[data-focal-editor]').addEventListener('click', (event) => {
+    const bounds = event.currentTarget.getBoundingClientRect();
+    const x = Math.min(100, Math.max(0, Math.round(((event.clientX - bounds.left) / bounds.width) * 100)));
+    const y = Math.min(100, Math.max(0, Math.round(((event.clientY - bounds.top) / bounds.height) * 100)));
+    itemForm.elements.focalX.value = String(x);
+    itemForm.elements.focalY.value = String(y);
+    refreshItemEditorPreview();
+    queueEditorDraftSave();
 });
 
 itemForm.querySelector('[data-gallery-upload]').addEventListener('change', async (event) => {
@@ -3239,7 +3640,10 @@ itemForm.addEventListener('submit', (event) => {
         focalY: Number(data.get('focalY') || 50),
         gallery: readEditorCollection('gallery'),
         variants: readEditorCollection('variants'),
-        badge: String(data.get('badge')),
+        video: String(data.get('video') || ''),
+        videoName: String(data.get('videoName') || '').trim(),
+        videoDuration: Math.max(0, Number(data.get('videoDuration') || 0)),
+        badge: String(data.get('badge') || ''),
         availability: String(data.get('availability')),
         addonGroupIds: data.getAll('addonGroupIds').map(String),
         containsMilk: data.get('containsMilk') === 'on',
@@ -3258,6 +3662,11 @@ itemForm.addEventListener('submit', (event) => {
     persistState();
     removeEditorDraft(id);
     itemEditorDirty = false;
+    recordPilotEvent(existing ? 'menu_edit_saved' : 'menu_created', {
+        variants: item.variants.length,
+        addons: item.addonGroupIds.length,
+        hasVideo: Boolean(item.video),
+    });
     closeItemEditor();
     routeTo('menus');
     toast('Menu disimpan', `${name} masuk ke draft.`);
@@ -3280,6 +3689,16 @@ simpleForm.addEventListener('submit', (event) => {
     closeSimpleDialog();
 });
 
+pilotDialog.addEventListener('cancel', (event) => {
+    event.preventDefault();
+    closePilotReview();
+});
+
+pilotDialog.querySelector('[data-pilot-notes]').addEventListener('input', (event) => {
+    pilotSession.notes = event.target.value;
+    persistPilotSession();
+});
+
 detailDialog.addEventListener('click', (event) => {
     if (event.target === detailDialog) closeDetail();
 });
@@ -3287,6 +3706,10 @@ detailDialog.addEventListener('click', (event) => {
 itemEditor.addEventListener('close', () => document.body.classList.remove('modal-open'));
 simpleDialog.addEventListener('close', () => document.body.classList.remove('modal-open'));
 detailDialog.addEventListener('close', () => document.body.classList.remove('modal-open'));
+pilotDialog.addEventListener('close', () => {
+    window.clearInterval(pilotTimer);
+    document.body.classList.remove('modal-open');
+});
 
 document.addEventListener('keydown', (event) => {
     const previewMenu = previewLauncher?.querySelector('[role="menu"]');

@@ -17,6 +17,7 @@
     <div class="prototype-strip">
         <span>PROTOTYPE REVIEW</span>
         <p>Data tersimpan hanya di browser ini</p>
+        <button class="strip-action" type="button" data-action="open-pilot-review">Mode uji</button>
         <button class="strip-action" type="button" data-action="reset-demo">Reset demo</button>
     </div>
 
@@ -164,7 +165,7 @@
 
             <nav class="item-edit-sections" aria-label="Bagian edit menu" data-edit-sections hidden>
                 <button type="button" class="is-active" data-action="edit-section" data-section="1"><i data-lucide="notebook-pen"></i><span>Informasi</span></button>
-                <button type="button" data-action="edit-section" data-section="2"><i data-lucide="image"></i><span>Foto</span></button>
+                <button type="button" data-action="edit-section" data-section="2"><i data-lucide="image-play"></i><span>Media</span></button>
                 <button type="button" data-action="edit-section" data-section="3"><i data-lucide="list-plus"></i><span>Pilihan & detail</span></button>
             </nav>
 
@@ -174,6 +175,9 @@
                     <input type="hidden" name="image">
                     <input type="hidden" name="gallery">
                     <input type="hidden" name="variants">
+                    <input type="hidden" name="video">
+                    <input type="hidden" name="videoName">
+                    <input type="hidden" name="videoDuration">
 
                     <section class="wizard-panel" id="menu-editor-section-1" data-wizard-panel="1">
                         <header><span class="eyebrow" data-panel-eyebrow>Langkah 1 dari 4</span><h3 data-panel-title>Mulai dari informasi yang customer cari.</h3><p data-panel-copy>Nama, kategori, harga, dan deskripsi akan langsung terlihat pada preview.</p></header>
@@ -251,6 +255,11 @@
                                 <input name="imageAlt" maxlength="160" placeholder="Contoh: Iced Aren Latte dengan foam di gelas bening">
                                 <small>Jelaskan objek utama untuk aksesibilitas.</small>
                             </label>
+                            <button class="focal-point-editor field-span-2" type="button" data-focal-editor aria-label="Atur focal point langsung pada foto">
+                                <img src="" alt="" data-focal-editor-image>
+                                <span class="focal-point-marker" data-focal-marker aria-hidden="true"></span>
+                                <small>Klik objek utama untuk menentukan crop Bio dan Store.</small>
+                            </button>
                             <label class="field">
                                 <span>Focal point horizontal <b data-focal-x-value>50%</b></span>
                                 <input type="range" name="focalX" min="0" max="100" value="50">
@@ -264,6 +273,29 @@
                             <header><div><h4>Gallery menu</h4><p>Tambahkan sampai empat foto pendukung.</p></div><label class="button button-secondary"><i data-lucide="images"></i><span>Tambah foto</span><input type="file" accept="image/jpeg,image/png,image/webp" multiple data-gallery-upload aria-label="Unggah foto gallery"></label></header>
                             <div class="editor-gallery-grid" data-editor-gallery></div>
                         </section>
+                        <section class="editor-video">
+                            <header>
+                                <div><h4>Video menu</h4><p>Satu video pendek untuk detail menu. Tidak autoplay dengan suara.</p></div>
+                                <label class="button button-secondary"><i data-lucide="video"></i><span data-video-upload-label>Tambah video</span><input type="file" accept="video/mp4,video/webm" data-video-upload aria-label="Unggah video menu"></label>
+                            </header>
+                            <div class="editor-video-empty" data-editor-video-empty>
+                                <i data-lucide="clapperboard"></i>
+                                <span><strong>Belum ada video</strong><small>MP4 atau WebM, maksimal 2 MB untuk prototype.</small></span>
+                            </div>
+                            <div class="editor-video-preview" data-editor-video-preview hidden>
+                                <video controls muted playsinline preload="metadata" data-editor-video-player></video>
+                                <div>
+                                    <span><strong data-editor-video-name>Video menu</strong><small data-editor-video-duration>Siap dipreview</small></span>
+                                    <button class="icon-button" type="button" data-action="remove-editor-video" aria-label="Hapus video menu"><i data-lucide="trash-2"></i></button>
+                                </div>
+                            </div>
+                            <div class="upload-progress" data-video-progress hidden><span></span><b>Memproses video...</b></div>
+                            <div class="media-upload-error" role="alert" data-video-error hidden>
+                                <i data-lucide="circle-alert"></i>
+                                <span><strong>Video belum dapat diproses</strong><small data-video-error-copy>Pilih file lain dan coba kembali.</small></span>
+                                <button class="button button-secondary" type="button" data-action="retry-video-upload">Coba lagi</button>
+                            </div>
+                        </section>
                         <div class="media-guidance">
                             <span><i data-lucide="scan-face"></i></span>
                             <div><strong>Gunakan focal point yang aman</strong><p>Objek utama sebaiknya berada di tengah agar tetap terlihat pada card Bio Menu dan Store Display.</p></div>
@@ -276,6 +308,10 @@
                             <header><div><h4>Varian menu</h4><p>Contoh: Suhu, Ukuran, atau Level pedas.</p></div><button class="button button-secondary" type="button" data-action="new-variant-group"><i data-lucide="plus"></i><span>Tambah varian</span></button></header>
                             <div data-variant-groups></div>
                         </section>
+                        <div class="editor-complexity-summary" data-editor-complexity-summary>
+                            <i data-lucide="list-checks"></i>
+                            <span><strong>Menu sederhana</strong><small>Belum ada varian atau add-on.</small></span>
+                        </div>
                         <fieldset class="field checkbox-fieldset">
                             <legend>Add-on yang ditampilkan</legend>
                             <div class="dynamic-checkbox-list" data-addon-attachment-options></div>
@@ -380,6 +416,29 @@
 
     <dialog class="menu-detail" data-menu-detail>
         <article data-detail-content></article>
+    </dialog>
+
+    <dialog class="pilot-review" data-pilot-dialog>
+        <form method="dialog" class="pilot-review-frame" data-pilot-form>
+            <header>
+                <div><span class="eyebrow">Usability Pilot</span><h2>Mode uji SagaMenu</h2><p>Event yang direkam hanya nama aksi, waktu, dan ukuran layar.</p></div>
+                <button class="icon-button" type="button" data-action="close-pilot-review" aria-label="Tutup mode uji"><i data-lucide="x"></i></button>
+            </header>
+            <div class="pilot-session-meta">
+                <span data-pilot-state>Belum dimulai</span>
+                <strong data-pilot-duration>00:00</strong>
+            </div>
+            <ol class="pilot-task-list" data-pilot-tasks></ol>
+            <label class="field">
+                <span>Catatan penguji</span>
+                <textarea rows="4" maxlength="600" data-pilot-notes placeholder="Tuliskan bagian yang membingungkan atau terasa lambat."></textarea>
+            </label>
+            <footer>
+                <button class="button button-secondary" type="button" data-action="mark-pilot-hesitation"><i data-lucide="circle-help"></i><span>Tandai ragu</span></button>
+                <button class="button button-secondary" type="button" data-action="export-pilot-report"><i data-lucide="download"></i><span>Export report</span></button>
+                <button class="button button-primary" type="button" data-action="toggle-pilot-session"><i data-lucide="play"></i><span data-pilot-toggle>Mulai sesi</span></button>
+            </footer>
+        </form>
     </dialog>
 
     <div class="toast-region" aria-live="polite" aria-atomic="true" data-toast-region></div>

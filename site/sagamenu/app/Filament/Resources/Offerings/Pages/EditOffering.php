@@ -20,6 +20,10 @@ class EditOffering extends EditRecord
 
     private array $galleryMediaAssetIds = [];
 
+    private ?string $videoUpload = null;
+
+    private ?int $videoAssetId = null;
+
     public function getTitle(): string
     {
         return 'Edit menu';
@@ -42,6 +46,7 @@ class EditOffering extends EditRecord
             ->pluck('media_asset_id')
             ->values()
             ->all();
+        $data['video_asset_id'] = $media->firstWhere('role', 'menu_video')?->media_asset_id;
 
         return $data;
     }
@@ -55,7 +60,19 @@ class EditOffering extends EditRecord
             ? (int) $data['primary_image_asset_id']
             : null;
         $this->galleryMediaAssetIds = array_map('intval', $data['gallery_media_asset_ids'] ?? []);
-        unset($data['primary_image_upload'], $data['primary_image_asset_id'], $data['gallery_media_asset_ids']);
+        $this->videoUpload = filled($data['video_upload'] ?? null)
+            ? (string) $data['video_upload']
+            : null;
+        $this->videoAssetId = filled($data['video_asset_id'] ?? null)
+            ? (int) $data['video_asset_id']
+            : null;
+        unset(
+            $data['primary_image_upload'],
+            $data['primary_image_asset_id'],
+            $data['gallery_media_asset_ids'],
+            $data['video_upload'],
+            $data['video_asset_id'],
+        );
 
         return $data;
     }
@@ -70,6 +87,8 @@ class EditOffering extends EditRecord
             $this->primaryImageAssetId,
             $this->galleryMediaAssetIds,
             auth()->user(),
+            $this->videoUpload,
+            $this->videoAssetId,
         );
     }
 

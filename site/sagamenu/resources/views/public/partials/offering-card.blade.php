@@ -1,5 +1,6 @@
 @php
     $media = collect($offering['media'])->firstWhere('role', 'primary_image');
+    $video = collect($offering['media'])->firstWhere('role', 'menu_video');
     $isUnavailable = in_array($offering['availability'], ['sold_out', 'temporary', 'coming_soon', 'seasonal'], true);
     $availabilityLabel = match ($offering['availability']) {
         'sold_out' => 'Sold out',
@@ -32,6 +33,11 @@
             @endif
             @if ($availabilityLabel)
                 <span class="availability-badge">{{ $availabilityLabel }}</span>
+            @endif
+            @if (data_get($video, 'url'))
+                <span class="video-badge" aria-label="Memiliki video menu">
+                    <span aria-hidden="true">▶</span> Video
+                </span>
             @endif
         </div>
         <div class="offering-card__body">

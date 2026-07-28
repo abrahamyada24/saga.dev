@@ -26,3 +26,18 @@ npx.cmd serve . -l 4178
 - `#analytics`
 - `#preview-mobile`
 - `#preview-tablet`
+
+## Sprints 9-17 review
+
+- `Mode uji` records five usability tasks without direct identity fields.
+- Menu edit supports image focal point and one MP4/WebM video.
+- Video player is controls-only, muted in the prototype, and never autoplays.
+- Brand Kit uses Identitas, Tipografi, Bentuk, and Preset tabs.
+
+Run the focused acceptance suite:
+
+```powershell
+npm.cmd run qa:sprints9-17
+```
+
+Human pilot instructions: `../docs/sagamenu-usability-pilot-protocol-v1.md`.

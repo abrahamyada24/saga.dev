@@ -47,4 +47,13 @@ return [
         'required' => (bool) env('SAGAMENU_CLAMAV_REQUIRED', false),
         'binary' => env('SAGAMENU_CLAMAV_BINARY', 'clamscan'),
     ],
+    'media' => [
+        'image_max_kb' => (int) env('SAGAMENU_IMAGE_MAX_KB', 5120),
+        'video_max_kb' => (int) env('SAGAMENU_VIDEO_MAX_KB', 51200),
+        'video_max_duration_seconds' => (int) env('SAGAMENU_VIDEO_MAX_DURATION_SECONDS', 60),
+        'video_processing_required' => filter_var(
+            env('SAGAMENU_VIDEO_PROCESSING_REQUIRED', true),
+            FILTER_VALIDATE_BOOLEAN,
+        ),
+    ],
 ];

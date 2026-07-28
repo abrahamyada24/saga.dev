@@ -983,6 +983,37 @@ body[data-store-layout='photo_grid'] .offering-card__media {
     }
 }
 
+.video-badge {
+    position: absolute;
+    right: 10px;
+    bottom: 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 9px;
+    border-radius: 5px;
+    background: rgb(19 25 22 / 88%);
+    color: white;
+    font-size: 11px;
+    font-weight: 800;
+}
+
+.offering-dialog__video {
+    overflow: hidden;
+    margin-bottom: 22px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-card);
+    background: #111;
+    aspect-ratio: 16 / 9;
+}
+
+.offering-dialog__video video {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
 @media (prefers-reduced-motion: reduce) {
     html {
         scroll-behavior: auto;

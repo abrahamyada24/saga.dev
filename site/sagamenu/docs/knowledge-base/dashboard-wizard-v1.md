@@ -119,6 +119,25 @@ Save hanya menyimpan draft. Customer baru melihat perubahan setelah catalog dipu
 ## Appearance Rules
 
 - Default font adalah Plus Jakarta Sans.
+- Brand Kit sekarang dibagi menjadi tab Identitas, Tipografi, Bentuk, dan Preset.
+- Font brand tetap memakai Plus Jakarta Sans sebagai fallback dan membutuhkan konfirmasi lisensi.
+
+## Video Menu
+
+- Satu video opsional dapat dipasang pada setiap menu.
+- Prototype menerima MP4/WebM maksimal 2 MB dan 60 detik.
+- Laravel menerima MP4/WebM maksimal 50 MB secara default, memeriksa extension, MIME, dan signature file, lalu mengikat asset ke organization pemilik.
+- Player publik selalu memakai controls, `playsinline`, `preload="metadata"`, dan tidak autoplay.
+- Menutup detail menu menghentikan video.
+- Production memerlukan object storage, ClamAV, processing/transcoding, thumbnail, dan duration validation yang terbukti.
+
+## Mode Uji
+
+- Buka `Mode uji` dari prototype strip.
+- Mulai sesi sebelum mengerjakan lima task.
+- `Tandai ragu` digunakan saat peserta berhenti, kembali, atau bertanya.
+- Export report menghasilkan JSON tanpa field identitas langsung.
+- Automated dry run hanya memverifikasi instrumen; acceptance tetap memerlukan lima sesi manusia.
 - Klien boleh menggunakan custom WOFF/WOFF2 melalui Brand Kit.
 - Custom font memerlukan konfirmasi lisensi sebelum Brand Kit dapat disimpan atau diterbitkan.
 - Invalid custom font harus kembali ke fallback.

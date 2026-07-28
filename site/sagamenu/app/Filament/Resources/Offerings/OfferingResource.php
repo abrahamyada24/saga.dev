@@ -178,6 +178,24 @@ class OfferingResource extends Resource
                                 ->preload(),
                         ])
                         ->columns(2),
+                    Section::make('Video menu')
+                        ->description('Opsional. Video tampil di detail menu dengan kontrol manual dan tanpa autoplay.')
+                        ->schema([
+                            FileUpload::make('video_upload')
+                                ->label('Upload video dari perangkat')
+                                ->disk('public')
+                                ->directory(fn () => 'organizations/'.(auth()->user()->currentOrganization()?->id ?? 'admin').'/media')
+                                ->acceptedFileTypes(['video/mp4', 'video/webm'])
+                                ->maxSize((int) config('sagamenu.media.video_max_kb', 51200))
+                                ->helperText('MP4 atau WebM maksimal 50 MB. Rekomendasi durasi maksimal 60 detik.')
+                                ->columnSpanFull(),
+                            Select::make('video_asset_id')
+                                ->label('Atau pilih video dari Media Library')
+                                ->options(fn () => static::videoOptions())
+                                ->searchable()
+                                ->preload(),
+                        ])
+                        ->columns(2),
                 ])),
             Step::make('Pilihan & detail')
                 ->description('Variants, add-on, dan informasi menu')
@@ -304,6 +322,15 @@ class OfferingResource extends Resource
     {
         return MediaAsset::query()
             ->where('type', 'image')
+            ->when(! auth()->user()->isSagaDevAdmin(), fn ($query) => $query->where('organization_id', auth()->user()->currentOrganization()?->id))
+            ->latest()
+            ->pluck('original_name', 'id');
+    }
+
+    private static function videoOptions()
+    {
+        return MediaAsset::query()
+            ->where('type', 'video')
             ->when(! auth()->user()->isSagaDevAdmin(), fn ($query) => $query->where('organization_id', auth()->user()->currentOrganization()?->id))
             ->latest()
             ->pluck('original_name', 'id');

@@ -1,4 +1,4 @@
-import { chromium } from 'file:///C:/Users/Windows%2011/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright/index.mjs';
+import { chromium } from 'playwright';
 import { fileURLToPath } from 'node:url';
 
 const baseUrl = process.env.SAGA_MENU_PROTOTYPE_URL || 'http://127.0.0.1:4178';
@@ -73,9 +73,9 @@ const editMode = {
     saveLaterCount: await editor.getByRole('button', { name: 'Simpan & lanjut nanti' }).count(),
 };
 
-await editor.getByRole('button', { name: 'Foto', exact: true }).click();
+await editor.getByRole('button', { name: 'Media', exact: true }).click();
 const editNavigation = {
-    photoActive: await editor.getByRole('button', { name: 'Foto', exact: true }).getAttribute('class'),
+    photoActive: await editor.getByRole('button', { name: 'Media', exact: true }).getAttribute('class'),
     mediaVisible: await editor.locator('[data-media-upload-zone]').isVisible(),
 };
 

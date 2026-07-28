@@ -144,3 +144,22 @@ Sprint 0, Sprint 1, Sprint 2, the complete-wave E2E, and full prototype E2E all 
 ## Boundary
 
 The deployment uses static HTML, CSS, JavaScript, demo content, and `localStorage`. It does not prove Laravel hosting, persistent multi-tenant storage, central identity, subscription enforcement, payment, upload storage, queue processing, or Saga Platform sandbox integration. Those remain separate release gates for the VPS/Laravel implementation.
+
+## Sprints 9-17 Usability and Video Wave
+
+The production review prototype was updated on 29 July 2026 with:
+
+- five-task usability pilot mode and PII-minimized JSON export;
+- direct image focal-point editing and menu-complexity summary;
+- tabbed Brand Kit;
+- video upload, Media Library, editor preview/error states, and public detail player;
+- 93-item pagination and overflow stress coverage.
+
+Deployment:
+
+- Stable review: `https://sagamenu-prototype-review.vercel.app`
+- Immutable review: `https://sagamenu-prototype-review-3xvb2exov-andreas-projects16.vercel.app`
+- Deployment id: `dpl_Hetn3PTgi4sdwrwsuz9CnTPrkqAH`
+- Status: Ready
+
+Sprint 0, Sprint 1, Sprint 2, complete-wave, Sprints 9-17, and full prototype E2E passed against the stable URL with no console/page errors or horizontal overflow. This is static prototype evidence only; human pilot and Laravel staging gates remain open.

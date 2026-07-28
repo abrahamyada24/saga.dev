@@ -1,5 +1,7 @@
 @php
     $media = collect($offering['media'])->firstWhere('role', 'primary_image');
+    $video = collect($offering['media'])->firstWhere('role', 'menu_video');
+    $gallery = collect($offering['media'])->where('type', 'image');
     $availabilityLabel = match ($offering['availability']) {
         'sold_out' => 'Sold out',
         'temporary' => 'Sementara tidak tersedia',
@@ -19,6 +21,22 @@
             @endif
         </div>
         <div class="offering-dialog__content">
+            @if (data_get($video, 'url'))
+                <div class="offering-dialog__video">
+                    <video
+                        controls
+                        playsinline
+                        preload="metadata"
+                        @if (data_get($video, 'thumbnail_url') ?: data_get($media, 'url'))
+                            poster="{{ data_get($video, 'thumbnail_url') ?: data_get($media, 'url') }}"
+                        @endif
+                        aria-label="Video {{ $offering['name'] }}"
+                    >
+                        <source src="{{ $video['url'] }}" type="{{ $video['mime_type'] ?: 'video/mp4' }}">
+                        Browser Anda tidak mendukung pemutar video.
+                    </video>
+                </div>
+            @endif
             <div class="dialog-title-row">
                 <div>
                     <span class="availability-text">{{ $availabilityLabel }}</span>
@@ -34,9 +52,9 @@
 
             <p class="dialog-description">{{ $offering['full_description'] ?: $offering['short_description'] }}</p>
 
-            @if (count($offering['media'] ?? []) > 1)
+            @if ($gallery->count() > 1)
                 <div class="dialog-gallery" aria-label="Galeri {{ $offering['name'] }}">
-                    @foreach (collect($offering['media'])->take(6) as $galleryMedia)
+                    @foreach ($gallery->take(6) as $galleryMedia)
                         <img src="{{ $galleryMedia['url'] }}" alt="{{ $galleryMedia['alt_text'] }}" loading="lazy" decoding="async">
                     @endforeach
                 </div>

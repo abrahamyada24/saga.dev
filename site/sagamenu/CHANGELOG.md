@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased - Sprints 9-17 usability and video wave (local only)
+
+### Added
+
+- Five-task usability pilot mode with PII-minimized JSON evidence export.
+- Direct focal-point editing, menu-complexity summary, and tabbed Brand Kit.
+- Prototype and Laravel video-menu flow for MP4/WebM upload, Media Library, snapshot, and public detail players.
+- Tenant and file-signature tests, public no-autoplay contract, 93-item stress test, design freeze, and pilot protocol.
+
+### Safety
+
+- Laravel video processing, thumbnails, and authoritative duration checks remain staging infrastructure gates.
+- Human pilot sessions have not been run; automated pilot evidence does not replace usability acceptance.
+- Saga Platform remains default-off and no VPS, DNS, live database, customer data, or payment service was changed.
+
 ## Unreleased - Dashboard wizard complete prototype wave (local only)
 
 ### Added

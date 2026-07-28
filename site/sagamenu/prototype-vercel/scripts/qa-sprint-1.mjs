@@ -1,4 +1,4 @@
-import { chromium } from 'file:///C:/Users/Windows%2011/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright/index.mjs';
+import { chromium } from 'playwright';
 import { mkdir } from 'node:fs/promises';
 
 const baseUrl = process.env.SAGA_MENU_PROTOTYPE_URL || 'http://127.0.0.1:4178';
@@ -58,7 +58,7 @@ await page.getByRole('button', { name: 'Kembali ke dashboard' }).click();
 await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
 await page.getByRole('button', { name: /^Menu & Katalog/ }).click();
 await page.getByRole('heading', { name: 'Menu', exact: true }).waitFor();
-await page.waitForTimeout(100);
+await page.waitForFunction(() => window.scrollY === 0, null, { timeout: 2000 });
 const routeScrollReset = await page.evaluate(() => window.scrollY === 0);
 const menuHead = page.locator('.page-head');
 const menuHierarchy = {

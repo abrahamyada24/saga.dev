@@ -124,10 +124,22 @@ class CatalogSnapshotBuilder
             'is_featured' => $offering->is_featured,
             'media' => $offering->media
                 ->where('is_active', true)
+                ->filter(function ($media): bool {
+                    if ($media->mediaAsset->type !== 'video' || ! config('sagamenu.media.video_processing_required', true)) {
+                        return true;
+                    }
+
+                    return data_get($media->mediaAsset->metadata, 'processing_status') === 'ready';
+                })
                 ->map(fn ($media) => [
                     'role' => $media->role,
                     'type' => $media->mediaAsset->type,
+                    'mime_type' => $media->mediaAsset->mime_type,
                     'url' => $media->mediaAsset->publicUrl(),
+                    'thumbnail_url' => $media->mediaAsset->thumbnail_path
+                        ? \Storage::disk($media->mediaAsset->disk)->url($media->mediaAsset->thumbnail_path)
+                        : null,
+                    'duration_seconds' => $media->mediaAsset->duration_seconds,
                     'alt_text' => $media->mediaAsset->alt_text ?: $offering->name,
                     'metadata' => $media->mediaAsset->metadata ?? [],
                 ])->values()->all(),

@@ -25,6 +25,14 @@ class ManageMediaAssets extends ManageRecords
                 $data['extension'] = $validated['extension'];
                 $data['mime_type'] = $validated['mime_type'];
                 $data['file_size'] = $validated['file_size'];
+                if ($data['type'] === 'video') {
+                    $data['metadata'] = [
+                        'source' => 'media_library',
+                        'processing_status' => config('sagamenu.media.video_processing_required', true)
+                            ? 'pending_processing'
+                            : 'ready',
+                    ];
+                }
 
                 return $data;
             }),

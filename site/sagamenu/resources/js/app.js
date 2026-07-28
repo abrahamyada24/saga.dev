@@ -75,6 +75,7 @@ document.querySelectorAll('[data-offering-dialog]').forEach((dialog) => {
     });
 
     dialog.addEventListener('close', () => {
+        dialog.querySelectorAll('video').forEach((video) => video.pause());
         body.classList.remove('dialog-open');
         const trigger = document.querySelector(`[data-offering-open="${CSS.escape(dialog.dataset.returnFocus || '')}"]`);
         trigger?.focus();
