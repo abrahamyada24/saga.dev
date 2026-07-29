@@ -125,7 +125,8 @@ class VideoMenuTest extends TestCase
                 ->assertSee('<video', false)
                 ->assertSee('controls', false)
                 ->assertSee('playsinline', false)
-                ->assertSee('preload="metadata"', false)
+                ->assertSee('preload="none"', false)
+                ->assertDontSee('preload="metadata"', false)
                 ->assertSee('Memiliki video menu')
                 ->assertDontSee('autoplay', false);
         }

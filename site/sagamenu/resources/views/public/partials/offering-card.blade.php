@@ -1,6 +1,7 @@
 @php
     $media = collect($offering['media'])->firstWhere('role', 'primary_image');
     $video = collect($offering['media'])->firstWhere('role', 'menu_video');
+    $priorityImage = (bool) ($priorityImage ?? false);
     $isUnavailable = in_array($offering['availability'], ['sold_out', 'temporary', 'coming_soon', 'seasonal'], true);
     $availabilityLabel = match ($offering['availability']) {
         'sold_out' => 'Sold out',
@@ -33,7 +34,17 @@
         <div class="offering-card__media" data-image-container>
             <div class="media-fallback" aria-hidden="true"><span>{{ strtoupper(substr($offering['name'], 0, 1)) }}</span></div>
             @if (data_get($media, 'url'))
-                <img src="{{ $media['url'] }}" alt="{{ $media['alt_text'] }}" loading="lazy" decoding="async">
+                <img
+                    src="{{ $media['url'] }}"
+                    alt="{{ $media['alt_text'] ?: $offering['name'] }}"
+                    @if (data_get($media, 'width') && data_get($media, 'height'))
+                        width="{{ $media['width'] }}"
+                        height="{{ $media['height'] }}"
+                    @endif
+                    loading="{{ $priorityImage ? 'eager' : 'lazy' }}"
+                    decoding="async"
+                    @if ($priorityImage) fetchpriority="high" @endif
+                >
             @endif
             @if ($availabilityLabel)
                 <span class="availability-badge">{{ $availabilityLabel }}</span>

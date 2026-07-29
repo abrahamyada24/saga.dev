@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-07-29 - Public media loading budget
+
+- Preserved image dimensions in immutable catalog snapshots and rendered them
+  when available to reduce layout movement.
+- Prioritized exactly one first-viewport menu image per public surface while
+  keeping remaining card and dialog images lazy.
+- Changed hidden menu videos from metadata preload to no preload.
+- Added public media performance contract tests and retained compatibility with
+  older snapshots that have no image dimensions.
+- Patched development build dependencies covered by current high-severity npm
+  advisories without changing production dependency scope.
+- No infrastructure, provider, prototype, or Laravel deployment was changed.
+
 ## 2026-07-29 - Laravel VPS staging bootstrap contract
 
 - Added a fail-closed 55-check target evidence contract for PHP, PostgreSQL,

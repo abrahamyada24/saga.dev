@@ -17,7 +17,16 @@
         <div class="offering-dialog__media" data-image-container>
             <div class="media-fallback" aria-hidden="true"><span>{{ strtoupper(substr($offering['name'], 0, 1)) }}</span></div>
             @if (data_get($media, 'url'))
-                <img src="{{ $media['url'] }}" alt="{{ $media['alt_text'] }}">
+                <img
+                    src="{{ $media['url'] }}"
+                    alt="{{ $media['alt_text'] ?: $offering['name'] }}"
+                    @if (data_get($media, 'width') && data_get($media, 'height'))
+                        width="{{ $media['width'] }}"
+                        height="{{ $media['height'] }}"
+                    @endif
+                    loading="lazy"
+                    decoding="async"
+                >
             @endif
         </div>
         <div class="offering-dialog__content">
@@ -26,7 +35,7 @@
                     <video
                         controls
                         playsinline
-                        preload="metadata"
+                        preload="none"
                         @if (data_get($video, 'thumbnail_url') ?: data_get($media, 'url'))
                             poster="{{ data_get($video, 'thumbnail_url') ?: data_get($media, 'url') }}"
                         @endif
@@ -61,7 +70,16 @@
             @if ($gallery->count() > 1)
                 <div class="dialog-gallery" aria-label="Galeri {{ $offering['name'] }}">
                     @foreach ($gallery->take(6) as $galleryMedia)
-                        <img src="{{ $galleryMedia['url'] }}" alt="{{ $galleryMedia['alt_text'] }}" loading="lazy" decoding="async">
+                        <img
+                            src="{{ $galleryMedia['url'] }}"
+                            alt="{{ $galleryMedia['alt_text'] ?: $offering['name'] }}"
+                            @if (data_get($galleryMedia, 'width') && data_get($galleryMedia, 'height'))
+                                width="{{ $galleryMedia['width'] }}"
+                                height="{{ $galleryMedia['height'] }}"
+                            @endif
+                            loading="lazy"
+                            decoding="async"
+                        >
                     @endforeach
                 </div>
             @endif

@@ -18,6 +18,12 @@
             ->take(2)
             ->map(fn ($word) => mb_strtoupper(mb_substr($word, 0, 1)))
             ->implode('');
+        $priorityImageSlug = $collections
+            ->flatMap(fn ($collection) => $collection['offerings'])
+            ->first(fn ($offering) => collect($offering['media'])->contains(
+                fn ($media) => $media['role'] === 'primary_image' && filled($media['url']),
+            ))['slug'] ?? null;
+        $priorityImageRendered = false;
     @endphp
 
     <main class="catalog-shell catalog-shell--store">
@@ -86,7 +92,15 @@
                     </div>
                     <div class="offering-grid">
                         @foreach ($collection['offerings'] as $offering)
-                            @include('public.partials.offering-card', ['offering' => $offering, 'mode' => 'store'])
+                            @php
+                                $priorityImage = ! $priorityImageRendered && $offering['slug'] === $priorityImageSlug;
+                                $priorityImageRendered = $priorityImageRendered || $priorityImage;
+                            @endphp
+                            @include('public.partials.offering-card', [
+                                'offering' => $offering,
+                                'mode' => 'store',
+                                'priorityImage' => $priorityImage,
+                            ])
                         @endforeach
                     </div>
                 </section>

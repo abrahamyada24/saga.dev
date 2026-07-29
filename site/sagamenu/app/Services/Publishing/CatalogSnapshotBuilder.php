@@ -142,6 +142,8 @@ class CatalogSnapshotBuilder
                     'thumbnail_url' => $media->mediaAsset->thumbnail_path
                         ? \Storage::disk($media->mediaAsset->disk)->url($media->mediaAsset->thumbnail_path)
                         : null,
+                    'width' => $media->mediaAsset->width,
+                    'height' => $media->mediaAsset->height,
                     'duration_seconds' => $media->mediaAsset->duration_seconds,
                     'alt_text' => $media->mediaAsset->alt_text ?: $offering->name,
                     'metadata' => $media->mediaAsset->metadata ?? [],
