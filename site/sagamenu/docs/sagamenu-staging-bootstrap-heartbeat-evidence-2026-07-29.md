@@ -24,6 +24,20 @@ or reclassified as the Laravel SaaS runtime.
 - Older SagaMenu changes included in this batch: none
 - User data or non-rebuildable artifacts removed: none
 
+## Storage Audit
+
+After validation, drive `D:` had approximately 11.6 MiB free. Git reported:
+
+- pack storage: 1.19 GiB;
+- temporary garbage: 14 files, 232.82 MiB;
+- largest temporary file:
+  `.git/objects/pack/tmp_pack_4hg0xX`, 232.38 MiB.
+
+All cleanup candidates matched Git-generated `tmp_pack_*` or `tmp_obj_*` files
+inside the resolved `.git/objects` directory. Cleanup was not performed because
+the host policy rejected file deletion. No alternative garbage collection,
+source deletion, build deletion, or user-data cleanup was attempted.
+
 ## Validation
 
 | Check | Result |
