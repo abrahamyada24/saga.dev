@@ -3,6 +3,7 @@
 use App\Http\Controllers\AdminCatalogPreviewController;
 use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\PublicCatalogController;
+use App\Http\Controllers\PublicSitemapController;
 use App\Http\Controllers\QrRedirectController;
 use App\Http\Controllers\SagaPlatformAuthController;
 use App\Http\Controllers\SagaPlatformBillingController;
@@ -43,6 +44,14 @@ Route::get('/invitations/{token}/accept', [InvitationController::class, 'accept'
     ->name('invitations.accept');
 
 Route::middleware('public.security')->group(function (): void {
+    Route::get('/sitemap.xml', PublicSitemapController::class)
+        ->middleware(PublicCatalogDelivery::class)
+        ->withoutMiddleware([
+            StartSession::class,
+            ShareErrorsFromSession::class,
+            PreventRequestForgery::class,
+        ])
+        ->name('public.sitemap');
     Route::get('/s/{brand}/{catalog}', [PublicCatalogController::class, 'store'])
         ->middleware(PublicCatalogDelivery::class)
         ->withoutMiddleware([
