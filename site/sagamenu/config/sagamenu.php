@@ -12,6 +12,9 @@ return [
         'stale_while_revalidate_seconds' => 30,
         'stale_if_error_seconds' => 86400,
     ],
+    'release' => [
+        'staging_probe_max_age_minutes' => (int) env('SAGAMENU_STAGING_PROBE_MAX_AGE_MINUTES', 30),
+    ],
     'saga_platform' => [
         'enabled' => filter_var(env('SAGAMENU_SAGA_PLATFORM_ENABLED', false), FILTER_VALIDATE_BOOLEAN),
         'base_url' => rtrim((string) env('SAGAMENU_SAGA_PLATFORM_BASE_URL', ''), '/'),

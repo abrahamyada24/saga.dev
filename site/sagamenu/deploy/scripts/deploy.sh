@@ -5,6 +5,7 @@ set -euo pipefail
 : "${SAGAMENU_ROOT:=/var/www/sagamenu}"
 : "${SAGAMENU_COMMIT:?Set SAGAMENU_COMMIT to an immutable 40-character Git SHA}"
 : "${SAGAMENU_RELEASE_MANIFEST:=release/sagamenu-staging-manifest.json}"
+: "${SAGAMENU_STAGING_PROBE:=release/sagamenu-staging-probe.json}"
 
 [[ "$SAGAMENU_COMMIT" =~ ^[0-9a-f]{40}$ ]] || {
     echo "SAGAMENU_COMMIT must be a full lowercase Git SHA" >&2
@@ -47,6 +48,13 @@ npm run build
 SAGAMENU_RELEASE_VERIFIED_COMMIT="$actual_commit" \
 SAGAMENU_RELEASE_VERIFIED_CLEAN=true \
 php artisan sagamenu:release-preflight --manifest="$SAGAMENU_RELEASE_MANIFEST"
+
+SAGAMENU_RELEASE_VERIFIED_COMMIT="$actual_commit" \
+SAGAMENU_RELEASE_VERIFIED_CLEAN=true \
+SAGAMENU_RELEASE_VERIFIED_BRANCH=detached \
+php artisan sagamenu:staging-bootstrap-preflight \
+    --manifest="$SAGAMENU_RELEASE_MANIFEST" \
+    --probe="$SAGAMENU_STAGING_PROBE"
 
 rm -rf "$app/storage"
 ln -s "$shared/storage" "$app/storage"

@@ -1,0 +1,116 @@
+{
+  "schemaVersion": 1,
+  "productCode": "sagamenu",
+  "releaseId": "PLACEHOLDER",
+  "generatedAt": "PLACEHOLDER",
+  "releaseManifestSha256": "PLACEHOLDER",
+  "source": {
+    "commit": "PLACEHOLDER",
+    "clean": false
+  },
+  "target": {
+    "environment": "staging",
+    "url": "https://staging.example.invalid"
+  },
+  "php": {
+    "version": "0.0.0",
+    "extensions": []
+  },
+  "binaries": {
+    "composer": false,
+    "git": false,
+    "node": false,
+    "npm": false,
+    "pg_dump": false,
+    "pg_restore": false,
+    "ffmpeg": false,
+    "clamscan": false
+  },
+  "runtime": {
+    "appDebug": true,
+    "appKeyConfigured": false,
+    "cacheStore": "file",
+    "sessionDriver": "file",
+    "sessionEncrypt": false,
+    "sessionSecure": false,
+    "malwareEnabled": false,
+    "malwareRequired": false,
+    "videoProcessingRequired": true,
+    "sagaPlatformEnabled": false,
+    "buildManifestExists": false
+  },
+  "database": {
+    "driver": "sqlite",
+    "connected": false,
+    "migrationsCurrent": false
+  },
+  "redis": {
+    "cachePing": false,
+    "queuePing": false
+  },
+  "storage": {
+    "application": {
+      "driver": "local",
+      "writeReadDelete": false
+    },
+    "backup": {
+      "configured": false,
+      "driver": "local",
+      "writeReadDelete": false
+    }
+  },
+  "queue": {
+    "connection": "sync",
+    "roundTrip": false,
+    "failedJobsClear": false,
+    "workerEvidenceRef": ""
+  },
+  "scheduler": {
+    "heartbeatFresh": false,
+    "scheduleRegistered": false
+  },
+  "mail": {
+    "transport": "log",
+    "providerHandshake": false,
+    "evidenceRef": ""
+  },
+  "monitoring": {
+    "configured": false,
+    "testAlertAcknowledged": false,
+    "evidenceRef": ""
+  },
+  "videoWorker": {
+    "roundTrip": false,
+    "ffmpeg": false,
+    "malwareScan": false,
+    "evidenceRef": ""
+  },
+  "https": {
+    "reachable": false,
+    "tlsValid": false,
+    "status": 0
+  },
+  "backupRestore": {
+    "offsiteBackupVerified": false,
+    "checksumVerified": false,
+    "disposableRestore": false,
+    "schemaVerified": false,
+    "cleanupConfirmed": false,
+    "completedAt": null,
+    "evidenceRef": ""
+  },
+  "sagaPlatform": {
+    "mode": "disabled",
+    "nonProductionEndpoint": false,
+    "signedRoundTrip": false,
+    "evidenceRef": ""
+  },
+  "rollback": {
+    "previousReleaseCommit": "PLACEHOLDER",
+    "previousReleasePath": "",
+    "databaseCompatibility": false,
+    "rehearsalCompleted": false,
+    "healthPassed": false,
+    "evidenceRef": ""
+  }
+}

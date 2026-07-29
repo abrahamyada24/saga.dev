@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-07-29 - Laravel VPS staging bootstrap contract
+
+- Added a fail-closed 55-check target evidence contract for PHP, PostgreSQL,
+  Redis, S3-compatible storage, workers, scheduler, mail, monitoring, video,
+  HTTPS, backup restore, Saga Platform sandbox, exact source, and rollback.
+- Bound the target probe to the exact release manifest digest and immutable
+  source commit, with stale evidence and placeholder rejection.
+- Inserted the staging bootstrap gate before migration in the deployment script.
+- Added a secret-free red template, host wrapper, negative-gate tests, and the
+  operator runbook in `docs/SAGAMENU-STAGING-BOOTSTRAP.md`.
+- No Laravel target was deployed and the Vercel prototype was not changed.
+
 ## Unreleased - Release hygiene and staging preflight (local only)
 
 ### Added
