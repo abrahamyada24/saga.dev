@@ -6,6 +6,12 @@ return [
         'public_catalog_allowed_statuses' => ['active', 'trialing'],
         'maintenance_retry_after_seconds' => 3600,
     ],
+    'public_delivery' => [
+        'browser_max_age_seconds' => 0,
+        'shared_max_age_seconds' => 60,
+        'stale_while_revalidate_seconds' => 30,
+        'stale_if_error_seconds' => 86400,
+    ],
     'saga_platform' => [
         'enabled' => filter_var(env('SAGAMENU_SAGA_PLATFORM_ENABLED', false), FILTER_VALIDATE_BOOLEAN),
         'base_url' => rtrim((string) env('SAGAMENU_SAGA_PLATFORM_BASE_URL', ''), '/'),

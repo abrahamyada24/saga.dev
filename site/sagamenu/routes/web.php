@@ -6,7 +6,11 @@ use App\Http\Controllers\PublicCatalogController;
 use App\Http\Controllers\QrRedirectController;
 use App\Http\Controllers\SagaPlatformAuthController;
 use App\Http\Controllers\SagaPlatformBillingController;
+use App\Http\Middleware\PublicCatalogDelivery;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
+use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Route;
+use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 Route::redirect('/', '/admin');
 
@@ -39,8 +43,22 @@ Route::get('/invitations/{token}/accept', [InvitationController::class, 'accept'
     ->name('invitations.accept');
 
 Route::middleware('public.security')->group(function (): void {
-    Route::get('/s/{brand}/{catalog}', [PublicCatalogController::class, 'store'])->name('public.store-display');
-    Route::get('/m/{brand}/{catalog}', [PublicCatalogController::class, 'mobile'])->name('public.mobile-catalog');
+    Route::get('/s/{brand}/{catalog}', [PublicCatalogController::class, 'store'])
+        ->middleware(PublicCatalogDelivery::class)
+        ->withoutMiddleware([
+            StartSession::class,
+            ShareErrorsFromSession::class,
+            PreventRequestForgery::class,
+        ])
+        ->name('public.store-display');
+    Route::get('/m/{brand}/{catalog}', [PublicCatalogController::class, 'mobile'])
+        ->middleware(PublicCatalogDelivery::class)
+        ->withoutMiddleware([
+            StartSession::class,
+            ShareErrorsFromSession::class,
+            PreventRequestForgery::class,
+        ])
+        ->name('public.mobile-catalog');
     Route::get('/preview/{token}', [PublicCatalogController::class, 'preview'])->middleware('throttle:preview')->name('public.preview');
     Route::view('/privacy', 'public.privacy')->name('privacy');
 });
