@@ -97,6 +97,7 @@ class StagingBootstrapContractTest extends TestCase
             'evidenceRef' => 'evidence/saga-platform-sandbox.json',
         ];
         $probe['runtime']['sagaPlatformEnabled'] = true;
+        $probe['queue']['workerEvidenceRef'] = 'evidence/../private/queue.json';
         $probe['rollback']['rehearsalCompleted'] = false;
         $probe['rollback']['evidenceRef'] = 'https://provider.invalid/private-token';
 
@@ -104,6 +105,7 @@ class StagingBootstrapContractTest extends TestCase
         $failed = collect($result['checks'])->where('status', 'failed')->pluck('id');
 
         $this->assertSame('failed', $result['status']);
+        $this->assertContains('queue.worker_evidence', $failed);
         $this->assertContains('saga_platform.mode', $failed);
         $this->assertContains('rollback.rehearsal', $failed);
         $this->assertContains('rollback.evidence', $failed);
