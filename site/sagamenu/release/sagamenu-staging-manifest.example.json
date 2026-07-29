@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "productCode": "sagamenu",
+  "releaseId": "PLACEHOLDER",
+  "source": {
+    "commit": "PLACEHOLDER",
+    "branch": "codex/sagamenu-release",
+    "clean": false
+  },
+  "target": {
+    "environment": "staging",
+    "url": "https://staging.example.invalid"
+  },
+  "providers": {
+    "database": {
+      "status": "unavailable",
+      "evidenceRef": ""
+    },
+    "objectStorage": {
+      "status": "unavailable",
+      "evidenceRef": ""
+    },
+    "queue": {
+      "status": "unavailable",
+      "evidenceRef": ""
+    },
+    "scheduler": {
+      "status": "unavailable",
+      "evidenceRef": ""
+    },
+    "mail": {
+      "status": "unavailable",
+      "evidenceRef": ""
+    },
+    "monitoring": {
+      "status": "unavailable",
+      "evidenceRef": ""
+    },
+    "backup": {
+      "status": "unavailable",
+      "evidenceRef": ""
+    }
+  },
+  "acceptance": {
+    "automatedTests": {
+      "status": "pending",
+      "evidenceRef": ""
+    },
+    "artifactBuild": {
+      "status": "pending",
+      "evidenceRef": ""
+    },
+    "securityReview": {
+      "status": "pending",
+      "evidenceRef": ""
+    },
+    "ownerReview": {
+      "status": "pending",
+      "evidenceRef": ""
+    },
+    "humanUat": {
+      "status": "pending",
+      "evidenceRef": ""
+    },
+    "backupRestore": {
+      "status": "pending",
+      "evidenceRef": ""
+    },
+    "rollbackRehearsal": {
+      "status": "pending",
+      "evidenceRef": ""
+    },
+    "centralSandbox": {
+      "status": "pending",
+      "evidenceRef": ""
+    }
+  },
+  "rollback": {
+    "previousReleaseId": "PLACEHOLDER",
+    "strategy": "symlink",
+    "databaseCompatibility": "unverified"
+  }
+}

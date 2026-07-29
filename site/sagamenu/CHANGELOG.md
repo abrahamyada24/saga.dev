@@ -1,5 +1,47 @@
 # Changelog
 
+## Unreleased - Release hygiene and staging preflight (local only)
+
+### Added
+
+- Machine-readable staging release manifest contract.
+- Fail-closed `sagamenu:release-preflight` command for source, provider, runtime,
+  acceptance, backup, and rollback gates.
+- Automated tests for placeholder rejection, safe output, immutable checkout,
+  and preflight ordering.
+- Release hygiene runbook with non-destructive rollback guidance.
+
+### Changed
+
+- Deployment requires a full immutable Git SHA and refuses a dirty checkout.
+- Preflight now runs before database migration and release symlink activation.
+
+### Safety
+
+- The example manifest intentionally fails until real evidence is supplied.
+- No secret value is emitted or stored in release evidence.
+- No merge, deployment, live database, provider, DNS, or customer state changed.
+
+## Unreleased - Sprints 18-25 content operations and public discovery (local only)
+
+### Added
+
+- Editorial Quick Ops with inline edits, filtered bulk actions, saved views, Shift Mode, idempotent batch ledger, and grouped undo.
+- Draft-versus-live Change Center, field-level diff, selective discard, and stable Catalog Health issue codes.
+- Public search recovery, sticky top categories, dietary filters, locale switching, translations, transcripts, schedules, and accessible focus behavior.
+- QR distribution workspace, source attribution, social preview, managed destinations, and active scheduling windows.
+- Outlet scope, role matrix, pending invitations, version history, and restore-as-draft prototype flows.
+- Privacy-light analytics for surface views, QR sources, detail opens, video plays, zero results, and sold-out interest.
+- Laravel translation, batch-operation, health, diff, schedule, QR-window, and aggregate analytics foundations with feature tests.
+- Automated browser acceptance for Sprints 18-25 across admin and Bio Menu mobile states.
+
+### Safety
+
+- SagaMenu remains a preview-only menu and catalog; ordering, cart, checkout, POS, and WhatsApp ordering are excluded.
+- Catalog content, media, raw search terms, session identifiers, and visitor-level analytics stay outside Saga Platform aggregate reporting.
+- Human usability sessions, real object storage, queue/scheduler recovery, accessibility manual review, and staging performance remain release gates.
+- No push, merge, deploy, live database, DNS, credential, paid service, or customer communication was performed.
+
 ## Unreleased - Sprints 9-17 usability and video wave (local only)
 
 ### Added
