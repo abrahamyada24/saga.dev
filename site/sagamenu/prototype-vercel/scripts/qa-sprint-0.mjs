@@ -101,6 +101,7 @@ const guardedCloseRecovery = await editor.locator('input[name="price"]').inputVa
 await editor.getByRole('button', { name: 'Simpan perubahan' }).click();
 itemRow = page.locator('[data-item-row]').filter({ hasText: 'Sprint Zero Cold Brew' });
 const finalRow = await itemRow.innerText();
+const finalPrice = await itemRow.locator('[data-inline-field="price"]').inputValue();
 
 await page.setViewportSize({ width: 390, height: 844 });
 await addButton.click();
@@ -127,6 +128,7 @@ const result = {
     editRecovery,
     guardedCloseRecovery,
     finalRow,
+    finalPrice,
     mobileValidationVisible,
     mobileFooterVisible,
     consoleErrors,
@@ -154,7 +156,7 @@ const passed = [
     editRecovery.status,
     editRecovery.price === '36000',
     guardedCloseRecovery === '37000',
-    finalRow.includes('Rp 37.000'),
+    finalPrice === '37000',
     mobileValidationVisible,
     mobileFooterVisible,
     consoleErrors.length === 0,

@@ -94,6 +94,7 @@ await editor.getByRole('button', { name: 'Simpan perubahan' }).click();
 itemRow = page.locator('[data-item-row]').filter({ hasText: 'Sprint Two Espresso Tonic' });
 await itemRow.waitFor();
 const savedEditRow = await itemRow.innerText();
+const savedEditPrice = await itemRow.locator('[data-inline-field="price"]').inputValue();
 
 await itemRow.getByRole('button', { name: 'Edit Sprint Two Espresso Tonic' }).click();
 editor = page.locator('[data-item-editor]');
@@ -182,6 +183,7 @@ const result = {
     editNavigation,
     editValidation,
     savedEditRow,
+    savedEditPrice,
     autosaveRecovery,
     guardedPendingValue,
     guardedStoredValue,
@@ -225,7 +227,7 @@ const passed = [
     editValidation.summaryVisible,
     editValidation.messageVisible,
     editValidation.focusedField === 'name',
-    savedEditRow.includes('Rp 36.000'),
+    savedEditPrice === '36000',
     autosaveRecovery.statusVisible,
     autosaveRecovery.price === '37000',
     guardedPendingValue === '38000',
