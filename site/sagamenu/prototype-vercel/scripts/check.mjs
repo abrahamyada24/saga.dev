@@ -2,8 +2,8 @@ import { readFile } from 'node:fs/promises';
 
 const files = {
     html: await readFile('index.html', 'utf8'),
-    css: await readFile('styles.css', 'utf8'),
-    js: await readFile('app.js', 'utf8'),
+    css: `${await readFile('styles.css', 'utf8')}\n${await readFile('sprints-18-25.css', 'utf8')}`,
+    js: `${await readFile('app.js', 'utf8')}\n${await readFile('sprints-18-25.js', 'utf8')}`,
     vercel: JSON.parse(await readFile('vercel.json', 'utf8')),
 };
 
@@ -25,6 +25,9 @@ const requiredJs = [
     'renderPublish',
     'renderAnalytics',
     'renderPublicMenu',
+    'renderChangesHealth',
+    'renderDistribution',
+    'renderWorkspaceOperations',
     'localStorage',
 ];
 
@@ -64,7 +67,7 @@ console.log(JSON.stringify({
     htmlBytes: files.html.length,
     cssBytes: files.css.length,
     jsBytes: files.js.length,
-    routes: ['overview', 'menus', 'categories', 'addons', 'media', 'appearance', 'publish', 'analytics'],
+    routes: ['overview', 'menus', 'categories', 'addons', 'media', 'changes', 'appearance', 'distribution', 'workspace', 'publish', 'analytics'],
     previews: ['mobile', 'tablet', 'maintenance'],
     actionsChecked: declaredActions.size,
 }, null, 2));

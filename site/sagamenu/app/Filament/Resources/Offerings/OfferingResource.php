@@ -10,10 +10,13 @@ use App\Models\Catalog;
 use App\Models\Collection;
 use App\Models\MediaAsset;
 use App\Models\Offering;
+use App\Services\Catalog\BulkOfferingUpdater;
 use App\Services\OfferingDuplicator;
 use App\Services\Publishing\CatalogAvailabilityPublisher;
 use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Actions\BulkAction;
+use Filament\Actions\BulkActionGroup;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\FileUpload;
@@ -37,7 +40,9 @@ use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Str;
 
 class OfferingResource extends Resource
 {
@@ -371,8 +376,48 @@ class OfferingResource extends Resource
                 Action::make('archive')->color('danger')->icon(Heroicon::OutlinedArchiveBox)->requiresConfirmation()
                     ->action(fn (Offering $record) => $record->update(['archived_at' => now(), 'visibility' => 'hidden'])),
             ])
+            ->toolbarActions([
+                BulkActionGroup::make([
+                    BulkAction::make('mark_available')
+                        ->label('Tandai tersedia')
+                        ->icon(Heroicon::OutlinedEye)
+                        ->action(fn (EloquentCollection $records) => static::runBulkUpdate($records, ['availability' => 'available'])),
+                    BulkAction::make('mark_sold_out')
+                        ->label('Tandai sold out')
+                        ->icon(Heroicon::OutlinedEyeSlash)
+                        ->color('danger')
+                        ->action(fn (EloquentCollection $records) => static::runBulkUpdate($records, ['availability' => 'sold_out'])),
+                    BulkAction::make('show_both')
+                        ->label('Tampilkan di kedua surface')
+                        ->icon(Heroicon::OutlinedRectangleGroup)
+                        ->action(fn (EloquentCollection $records) => static::runBulkUpdate($records, ['visibility' => 'both'])),
+                    BulkAction::make('hide')
+                        ->label('Sembunyikan')
+                        ->icon(Heroicon::OutlinedEyeSlash)
+                        ->requiresConfirmation()
+                        ->action(fn (EloquentCollection $records) => static::runBulkUpdate($records, ['visibility' => 'hidden'])),
+                ]),
+            ])
             ->reorderable('sort_order')
             ->defaultSort('updated_at', 'desc');
+    }
+
+    /**
+     * @param  array<string, mixed>  $changes
+     */
+    private static function runBulkUpdate(EloquentCollection $records, array $changes): void
+    {
+        foreach ($records->groupBy('catalog_id') as $catalogId => $catalogRecords) {
+            $catalog = Catalog::query()->findOrFail($catalogId);
+            Gate::authorize('update', $catalog);
+            app(BulkOfferingUpdater::class)->update(
+                $catalog,
+                $catalogRecords->modelKeys(),
+                $changes,
+                auth()->user(),
+                (string) Str::uuid(),
+            );
+        }
     }
 
     public static function getPages(): array

@@ -36,6 +36,12 @@
                         Browser Anda tidak mendukung pemutar video.
                     </video>
                 </div>
+                @if (! empty($offering['video_transcript']))
+                    <details class="video-transcript">
+                        <summary>Transcript video</summary>
+                        <p>{{ $offering['video_transcript'] }}</p>
+                    </details>
+                @endif
             @endif
             <div class="dialog-title-row">
                 <div>

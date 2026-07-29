@@ -18,6 +18,7 @@ class CatalogSnapshotBuilder
             'collections.offerings.variantGroups.values',
             'collections.offerings.optionGroups.values',
             'collections.offerings.inclusions',
+            'collections.offerings.translations',
         ]);
 
         $collections = $catalog->collections
@@ -109,6 +110,8 @@ class CatalogSnapshotBuilder
             ],
             'availability' => $offering->availability,
             'visibility' => $offering->visibility,
+            'available_from' => optional($offering->available_from)->toIso8601String(),
+            'available_until' => optional($offering->available_until)->toIso8601String(),
             'badges' => array_slice($offering->badges ?? [], 0, 2),
             'tags' => $offering->tags ?? [],
             'ingredients' => $offering->ingredients,
@@ -162,6 +165,14 @@ class CatalogSnapshotBuilder
                 ])->values()->all(),
             ])->values()->all(),
             'inclusions' => $offering->inclusions->pluck('name')->values()->all(),
+            'translations' => $offering->translations->mapWithKeys(fn ($translation) => [
+                $translation->locale => [
+                    'name' => $translation->name,
+                    'short_description' => $translation->short_description,
+                    'full_description' => $translation->full_description,
+                    'video_transcript' => $translation->video_transcript,
+                ],
+            ])->all(),
         ];
     }
 

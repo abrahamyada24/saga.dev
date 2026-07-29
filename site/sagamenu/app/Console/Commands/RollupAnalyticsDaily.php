@@ -50,6 +50,8 @@ class RollupAnalyticsDaily extends Command
                 'catalog_views' => $events->where('event_name', 'catalog_viewed')->count(),
                 'engaged_sessions' => $meaningful->pluck('session_key')->filter()->unique()->count(),
                 'offering_opens' => $events->where('event_name', 'offering_opened')->count(),
+                'video_plays' => $events->where('event_name', 'video_played')->count(),
+                'sold_out_opens' => $events->where('event_name', 'sold_out_opened')->count(),
                 'qr_scans' => $events->where('event_name', 'qr_scanned')->count(),
                 'searches' => $events->where('event_name', 'search_performed')->count(),
                 'zero_results' => $events->where('event_name', 'search_zero_result')->count(),

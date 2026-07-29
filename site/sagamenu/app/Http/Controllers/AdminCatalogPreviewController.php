@@ -18,12 +18,20 @@ class AdminCatalogPreviewController extends Controller
         abort_unless(in_array($surface, ['mobile', 'store'], true), 404);
 
         $view = $surface === 'store' ? 'public.store-display' : 'public.mobile-catalog';
+        $payload = $builder->build($catalog);
+        $locale = (string) data_get($payload, 'organization.locale', 'id');
+        $availableLocales = array_values(array_unique([
+            $locale,
+            ...array_values(array_filter((array) data_get($payload, 'catalog.settings.enabled_locales', []))),
+        ]));
         $response = response()->view($view, [
             'catalogModel' => $catalog,
-            'payload' => $builder->build($catalog),
+            'payload' => $payload,
             'surface' => $surface,
             'isPreview' => true,
             'analyticsEndpoint' => route('analytics.events'),
+            'locale' => $locale,
+            'availableLocales' => $availableLocales,
         ]);
 
         return $response

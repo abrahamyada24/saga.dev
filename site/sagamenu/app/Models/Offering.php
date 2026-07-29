@@ -70,4 +70,9 @@ class Offering extends Model
     {
         return $this->hasMany(Inclusion::class)->orderBy('sort_order');
     }
+
+    public function translations(): HasMany
+    {
+        return $this->hasMany(OfferingTranslation::class);
+    }
 }

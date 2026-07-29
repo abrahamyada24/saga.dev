@@ -16,9 +16,13 @@
         implode(' ', $offering['tags'] ?? []),
         implode(' ', $offering['inclusions'] ?? []),
     ])));
+    $dietaryText = strtolower(implode(' ', [
+        ...($offering['dietary'] ?? []),
+        ...($offering['allergens'] ?? []),
+    ]));
 @endphp
 
-<article class="offering-card offering-card--{{ $mode }} {{ $isUnavailable ? 'is-unavailable' : '' }}" data-search-item="{{ $searchText }}">
+<article class="offering-card offering-card--{{ $mode }} {{ $isUnavailable ? 'is-unavailable' : '' }}" data-search-item="{{ $searchText }}" data-dietary="{{ $dietaryText }}" data-unavailable="{{ $isUnavailable ? 'true' : 'false' }}">
     <button
         type="button"
         class="offering-card__button"

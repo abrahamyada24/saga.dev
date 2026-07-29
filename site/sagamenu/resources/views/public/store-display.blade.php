@@ -31,6 +31,13 @@
                 </div>
             </div>
             <div class="store-meta">
+                @if (count($availableLocales ?? []) > 1)
+                    <nav class="locale-switch" aria-label="Bahasa menu">
+                        @foreach ($availableLocales as $localeOption)
+                            <a href="{{ request()->fullUrlWithQuery(['lang' => $localeOption]) }}" aria-current="{{ $localeOption === $locale ? 'true' : 'false' }}">{{ strtoupper($localeOption) }}</a>
+                        @endforeach
+                    </nav>
+                @endif
                 <div>
                     <span class="meta-label">Jam buka</span>
                     <strong>{{ data_get($catalog, 'business_info.hours', 'Lihat informasi outlet') }}</strong>
@@ -50,8 +57,22 @@
                 </a>
             @endforeach
         </nav>
+        <div class="store-discovery-tools">
+            <label class="search-field">
+                <span class="sr-only">Cari menu</span>
+                <input type="search" placeholder="Cari menu, rasa, atau bahan" data-catalog-search autocomplete="off">
+                <button type="button" data-search-clear aria-label="Hapus pencarian">Hapus</button>
+            </label>
+            <div class="dietary-filters" aria-label="Filter kebutuhan menu">
+                <button class="is-active" type="button" data-dietary-filter="">Semua</button>
+                <button type="button" data-dietary-filter="vegetarian">Vegetarian</button>
+                <button type="button" data-dietary-filter="vegan">Vegan</button>
+                <button type="button" data-dietary-filter="milk-free">Tanpa susu</button>
+            </div>
+            <p class="result-count" data-result-count aria-live="polite"></p>
+        </div>
 
-        <div class="catalog-content">
+        <div class="catalog-content" id="catalog-content">
             @forelse ($collections as $collection)
                 <section class="collection-section" id="collection-{{ $collection['slug'] }}" data-collection="{{ $collection['slug'] }}">
                     <div class="section-heading">
@@ -76,6 +97,12 @@
                     <p>Silakan tanyakan menu yang tersedia kepada staf.</p>
                 </section>
             @endforelse
+            <section class="search-empty" data-search-empty hidden>
+                <img src="{{ asset('assets/illustrations/empty-catalog.webp') }}" alt="" width="640" height="640">
+                <h2>Menu tidak ditemukan</h2>
+                <p>Coba kata lain atau hapus filter.</p>
+                <button type="button" data-search-reset>Reset pencarian</button>
+            </section>
         </div>
 
         <footer class="public-footer">

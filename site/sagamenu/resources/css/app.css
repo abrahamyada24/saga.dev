@@ -983,6 +983,163 @@ body[data-store-layout='photo_grid'] .offering-card__media {
     }
 }
 
+.public-skip-link {
+    position: fixed;
+    z-index: 1000;
+    top: 8px;
+    left: 8px;
+    padding: 10px 14px;
+    border: 2px solid #111814;
+    background: #fff;
+    color: #111814;
+    transform: translateY(-160%);
+}
+
+.public-skip-link:focus {
+    transform: translateY(0);
+}
+
+:where(button, input, select, summary, a):focus-visible {
+    outline: 3px solid var(--brand-primary);
+    outline-offset: 3px;
+}
+
+.header-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.locale-switch {
+    display: inline-flex;
+    gap: 2px;
+    padding: 2px;
+    border: 1px solid color-mix(in srgb, var(--brand-primary) 28%, transparent);
+    border-radius: 6px;
+}
+
+.locale-switch a {
+    display: grid;
+    place-items: center;
+    min-width: 32px;
+    min-height: 30px;
+    padding: 4px 6px;
+    border-radius: 4px;
+    color: inherit;
+    font-size: 10px;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.locale-switch a[aria-current='true'] {
+    background: var(--brand-primary);
+    color: #fff;
+}
+
+.search-field {
+    position: relative;
+}
+
+.search-field [data-search-clear] {
+    position: absolute;
+    top: 50%;
+    right: 7px;
+    min-width: 44px;
+    min-height: 34px;
+    border: 0;
+    background: transparent;
+    color: var(--brand-primary);
+    font: inherit;
+    font-size: 10px;
+    font-weight: 700;
+    transform: translateY(-50%);
+    cursor: pointer;
+}
+
+.search-field input {
+    padding-right: 60px;
+}
+
+.dietary-filters {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+}
+
+.dietary-filters button {
+    min-height: 36px;
+    padding: 7px 10px;
+    border: 1px solid color-mix(in srgb, var(--brand-primary) 24%, transparent);
+    border-radius: 6px;
+    background: var(--brand-paper);
+    color: inherit;
+    font: inherit;
+    font-size: 10px;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.dietary-filters button.is-active {
+    border-color: var(--brand-primary);
+    background: var(--brand-primary);
+    color: #fff;
+}
+
+.result-count {
+    min-height: 17px;
+    margin: 0;
+    color: color-mix(in srgb, currentColor 64%, transparent);
+    font-size: 10px;
+}
+
+.store-discovery-tools {
+    display: grid;
+    grid-template-columns: minmax(240px, 1fr) auto auto;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 22px;
+}
+
+.video-transcript {
+    margin-top: 10px;
+    padding: 10px 12px;
+    border: 1px solid color-mix(in srgb, var(--brand-primary) 20%, transparent);
+    border-radius: 6px;
+    background: color-mix(in srgb, var(--brand-paper) 92%, #fff);
+}
+
+.video-transcript summary {
+    cursor: pointer;
+    font-weight: 700;
+}
+
+.video-transcript p {
+    margin: 8px 0 0;
+    line-height: 1.65;
+}
+
+@media (max-width: 760px) {
+    .store-discovery-tools {
+        grid-template-columns: 1fr;
+    }
+
+    .dietary-filters button,
+    .locale-switch a {
+        min-height: 44px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+    }
+}
+
 .video-badge {
     position: absolute;
     right: 10px;

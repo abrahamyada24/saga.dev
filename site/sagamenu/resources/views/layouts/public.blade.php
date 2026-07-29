@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ data_get($payload ?? [], 'organization.locale', 'id') }}">
+<html lang="{{ $locale ?? data_get($payload ?? [], 'organization.locale', 'id') }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -51,6 +51,7 @@
     data-mobile-layout="{{ in_array(data_get($appearance, 'mobile_layout'), ['editorial_list', 'photo_grid'], true) ? data_get($appearance, 'mobile_layout') : 'editorial_list' }}"
     data-store-layout="{{ in_array(data_get($appearance, 'store_layout'), ['editorial_grid', 'photo_grid'], true) ? data_get($appearance, 'store_layout') : 'editorial_grid' }}"
 >
+    <a class="public-skip-link" href="#catalog-content">Lewati ke daftar menu</a>
     @if ($isPreview ?? false)
         <div class="preview-banner" role="status">Draft preview. Perubahan ini belum tampil di halaman publik.</div>
     @endif

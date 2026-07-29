@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AnalyticsEvent;
 use App\Models\QrRoute;
+use App\Services\Catalog\ScheduleEvaluator;
 use chillerlan\QRCode\QRCode;
 use chillerlan\QRCode\QROptions;
 use Illuminate\Http\RedirectResponse;
@@ -13,10 +14,10 @@ use Illuminate\Support\Str;
 
 class QrRedirectController extends Controller
 {
-    public function redirect(string $code): RedirectResponse
+    public function redirect(string $code, ScheduleEvaluator $scheduleEvaluator): RedirectResponse
     {
         $qr = QrRoute::query()->with(['catalog.organization'])->where('code', $code)->firstOrFail();
-        abort_unless($qr->status === 'active' && ! $qr->archived_at, 410, 'QR route is unavailable.');
+        abort_unless($scheduleEvaluator->qrRouteIsActive($qr), 410, 'QR route is unavailable.');
 
         AnalyticsEvent::query()->create([
             'event_id' => (string) Str::uuid(),

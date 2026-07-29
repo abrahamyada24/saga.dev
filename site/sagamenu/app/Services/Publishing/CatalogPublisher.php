@@ -6,6 +6,7 @@ use App\Models\Catalog;
 use App\Models\CatalogSnapshot;
 use App\Models\User;
 use App\Services\AuditLogger;
+use App\Services\Catalog\CatalogHealthValidator;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -15,6 +16,7 @@ class CatalogPublisher
     public function __construct(
         private readonly CatalogSnapshotBuilder $builder,
         private readonly AuditLogger $auditLogger,
+        private readonly CatalogHealthValidator $healthValidator,
     ) {}
 
     public function publish(Catalog $catalog, ?User $actor = null, ?string $reason = null): CatalogSnapshot
@@ -104,6 +106,14 @@ class CatalogPublisher
 
         if (! $catalog->offerings()->where('visibility', '!=', 'hidden')->whereNull('archived_at')->exists()) {
             $errors['offerings'] = 'Minimal satu offering yang terlihat diperlukan.';
+        }
+
+        foreach ($this->healthValidator->validate($catalog) as $issue) {
+            if ($issue['severity'] !== 'blocking') {
+                continue;
+            }
+
+            $errors["health.{$issue['id']}"] = $issue['title'];
         }
 
         if ($errors) {

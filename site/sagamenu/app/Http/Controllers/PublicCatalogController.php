@@ -9,6 +9,7 @@ use App\Services\Publishing\PreviewTokenService;
 use App\Services\SagaPlatform\PublicCatalogAccessPolicy;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Response;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 
 class PublicCatalogController extends Controller
@@ -72,13 +73,91 @@ class PublicCatalogController extends Controller
 
     private function viewData(Catalog $catalog, array $payload, string $surface, bool $preview): array
     {
+        [$payload, $locale, $availableLocales] = $this->preparePayload(
+            $payload,
+            $surface,
+            (string) request()->query('lang', ''),
+        );
+
         return [
             'catalogModel' => $catalog,
             'payload' => $payload,
             'surface' => $surface,
             'isPreview' => $preview,
             'analyticsEndpoint' => route('analytics.events'),
+            'locale' => $locale,
+            'availableLocales' => $availableLocales,
         ];
+    }
+
+    /**
+     * @return array{0: array, 1: string, 2: array<int, string>}
+     */
+    private function preparePayload(array $payload, string $surface, string $requestedLocale): array
+    {
+        $defaultLocale = (string) data_get($payload, 'organization.locale', 'id');
+        $configuredLocales = array_values(array_filter((array) data_get($payload, 'catalog.settings.enabled_locales', [])));
+        $translationLocales = collect(data_get($payload, 'collections', []))
+            ->flatMap(fn (array $collection) => collect($collection['offerings'] ?? [])->flatMap(
+                fn (array $offering) => array_keys($offering['translations'] ?? []),
+            ))
+            ->unique()
+            ->values()
+            ->all();
+        $availableLocales = array_values(array_unique([$defaultLocale, ...$configuredLocales, ...$translationLocales]));
+        $locale = in_array($requestedLocale, $availableLocales, true) ? $requestedLocale : $defaultLocale;
+        $now = now();
+
+        $payload['collections'] = collect($payload['collections'] ?? [])
+            ->map(function (array $collection) use ($surface, $locale, $defaultLocale, $now): array {
+                $collection['offerings'] = collect($collection['offerings'] ?? [])
+                    ->filter(fn (array $offering): bool => $this->offeringIsVisible($offering, $surface, $now))
+                    ->map(fn (array $offering): array => $this->localizeOffering($offering, $locale, $defaultLocale))
+                    ->values()
+                    ->all();
+
+                return $collection;
+            })
+            ->filter(fn (array $collection): bool => count($collection['offerings']) > 0)
+            ->values()
+            ->all();
+
+        return [$payload, $locale, $availableLocales];
+    }
+
+    private function offeringIsVisible(array $offering, string $surface, Carbon $now): bool
+    {
+        $visibility = $offering['visibility'] ?? 'both';
+        if ($visibility === 'hidden') {
+            return false;
+        }
+        if ($surface === 'mobile' && $visibility === 'store') {
+            return false;
+        }
+        if ($surface === 'store' && $visibility === 'mobile') {
+            return false;
+        }
+
+        $startsAt = ! empty($offering['available_from']) ? Carbon::parse($offering['available_from']) : null;
+        $endsAt = ! empty($offering['available_until']) ? Carbon::parse($offering['available_until']) : null;
+
+        return (! $startsAt || $now->gte($startsAt)) && (! $endsAt || $now->lte($endsAt));
+    }
+
+    private function localizeOffering(array $offering, string $locale, string $defaultLocale): array
+    {
+        if ($locale === $defaultLocale) {
+            return $offering;
+        }
+
+        $translation = data_get($offering, "translations.{$locale}", []);
+        foreach (['name', 'short_description', 'full_description', 'video_transcript'] as $field) {
+            if (! empty($translation[$field])) {
+                $offering[$field] = $translation[$field];
+            }
+        }
+
+        return $offering;
     }
 
     private function maintenance(Organization $organization): Response

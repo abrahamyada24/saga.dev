@@ -10,10 +10,13 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/styles.css">
+    <link rel="stylesheet" href="/sprints-18-25.css">
     <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.js" defer></script>
     <script src="/app.js" defer></script>
+    <script src="/sprints-18-25.js" defer></script>
 </head>
 <body>
+    <a class="skip-link" href="#main-content">Lewati ke konten utama</a>
     <div class="prototype-strip">
         <span>PROTOTYPE REVIEW</span>
         <p>Data tersimpan hanya di browser ini</p>
@@ -48,8 +51,18 @@
                 <button class="nav-item" type="button" data-route="media">
                     <i data-lucide="images"></i><span>Media Library</span>
                 </button>
+                <button class="nav-item" type="button" data-route="changes">
+                    <i data-lucide="list-checks"></i><span>Perubahan & Kesehatan</span>
+                    <span class="nav-count" data-health-count>0</span>
+                </button>
                 <button class="nav-item" type="button" data-route="appearance">
                     <i data-lucide="palette"></i><span>Tampilan</span>
+                </button>
+                <button class="nav-item" type="button" data-route="distribution">
+                    <i data-lucide="qr-code"></i><span>QR & Distribusi</span>
+                </button>
+                <button class="nav-item" type="button" data-route="workspace">
+                    <i data-lucide="building-2"></i><span>Outlet & Tim</span>
                 </button>
                 <button class="nav-item" type="button" data-route="publish">
                     <i data-lucide="send"></i><span>Preview & Terbitkan</span>

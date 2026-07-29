@@ -7,17 +7,20 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Guarded([])]
-class QrRoute extends Model
+class CatalogOperationBatch extends Model
 {
     protected function casts(): array
     {
         return [
-            'starts_at' => 'datetime',
-            'ends_at' => 'datetime',
-            'design' => 'array',
-            'metadata' => 'array',
-            'archived_at' => 'datetime',
+            'payload' => 'array',
+            'before' => 'array',
+            'undone_at' => 'datetime',
         ];
+    }
+
+    public function catalog(): BelongsTo
+    {
+        return $this->belongsTo(Catalog::class);
     }
 
     public function organization(): BelongsTo
@@ -25,8 +28,8 @@ class QrRoute extends Model
         return $this->belongsTo(Organization::class);
     }
 
-    public function catalog(): BelongsTo
+    public function actor(): BelongsTo
     {
-        return $this->belongsTo(Catalog::class);
+        return $this->belongsTo(User::class, 'actor_user_id');
     }
 }

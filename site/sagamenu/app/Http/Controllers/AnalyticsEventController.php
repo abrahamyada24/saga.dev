@@ -16,6 +16,8 @@ class AnalyticsEventController extends Controller
         'catalog_viewed',
         'collection_selected',
         'offering_opened',
+        'video_played',
+        'sold_out_opened',
         'search_performed',
         'search_zero_result',
         'external_action_clicked',
@@ -51,7 +53,7 @@ class AnalyticsEventController extends Controller
                 'collection_slug' => $data['collection_slug'] ?? null,
                 'offering_slug' => $data['offering_slug'] ?? null,
                 'search_term' => isset($data['search_term']) ? Str::limit(strip_tags($data['search_term']), 120, '') : null,
-                'metadata' => array_intersect_key($data['metadata'] ?? [], array_flip(['result_count', 'action_label'])),
+                'metadata' => array_intersect_key($data['metadata'] ?? [], array_flip(['result_count', 'action_label', 'source_key'])),
                 'occurred_at' => now(),
             ],
         );

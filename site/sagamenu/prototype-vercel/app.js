@@ -646,9 +646,7 @@ function updateGlobalState() {
 
 function toast(title, message = '') {
     const region = document.querySelector('[data-toast-region]');
-    while (region.children.length >= 3) {
-        region.firstElementChild?.remove();
-    }
+    region.replaceChildren();
     const node = document.createElement('div');
     node.className = 'toast';
     node.innerHTML = `

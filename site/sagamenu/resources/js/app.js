@@ -61,6 +61,10 @@ document.querySelectorAll('[data-offering-open]').forEach((trigger) => {
         dialog.showModal();
         body.classList.add('dialog-open');
         track('offering_opened', { offering_slug: slug });
+        if (trigger.closest('[data-unavailable]')?.dataset.unavailable === 'true') {
+            track('sold_out_opened', { offering_slug: slug });
+        }
+        history.replaceState(null, '', `${location.pathname}${location.search}#item-${slug}`);
     });
 });
 
@@ -79,7 +83,17 @@ document.querySelectorAll('[data-offering-dialog]').forEach((dialog) => {
         body.classList.remove('dialog-open');
         const trigger = document.querySelector(`[data-offering-open="${CSS.escape(dialog.dataset.returnFocus || '')}"]`);
         trigger?.focus();
+        if (location.hash.startsWith('#item-')) {
+            history.replaceState(null, '', `${location.pathname}${location.search}`);
+        }
     });
+});
+
+document.querySelectorAll('[data-offering-dialog] video').forEach((video) => {
+    video.addEventListener('play', () => {
+        const dialog = video.closest('[data-offering-dialog]');
+        track('video_played', { offering_slug: dialog?.dataset.offeringDialog });
+    }, { once: true });
 });
 
 document.querySelectorAll('[data-collection-link]').forEach((link) => {
@@ -99,13 +113,20 @@ document.querySelectorAll('[data-external-action]').forEach((link) => {
 const search = document.querySelector('[data-catalog-search]');
 const searchEmpty = document.querySelector('[data-search-empty]');
 const searchReset = document.querySelector('[data-search-reset]');
+const searchClear = document.querySelector('[data-search-clear]');
+const resultCount = document.querySelector('[data-result-count]');
+let dietaryFilter = '';
 
 function applySearch() {
     const term = (search?.value || '').trim().toLocaleLowerCase('id');
     let visibleCount = 0;
 
     document.querySelectorAll('[data-search-item]').forEach((item) => {
-        const visible = !term || item.dataset.searchItem.includes(term);
+        const matchesTerm = !term || item.dataset.searchItem.includes(term);
+        const dietary = item.dataset.dietary || '';
+        const matchesDietary = !dietaryFilter
+            || (dietaryFilter === 'milk-free' ? !dietary.includes('susu') : dietary.includes(dietaryFilter));
+        const visible = matchesTerm && matchesDietary;
         item.hidden = !visible;
         if (visible) visibleCount += 1;
     });
@@ -116,6 +137,9 @@ function applySearch() {
 
     if (searchEmpty) {
         searchEmpty.hidden = visibleCount > 0;
+    }
+    if (resultCount) {
+        resultCount.textContent = `${visibleCount} menu ditemukan`;
     }
 
     return { term, visibleCount };
@@ -140,3 +164,27 @@ searchReset?.addEventListener('click', () => {
     applySearch();
     search.focus();
 });
+
+searchClear?.addEventListener('click', () => {
+    if (!search) return;
+    search.value = '';
+    applySearch();
+    search.focus();
+});
+
+document.querySelectorAll('[data-dietary-filter]').forEach((button) => {
+    button.addEventListener('click', () => {
+        dietaryFilter = button.dataset.dietaryFilter || '';
+        document.querySelectorAll('[data-dietary-filter]').forEach((item) => {
+            item.classList.toggle('is-active', item === button);
+        });
+        applySearch();
+    });
+});
+
+const requestedItem = location.hash.startsWith('#item-') ? location.hash.slice(6) : '';
+if (requestedItem) {
+    document.querySelector(`[data-offering-open="${CSS.escape(requestedItem)}"]`)?.click();
+}
+
+applySearch();

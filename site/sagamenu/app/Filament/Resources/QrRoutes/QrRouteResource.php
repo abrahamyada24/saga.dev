@@ -9,6 +9,7 @@ use App\Models\QrRoute;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
+use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
@@ -37,6 +38,8 @@ class QrRouteResource extends Resource
                 TextInput::make('source_key')->maxLength(120),
                 Select::make('destination_surface')->options(['mobile' => 'Mobile Catalog', 'store' => 'Store Display'])->default('mobile')->required(),
                 Select::make('status')->options(['active' => 'Active', 'paused' => 'Paused', 'archived' => 'Archived'])->default('active')->required(),
+                DateTimePicker::make('starts_at')->label('Aktif mulai')->timezone('Asia/Jakarta'),
+                DateTimePicker::make('ends_at')->label('Aktif sampai')->timezone('Asia/Jakarta')->after('starts_at'),
             ])->columns(2),
         ]);
     }
@@ -49,6 +52,8 @@ class QrRouteResource extends Resource
             TextColumn::make('code')->copyable(),
             TextColumn::make('destination_surface')->badge(),
             TextColumn::make('status')->badge()->color(fn ($state) => $state === 'active' ? 'success' : 'warning'),
+            TextColumn::make('starts_at')->label('Mulai')->dateTime('d M Y H:i')->placeholder('Sekarang'),
+            TextColumn::make('ends_at')->label('Selesai')->dateTime('d M Y H:i')->placeholder('Tanpa batas'),
             TextColumn::make('updated_at')->since(),
         ])->recordActions([
             Action::make('open')->icon(Heroicon::OutlinedArrowTopRightOnSquare)->url(fn (QrRoute $record) => route('qr.redirect', $record->code))->openUrlInNewTab(),
