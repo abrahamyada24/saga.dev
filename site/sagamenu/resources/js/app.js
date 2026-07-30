@@ -40,8 +40,25 @@ function track(eventName, properties = {}) {
 track('catalog_viewed');
 
 document.querySelectorAll('[data-image-container] img').forEach((image) => {
-    const markFailed = () => image.closest('[data-image-container]')?.classList.add('image-failed');
+    const container = image.closest('[data-image-container]');
+    const fallback = container?.querySelector('[data-image-fallback]');
+    const markFailed = () => {
+        container?.classList.add('image-failed');
+        fallback?.setAttribute('aria-hidden', 'false');
+        fallback?.setAttribute('role', 'img');
+        if (fallback?.dataset.fallbackLabel) {
+            fallback.setAttribute('aria-label', fallback.dataset.fallbackLabel);
+        }
+    };
+    const markReady = () => {
+        container?.classList.remove('image-failed');
+        fallback?.setAttribute('aria-hidden', 'true');
+        fallback?.removeAttribute('role');
+        fallback?.removeAttribute('aria-label');
+    };
+
     image.addEventListener('error', markFailed);
+    image.addEventListener('load', markReady);
 
     if (image.complete && image.naturalWidth === 0) {
         markFailed();
@@ -89,7 +106,48 @@ document.querySelectorAll('[data-offering-dialog]').forEach((dialog) => {
     });
 });
 
-document.querySelectorAll('[data-offering-dialog] video').forEach((video) => {
+document.querySelectorAll('[data-menu-video]').forEach((video) => {
+    const container = video.closest('[data-video-container]');
+    const status = container?.querySelector('[data-video-status]');
+    const title = status?.querySelector('[data-video-status-title]');
+    const copy = status?.querySelector('[data-video-status-copy]');
+    const retry = status?.querySelector('[data-video-retry]');
+
+    const setVideoState = (state) => {
+        container?.classList.toggle('has-error', state === 'error');
+        container?.classList.toggle('is-retrying', state === 'retrying');
+
+        if (!status || !title || !copy || !retry) {
+            return;
+        }
+
+        status.hidden = state === 'ready';
+        retry.disabled = state === 'retrying';
+        retry.hidden = state === 'retrying';
+
+        if (state === 'retrying') {
+            title.textContent = 'Memuat ulang video';
+            copy.textContent = 'Mohon tunggu sebentar.';
+            return;
+        }
+
+        if (state === 'error') {
+            title.textContent = 'Video belum dapat diputar';
+            copy.textContent = 'Foto dan detail menu tetap dapat dilihat.';
+        }
+    };
+
+    video.addEventListener('error', () => setVideoState('error'));
+    video.querySelectorAll('source').forEach((source) => {
+        source.addEventListener('error', () => setVideoState('error'));
+    });
+    video.addEventListener('loadeddata', () => setVideoState('ready'));
+    video.addEventListener('canplay', () => setVideoState('ready'));
+    retry?.addEventListener('click', () => {
+        setVideoState('retrying');
+        video.load();
+    });
+
     video.addEventListener('play', () => {
         const dialog = video.closest('[data-offering-dialog]');
         track('video_played', { offering_slug: dialog?.dataset.offeringDialog });

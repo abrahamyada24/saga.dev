@@ -50,7 +50,30 @@ class PublicCatalogMediaPerformanceTest extends TestCase
             $this->assertSame(0, $xpath->query('//img[not(@width) or not(@height)]')->length);
             $this->assertGreaterThan(0, $xpath->query('//dialog//video[@preload="none" and not(@autoplay)]')->length);
             $this->assertSame(0, $xpath->query('//dialog//video[@preload="metadata"]')->length);
+            $this->assertGreaterThan(0, $xpath->query("//*[@data-image-fallback and @data-fallback-label and @aria-hidden='true']")->length);
+
+            $videos = $xpath->query('//dialog//*[@data-menu-video]');
+            $statuses = $xpath->query("//dialog//*[@data-video-status and @role='status' and @aria-live='polite' and @hidden]");
+            $retries = $xpath->query("//dialog//button[@data-video-retry and normalize-space()='Coba lagi']");
+
+            $this->assertGreaterThan(0, $videos->length);
+            $this->assertSame($videos->length, $statuses->length);
+            $this->assertSame($videos->length, $retries->length);
         }
+    }
+
+    public function test_public_media_recovery_client_contract_covers_failure_retry_and_recovery(): void
+    {
+        $javascript = file_get_contents(resource_path('js/app.js'));
+        $stylesheet = file_get_contents(resource_path('css/app.css'));
+
+        $this->assertStringContainsString("video.addEventListener('error'", $javascript);
+        $this->assertStringContainsString("source.addEventListener('error'", $javascript);
+        $this->assertStringContainsString("retry?.addEventListener('click'", $javascript);
+        $this->assertStringContainsString("video.addEventListener('canplay'", $javascript);
+        $this->assertStringContainsString("fallback?.setAttribute('role', 'img')", $javascript);
+        $this->assertStringContainsString('.offering-dialog__video.has-error video', $stylesheet);
+        $this->assertStringContainsString('.media-recovery[hidden]', $stylesheet);
     }
 
     public function test_public_views_remain_compatible_with_snapshot_media_without_dimensions(): void

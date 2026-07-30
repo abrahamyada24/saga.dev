@@ -33,7 +33,12 @@
         aria-haspopup="dialog"
     >
         <div class="offering-card__media" data-image-container>
-            <div class="media-fallback" aria-hidden="true"><span>{{ strtoupper(substr($offering['name'], 0, 1)) }}</span></div>
+            <div
+                class="media-fallback"
+                data-image-fallback
+                data-fallback-label="Foto {{ $offering['name'] }} belum tersedia"
+                aria-hidden="true"
+            ><span>{{ strtoupper(substr($offering['name'], 0, 1)) }}</span></div>
             @if (data_get($media, 'url'))
                 <img
                     src="{{ $media['url'] }}"

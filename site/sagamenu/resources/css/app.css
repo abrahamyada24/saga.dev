@@ -763,10 +763,20 @@ h3 {
     margin-top: 20px;
 }
 
-.dialog-gallery img {
-    width: 100%;
+.dialog-gallery__item {
+    position: relative;
+    overflow: hidden;
     aspect-ratio: 1;
     border-radius: 6px;
+    background: #e5e0d8;
+}
+
+.dialog-gallery__item img {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
     object-fit: cover;
 }
 
@@ -1188,6 +1198,7 @@ body[data-store-layout='photo_grid'] .offering-card__media {
 }
 
 .offering-dialog__video {
+    position: relative;
     overflow: hidden;
     margin-bottom: 22px;
     border: 1px solid var(--line);
@@ -1201,6 +1212,81 @@ body[data-store-layout='photo_grid'] .offering-card__media {
     width: 100%;
     height: 100%;
     object-fit: contain;
+}
+
+.offering-dialog__video.has-error video {
+    visibility: hidden;
+}
+
+.offering-dialog__video.is-retrying video {
+    opacity: .24;
+}
+
+.media-recovery {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+    padding: 18px;
+    background: color-mix(in srgb, var(--brand-paper) 96%, #fff);
+    color: var(--ink);
+}
+
+.media-recovery[hidden] {
+    display: none;
+}
+
+.media-recovery__mark {
+    display: grid;
+    width: 34px;
+    height: 34px;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--brand-primary);
+    color: white;
+    font-weight: 850;
+}
+
+.media-recovery strong,
+.media-recovery p {
+    display: block;
+    margin: 0;
+}
+
+.media-recovery p {
+    margin-top: 3px;
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.media-recovery button {
+    min-height: 40px;
+    padding: 9px 12px;
+    border: 1px solid var(--ink);
+    border-radius: 6px;
+    background: var(--ink);
+    color: white;
+    cursor: pointer;
+    font-weight: 800;
+}
+
+.media-recovery button:focus-visible {
+    outline: 3px solid color-mix(in srgb, var(--brand-primary) 55%, white);
+    outline-offset: 2px;
+}
+
+@media (max-width: 520px) {
+    .media-recovery {
+        grid-template-columns: auto minmax(0, 1fr);
+    }
+
+    .media-recovery button {
+        grid-column: 1 / -1;
+        width: 100%;
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {

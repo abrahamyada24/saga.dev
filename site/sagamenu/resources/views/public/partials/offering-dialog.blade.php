@@ -14,7 +14,12 @@
     <div class="offering-dialog__frame">
         <button type="button" class="dialog-close" data-dialog-close aria-label="Tutup detail">Tutup</button>
         <div class="offering-dialog__media" data-image-container>
-            <div class="media-fallback" aria-hidden="true"><span>{{ strtoupper(substr($offering['name'], 0, 1)) }}</span></div>
+            <div
+                class="media-fallback"
+                data-image-fallback
+                data-fallback-label="Foto {{ $offering['name'] }} belum tersedia"
+                aria-hidden="true"
+            ><span>{{ strtoupper(substr($offering['name'], 0, 1)) }}</span></div>
             @if (data_get($media, 'url'))
                 <img
                     src="{{ $media['url'] }}"
@@ -30,8 +35,9 @@
         </div>
         <div class="offering-dialog__content">
             @if (data_get($video, 'url'))
-                <div class="offering-dialog__video">
+                <div class="offering-dialog__video" data-video-container>
                     <video
+                        data-menu-video
                         controls
                         playsinline
                         preload="none"
@@ -43,6 +49,14 @@
                         <source src="{{ $video['url'] }}" type="{{ $video['mime_type'] ?: 'video/mp4' }}">
                         Browser Anda tidak mendukung pemutar video.
                     </video>
+                    <div class="media-recovery" data-video-status role="status" aria-live="polite" hidden>
+                        <span class="media-recovery__mark" aria-hidden="true">!</span>
+                        <div>
+                            <strong data-video-status-title>Video belum dapat diputar</strong>
+                            <p data-video-status-copy>Foto dan detail menu tetap dapat dilihat.</p>
+                        </div>
+                        <button type="button" data-video-retry>Coba lagi</button>
+                    </div>
                 </div>
                 @if (! empty($offering['video_transcript']))
                     <details class="video-transcript">
@@ -69,16 +83,24 @@
             @if ($gallery->count() > 1)
                 <div class="dialog-gallery" aria-label="Galeri {{ $offering['name'] }}">
                     @foreach ($gallery->take(6) as $galleryMedia)
-                        <img
-                            src="{{ $galleryMedia['url'] }}"
-                            alt="{{ $galleryMedia['alt_text'] ?: $offering['name'] }}"
-                            @if (data_get($galleryMedia, 'width') && data_get($galleryMedia, 'height'))
-                                width="{{ $galleryMedia['width'] }}"
-                                height="{{ $galleryMedia['height'] }}"
-                            @endif
-                            loading="lazy"
-                            decoding="async"
-                        >
+                        <div class="dialog-gallery__item" data-image-container>
+                            <div
+                                class="media-fallback"
+                                data-image-fallback
+                                data-fallback-label="Foto galeri {{ $offering['name'] }} belum tersedia"
+                                aria-hidden="true"
+                            ><span>{{ strtoupper(substr($offering['name'], 0, 1)) }}</span></div>
+                            <img
+                                src="{{ $galleryMedia['url'] }}"
+                                alt="{{ $galleryMedia['alt_text'] ?: $offering['name'] }}"
+                                @if (data_get($galleryMedia, 'width') && data_get($galleryMedia, 'height'))
+                                    width="{{ $galleryMedia['width'] }}"
+                                    height="{{ $galleryMedia['height'] }}"
+                                @endif
+                                loading="lazy"
+                                decoding="async"
+                            >
+                        </div>
                     @endforeach
                 </div>
             @endif
