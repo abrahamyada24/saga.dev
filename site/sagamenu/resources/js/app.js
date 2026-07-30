@@ -61,7 +61,7 @@ document.querySelectorAll('[data-offering-open]').forEach((trigger) => {
         dialog.showModal();
         body.classList.add('dialog-open');
         track('offering_opened', { offering_slug: slug });
-        if (trigger.closest('[data-unavailable]')?.dataset.unavailable === 'true') {
+        if (trigger.closest('[data-availability-state]')?.dataset.availabilityState === 'sold_out') {
             track('sold_out_opened', { offering_slug: slug });
         }
         history.replaceState(null, '', `${location.pathname}${location.search}#item-${slug}`);

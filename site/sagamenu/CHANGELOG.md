@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-07-30 - Availability publish flow
+
+- Replaced the ambiguous available/sold-out quick toggle with an explicit
+  five-state publish modal and success notification.
+- Added a canonical availability state to new immutable snapshots and
+  normalized old snapshots safely at render time.
+- Unified status labels and visual treatment across the dashboard, live
+  editor preview, Bio Menu cards/details, and Store Display cards/details.
+- Kept seasonal menus available while their existing visibility schedule is
+  active, and made unknown values fail closed as unconfirmed.
+- Restricted `sold_out_opened` analytics to explicit sold-out items.
+- Added end-to-end tests for action permissions, publish success, snapshot
+  state, mobile/tablet rendering, rollback, unknown-state safety, and analytics.
+
 ## 2026-07-29 - Public media loading budget
 
 - Preserved image dimensions in immutable catalog snapshots and rendered them

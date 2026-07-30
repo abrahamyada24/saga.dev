@@ -4,6 +4,7 @@ namespace App\Services\Publishing;
 
 use App\Models\Offering;
 use App\Models\User;
+use App\Services\Catalog\OfferingAvailability;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -11,7 +12,7 @@ class CatalogAvailabilityPublisher
 {
     public function updateAndPublish(Offering $offering, string $availability, User $actor): Offering
     {
-        if (! in_array($availability, ['available', 'sold_out', 'temporary', 'coming_soon', 'seasonal'], true)) {
+        if (! in_array($availability, OfferingAvailability::allowed(), true)) {
             throw ValidationException::withMessages(['availability' => 'Invalid availability state.']);
         }
 

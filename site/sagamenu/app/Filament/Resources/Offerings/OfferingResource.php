@@ -11,6 +11,7 @@ use App\Models\Collection;
 use App\Models\MediaAsset;
 use App\Models\Offering;
 use App\Services\Catalog\BulkOfferingUpdater;
+use App\Services\Catalog\OfferingAvailability;
 use App\Services\OfferingDuplicator;
 use App\Services\Publishing\CatalogAvailabilityPublisher;
 use BackedEnum;
@@ -26,6 +27,7 @@ use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Group;
@@ -135,13 +137,7 @@ class OfferingResource extends Resource
                                 ->columnSpanFull(),
                             Select::make('availability')
                                 ->label('Status ketersediaan')
-                                ->options([
-                                    'available' => 'Tersedia',
-                                    'sold_out' => 'Sold out',
-                                    'temporary' => 'Sementara tidak tersedia',
-                                    'coming_soon' => 'Segera hadir',
-                                    'seasonal' => 'Musiman',
-                                ])
+                                ->options(OfferingAvailability::options())
                                 ->default('available')
                                 ->required()
                                 ->live(),
@@ -316,7 +312,7 @@ class OfferingResource extends Resource
                             'name' => $get('name') ?: 'Item baru',
                             'description' => $get('short_description') ?: 'Deskripsi menu akan tampil di sini.',
                             'price' => (int) ($get('price_min_minor') ?: 0),
-                            'availability' => $get('availability') ?: 'available',
+                            'availabilityState' => app(OfferingAvailability::class)->resolve($get('availability') ?: 'available'),
                         ])
                         ->columnSpan(1),
                 ]),
@@ -348,26 +344,43 @@ class OfferingResource extends Resource
                 TextColumn::make('name')->searchable()->sortable(),
                 TextColumn::make('primaryCollection.name')->label('Collection')->sortable(),
                 TextColumn::make('price_min_minor')->label('Price')->money('IDR', divideBy: 1)->sortable(),
-                TextColumn::make('availability')->badge()->color(fn (string $state) => match ($state) {
-                    'available' => 'success', 'sold_out' => 'danger', 'coming_soon' => 'info', default => 'warning',
-                }),
+                TextColumn::make('availability')
+                    ->label('Ketersediaan')
+                    ->badge()
+                    ->formatStateUsing(fn (mixed $state): string => app(OfferingAvailability::class)->resolve($state)['label'])
+                    ->color(fn (mixed $state): string => app(OfferingAvailability::class)->resolve($state)['filament_color']),
                 TextColumn::make('visibility')->badge(),
                 IconColumn::make('is_featured')->label('Featured')->boolean(),
                 TextColumn::make('updated_at')->since()->sortable(),
             ])
             ->filters([
-                SelectFilter::make('availability')->options(['available' => 'Available', 'sold_out' => 'Sold out', 'coming_soon' => 'Coming soon']),
+                SelectFilter::make('availability')->options(OfferingAvailability::options()),
                 SelectFilter::make('visibility')->options(['both' => 'Both', 'mobile' => 'Mobile', 'store' => 'Store', 'hidden' => 'Hidden']),
             ])
             ->recordActions([
-                Action::make('availability')->label(fn (Offering $record) => $record->availability === 'sold_out' ? 'Mark available' : 'Mark sold out')
+                Action::make('availability')
+                    ->label('Ubah status')
                     ->icon(Heroicon::OutlinedBolt)
-                    ->color(fn (Offering $record) => $record->availability === 'sold_out' ? 'success' : 'danger')
-                    ->visible(fn (Offering $record) => Gate::allows('publish', $record->catalog))
-                    ->requiresConfirmation()
-                    ->action(function (Offering $record): void {
-                        $availability = $record->availability === 'sold_out' ? 'available' : 'sold_out';
-                        app(CatalogAvailabilityPublisher::class)->updateAndPublish($record, $availability, auth()->user());
+                    ->color(fn (Offering $record): string => app(OfferingAvailability::class)->resolve($record->availability)['filament_color'])
+                    ->visible(fn (Offering $record) => Gate::allows('publish', $record->catalog()->firstOrFail()))
+                    ->modalHeading(fn (Offering $record): string => "Ubah status {$record->name}")
+                    ->modalDescription('Status baru langsung dipublikasikan ke Bio Menu dan Store Display dalam snapshot baru.')
+                    ->schema([
+                        Select::make('availability')
+                            ->label('Status ketersediaan')
+                            ->options(OfferingAvailability::options())
+                            ->required(),
+                    ])
+                    ->fillForm(fn (Offering $record): array => ['availability' => $record->availability])
+                    ->action(function (Offering $record, array $data): void {
+                        app(CatalogAvailabilityPublisher::class)->updateAndPublish($record, $data['availability'], auth()->user());
+                        $state = app(OfferingAvailability::class)->resolve($data['availability']);
+
+                        Notification::make()
+                            ->title('Status berhasil dipublikasikan')
+                            ->body("{$record->name} sekarang ditampilkan sebagai {$state['label']}.")
+                            ->success()
+                            ->send();
                     }),
                 Action::make('duplicate')->label('Duplicate')->icon(Heroicon::OutlinedSquare2Stack)
                     ->action(fn (Offering $record) => app(OfferingDuplicator::class)->duplicate($record)),

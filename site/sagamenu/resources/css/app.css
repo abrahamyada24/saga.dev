@@ -362,6 +362,38 @@ h3 {
     font-weight: 800;
 }
 
+.availability-badge--informational {
+    border: 1px solid color-mix(in srgb, var(--brand-primary) 28%, transparent);
+    background: color-mix(in srgb, var(--surface) 88%, var(--brand-accent));
+    color: var(--ink);
+}
+
+.availability-text {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.availability-text::before {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+    content: "";
+}
+
+.availability-text--available {
+    color: var(--brand-primary);
+}
+
+.availability-text--unavailable {
+    color: #8c311f;
+}
+
+.availability-text--informational {
+    color: #5d4b08;
+}
+
 .offering-card.is-unavailable .offering-card__media img {
     filter: grayscale(.55);
     opacity: .7;

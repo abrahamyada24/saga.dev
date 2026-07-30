@@ -109,6 +109,7 @@
                 @forelse ($offerings as $offering)
                     @php
                         $media = $offering->media->first()?->mediaAsset;
+                        $availabilityState = $availabilityStates[$offering->id];
                     @endphp
                     <a href="{{ $offeringsUrl }}" class="sm-offering-row">
                         @if ($media)
@@ -118,7 +119,7 @@
                         @endif
                         <span><strong>{{ $offering->name }}</strong><small>{{ $offering->primaryCollection?->name ?? 'Tanpa kategori' }}</small></span>
                         <b>{{ $offering->price_label ?: 'Rp '.number_format((int) $offering->price_min_minor, 0, ',', '.') }}</b>
-                        <span class="sm-status-badge {{ $offering->availability === 'available' ? 'is-active' : 'is-sold-out' }}">{{ $offering->availability === 'available' ? 'Aktif' : 'Sold out' }}</span>
+                        <span class="sm-status-badge is-{{ $availabilityState['tone'] }}">{{ $availabilityState['label'] }}</span>
                         <x-filament::icon icon="heroicon-o-pencil-square" />
                     </a>
                 @empty

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Catalog;
 use App\Models\Organization;
+use App\Services\Catalog\OfferingAvailability;
 use App\Services\Publishing\CatalogPublisher;
 use App\Services\Publishing\PreviewTokenService;
 use App\Services\SagaPlatform\PublicCatalogAccessPolicy;
@@ -14,7 +15,10 @@ use Illuminate\Support\Facades\Cache;
 
 class PublicCatalogController extends Controller
 {
-    public function __construct(private readonly PublicCatalogAccessPolicy $access) {}
+    public function __construct(
+        private readonly PublicCatalogAccessPolicy $access,
+        private readonly OfferingAvailability $availability,
+    ) {}
 
     public function store(string $brand, string $catalog): View|Response
     {
@@ -112,7 +116,12 @@ class PublicCatalogController extends Controller
             ->map(function (array $collection) use ($surface, $locale, $defaultLocale, $now): array {
                 $collection['offerings'] = collect($collection['offerings'] ?? [])
                     ->filter(fn (array $offering): bool => $this->offeringIsVisible($offering, $surface, $now))
-                    ->map(fn (array $offering): array => $this->localizeOffering($offering, $locale, $defaultLocale))
+                    ->map(function (array $offering) use ($locale, $defaultLocale): array {
+                        $offering = $this->localizeOffering($offering, $locale, $defaultLocale);
+                        $offering['availability_state'] = $this->availability->publicState($offering['availability'] ?? null);
+
+                        return $offering;
+                    })
                     ->values()
                     ->all();
 

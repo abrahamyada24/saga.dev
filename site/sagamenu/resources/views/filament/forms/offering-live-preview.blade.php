@@ -15,8 +15,8 @@
             <strong>{{ $name }}</strong>
             <b>{{ $price > 0 ? 'Rp '.number_format($price, 0, ',', '.') : 'Harga belum diisi' }}</b>
             <p>{{ $description }}</p>
-            <span class="{{ $availability === 'sold_out' ? 'is-sold-out' : 'is-available' }}">
-                {{ $availability === 'sold_out' ? 'Sold out' : 'Tersedia' }}
+            <span class="is-{{ $availabilityState['tone'] }}">
+                {{ $availabilityState['label'] }}
             </span>
         </div>
     </div>

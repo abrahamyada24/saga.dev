@@ -540,14 +540,21 @@
     font-weight: 750;
 }
 
-.sm-status-badge.is-active {
+.sm-status-badge.is-active,
+.sm-status-badge.is-available {
     background: #e4f1ec;
     color: var(--saga-primary-dark);
 }
 
-.sm-status-badge.is-sold-out {
+.sm-status-badge.is-sold-out,
+.sm-status-badge.is-unavailable {
     background: #fff4cf;
     color: #765112;
+}
+
+.sm-status-badge.is-informational {
+    background: #e5eef8;
+    color: #264c73;
 }
 
 .sm-editorial-empty {
@@ -746,7 +753,8 @@
 }
 
 .sm-offering-preview-card .is-available,
-.sm-offering-preview-card .is-sold-out {
+.sm-offering-preview-card .is-unavailable,
+.sm-offering-preview-card .is-informational {
     width: max-content;
     padding: .3rem .5rem;
     border-radius: .3rem;
@@ -759,9 +767,14 @@
     color: var(--saga-primary-dark);
 }
 
-.sm-offering-preview-card .is-sold-out {
+.sm-offering-preview-card .is-unavailable {
     background: #fbe8e5;
     color: #8c311f;
+}
+
+.sm-offering-preview-card .is-informational {
+    background: #e5eef8;
+    color: #264c73;
 }
 
 .sm-editor-safety,

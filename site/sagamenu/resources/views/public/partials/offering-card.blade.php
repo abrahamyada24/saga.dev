@@ -2,14 +2,9 @@
     $media = collect($offering['media'])->firstWhere('role', 'primary_image');
     $video = collect($offering['media'])->firstWhere('role', 'menu_video');
     $priorityImage = (bool) ($priorityImage ?? false);
-    $isUnavailable = in_array($offering['availability'], ['sold_out', 'temporary', 'coming_soon', 'seasonal'], true);
-    $availabilityLabel = match ($offering['availability']) {
-        'sold_out' => 'Sold out',
-        'temporary' => 'Sementara tidak tersedia',
-        'coming_soon' => 'Segera hadir',
-        'seasonal' => 'Seasonal',
-        default => null,
-    };
+    $availabilityState = $offering['availability_state'];
+    $isUnavailable = ! $availabilityState['is_available'];
+    $availabilityLabel = $availabilityState['key'] === 'available' ? null : $availabilityState['label'];
     $searchText = strtolower(implode(' ', array_filter([
         $offering['name'],
         $offering['short_description'],
@@ -23,7 +18,13 @@
     ]));
 @endphp
 
-<article class="offering-card offering-card--{{ $mode }} {{ $isUnavailable ? 'is-unavailable' : '' }}" data-search-item="{{ $searchText }}" data-dietary="{{ $dietaryText }}" data-unavailable="{{ $isUnavailable ? 'true' : 'false' }}">
+<article
+    class="offering-card offering-card--{{ $mode }} {{ $isUnavailable ? 'is-unavailable' : '' }}"
+    data-search-item="{{ $searchText }}"
+    data-dietary="{{ $dietaryText }}"
+    data-unavailable="{{ $isUnavailable ? 'true' : 'false' }}"
+    data-availability-state="{{ $availabilityState['key'] }}"
+>
     <button
         type="button"
         class="offering-card__button"
@@ -47,7 +48,7 @@
                 >
             @endif
             @if ($availabilityLabel)
-                <span class="availability-badge">{{ $availabilityLabel }}</span>
+                <span class="availability-badge availability-badge--{{ $availabilityState['tone'] }}">{{ $availabilityLabel }}</span>
             @endif
             @if (data_get($video, 'url'))
                 <span class="video-badge" aria-label="Memiliki video menu">

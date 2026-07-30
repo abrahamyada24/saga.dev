@@ -2,16 +2,15 @@
     $media = collect($offering['media'])->firstWhere('role', 'primary_image');
     $video = collect($offering['media'])->firstWhere('role', 'menu_video');
     $gallery = collect($offering['media'])->where('type', 'image');
-    $availabilityLabel = match ($offering['availability']) {
-        'sold_out' => 'Sold out',
-        'temporary' => 'Sementara tidak tersedia',
-        'coming_soon' => 'Segera hadir',
-        'seasonal' => 'Seasonal',
-        default => 'Tersedia',
-    };
+    $availabilityState = $offering['availability_state'];
 @endphp
 
-<dialog class="offering-dialog offering-dialog--{{ $mode }}" id="offering-{{ $offering['slug'] }}" data-offering-dialog="{{ $offering['slug'] }}">
+<dialog
+    class="offering-dialog offering-dialog--{{ $mode }}"
+    id="offering-{{ $offering['slug'] }}"
+    data-offering-dialog="{{ $offering['slug'] }}"
+    data-availability-state="{{ $availabilityState['key'] }}"
+>
     <div class="offering-dialog__frame">
         <button type="button" class="dialog-close" data-dialog-close aria-label="Tutup detail">Tutup</button>
         <div class="offering-dialog__media" data-image-container>
@@ -54,7 +53,7 @@
             @endif
             <div class="dialog-title-row">
                 <div>
-                    <span class="availability-text">{{ $availabilityLabel }}</span>
+                    <span class="availability-text availability-text--{{ $availabilityState['tone'] }}">{{ $availabilityState['label'] }}</span>
                     <h2>{{ $offering['name'] }}</h2>
                 </div>
                 <div class="dialog-price">

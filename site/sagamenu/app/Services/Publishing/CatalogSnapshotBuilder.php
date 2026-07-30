@@ -4,10 +4,13 @@ namespace App\Services\Publishing;
 
 use App\Models\Catalog;
 use App\Models\Offering;
+use App\Services\Catalog\OfferingAvailability;
 use Illuminate\Support\Carbon;
 
 class CatalogSnapshotBuilder
 {
+    public function __construct(private readonly OfferingAvailability $availability) {}
+
     public function build(Catalog $catalog): array
     {
         $catalog->load([
@@ -109,6 +112,7 @@ class CatalogSnapshotBuilder
                 'promo_terms' => $offering->promo_terms,
             ],
             'availability' => $offering->availability,
+            'availability_state' => $this->availability->publicState($offering->availability),
             'visibility' => $offering->visibility,
             'available_from' => optional($offering->available_from)->toIso8601String(),
             'available_until' => optional($offering->available_until)->toIso8601String(),
